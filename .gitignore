@@ -1,0 +1,8 @@
+# Temporary and cache files
+*.tmp
+*.log
+.system_generated/
+.agents/
+
+# Release archives (distributed via Releases)
+*.zip
