@@ -50,22 +50,63 @@
 
 ```text
 D:\Antigravity\6\
-├── ui_panel.js                        # 核心控制台脚本（自包含 Base64 表情包，单一真相来源）
-├── ui_panel_template.js               # 控制台代码模版
-├── build_ui_panel.ps1                 # 自包含构建脚本（将表情包注入并编译为 ui_panel.js）
+├── ui_panel.js                        # 核心控制台打包脚本（自包含 117 个动态表情包与最新样式，单一真相来源）
+├── ui_panel_template.js               # 控制台代码源模版（包含毛玻璃/类纸膜/三级菜单穿透样式与交互逻辑）
+├── emojis_data.js                     # 117 个鸣潮动态表情包全量离线数据集
+├── build_ui_panel.ps1                 # 自包含构建脚本（将表情包与模版编译合成为 ui_panel.js）
 ├── suoming_sunglasses.gif             # 锁暝捏捏像素墨镜动态表情包源素材
 ├── suoming_base64.txt                 # 锁暝表情包 100% 离线自包含 Base64 编码
-├── antarctica_glacier_ui_4k.jpg       # 4K 极地冰川默认底图素材
-├── apply_visual_panel_live.ps1        # 免重启 CDP 全页面热注入广播脚本
-├── persist_theme.ps1                  # 系统级持久化固化脚本（写入 Electron preload.js）
-├── restore_default_theme.ps1          # 一键 100% 无损还原官方状态脚本
-├── verify_advanced_suite.ps1          # 多场景自动化实机验收与截图套件
-├── ui_preview_suoming_button.png      # 锁暝动态表情包按钮实机截图
-├── ui_preview_modal_glass.png         # 控制台主界面（晶莹磨砂模式）实机截图
-├── ui_preview_modal_paper.png         # 控制台主界面（柔雾类纸膜模式）实机截图
-├── ui_preview_modal_palette.png       # 二级广色域色盘与 RGB 微调实机截图
-└── ui_preview_chat_scroll_safe.png    # 对话流下滚安全视口防遮挡实机截图
+├── antarctica_glacier_ui_4k.jpg       # 4K 极地冰川默认高清透底壁纸素材
+├── apply_visual_panel_live.ps1        # 免重启 CDP 全页面热注入广播脚本（开发与实时调试使用）
+├── persist_theme.ps1                  # 系统级持久化固化脚本（写入目标 Electron preload.js，重启常驻生效）
+├── restore_default_theme.ps1          # 一键 100% 无损还原官方状态脚本（一键清除固化补丁）
+├── slider_linkage_results.json        # 滑块全量联动与极值自动化断言测试数据
+├── verify_sliders_linkage.js          # 视窗透明度与模糊度联动自动化测试验证脚本
+├── ui_preview.png                     # 极简纯净磨砂玻璃风格实机全景预览截图
+└── Antigravity-Beautify-Suite-V1.0.0.zip # V1 完整自包含发布分发包（含所有生产脚本与高清素材）
 ```
+
+---
+
+## 🛠️ 文件作用详细说明 (File Manifest)
+
+| 文件名 | 职责与功能描述 |
+| :--- | :--- |
+| **`ui_panel_template.js`** | **样式与逻辑核心源码**。定义全域 CSS 穿透规则（Apple 磨砂、类纸膜双模、输入框防溢出剪裁、Actions 三级浮层保护）、控制台 UI 面板渲染、调色盘 Canvas 算法与滑块响应逻辑。 |
+| **`ui_panel.js`** | **生产级自包含产物**。由 `build_ui_panel.ps1` 自动将 `emojis_data.js`、锁暝表情包与模板编译合并生成，具备完整离线运行能力。 |
+| **`emojis_data.js`** | **离线表情包数据库**。内置 117 个动态表情包的名称与 Base64 数据，支持控制台入口按钮 10 秒无缝轮播。 |
+| **`build_ui_panel.ps1`** | **工程编译流水线**。读取模版与素材，执行占位符替换与模块拼接，输出最终的 `ui_panel.js`。 |
+| **`apply_visual_panel_live.ps1`** | **实机热更新脚本**。通过 Chrome DevTools Protocol (CDP) WebSocket 接口，向运行中的 Antigravity 客户端实时热注入最新脚本，免重启调试。 |
+| **`persist_theme.ps1`** | **全量固化脚本**。自动编译并将壁纸底衬与控制台脚本永久写入官方 Electron 的两处 `preload.js`，保证冷启动与应用重启后依然无损呈现。 |
+| **`restore_default_theme.ps1`** | **防灾还原脚本**。从官方 `preload.js` 中精准剥离注入代码，恢复 Electron 官方默认纯净状态。 |
+| **`antarctica_glacier_ui_4k.jpg`** | **官方默认 4K 壁纸**。专为磨砂玻璃设计的极地冰川冷调微光背景素材。 |
+| **`Antigravity-Beautify-Suite-V1.0.0.zip`** | **V1.0.0 完整独立封包**。适合归档、备份或跨设备分发的完整资产包。 |
+
+---
+
+## ⚠️ 潜在问题与边界约束说明 (Known Edge Cases & Potential Bugs)
+
+在工程实践中，受限于操作系统环境、硬件性能及 Electron 架构特性，可能存在以下已知边界与偶发问题：
+
+### 1. 客户端自动升级覆盖 `preload.js`
+- **现象**：当 Google Antigravity 执行全量客户端静默升级后，`preload.js` 可能会被官方安装包重置，导致重启后美化效果失效。
+- **排查与修复**：重新在终端以管理员权限执行 `powershell -ExecutionPolicy Bypass -File "D:\Antigravity\6\persist_theme.ps1"` 即可 1 秒重新固化。
+
+### 2. 导入超大体积 MP4 视频（> 200MB）
+- **现象**：若导入超过 200MB 的未经压缩视频，IndexedDB 存取时可能造成短暂卡顿，或因显卡解码器限制出现丢帧。
+- **建议**：推荐导入 1080P 或 4K、H.264 / HEVC 编码、帧率 30fps~60fps、文件大小在 5MB~50MB 的平滑循环无缝视频，以兼顾低功耗与流畅度。
+
+### 3. 系统全局禁用硬件加速 (GPU Rasterization)
+- **现象**：若在操作系统或显卡驱动中强制关闭了硬件加速，`backdrop-filter: blur(...)` 高斯模糊将退化为 CPU 软件渲染，可能在快速拖拽窗口时略有掉帧。
+- **解决方案**：在控制台中一键切换为 **「柔雾类纸膜」** 模式（采用低开销漫反射滤镜），或在显卡控制面板中启用硬件加速。
+
+### 4. 极端狭窄视口尺寸（窗口宽度 < 600px）
+- **现象**：在极端狭窄分屏或极小视口下，输入框加号触发的三级浮层可能横向压缩。
+- **优化保障**：已在样式中预置 `max-height: 200px`、隐藏式平滑滚动条与响应式最小宽度限制（`min-w-[160px]`），确保核心文字始终完整显示。
+
+### 5. 高 DPI 缩放下的亚像素微偏移
+- **现象**：在 Windows 125%、175% 等非整数缩放比例下，高光微边框（`1px solid rgba(...)`）在某些显示器上可能呈现微小亚像素抗锯齿平滑。
+- **现状**：已采用微透高光结合内发光（`inset 0 1px 0 rgba(...)`）双重补偿，视觉观感保持细腻自然。
 
 ---
 
@@ -99,3 +140,4 @@ powershell -ExecutionPolicy Bypass -File "D:\Antigravity\6\restore_default_theme
 - **切换质感风格**：在控制台中点击「晶莹磨砂」或「柔雾类纸膜」；
 - **导入 MP4 / 图片素材**：将本地任意 MP4 视频或图片（JPG/PNG/WebP）拖入虚线卡片，或点击选取文件，即刻全屏循环播放；
 - **调节全界面通透度**：滑动「全局视窗透明度」即可实时感受光线穿透效果。
+

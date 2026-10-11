@@ -716,7 +716,7 @@ div[class*="markdown-alert"] {
 /* 3.9 底部输入框整体磨砂与子智能体状态栏无缝整合 */
 div[data-testid="chat-input-container"],
 div[id="antigravity.agentSidePanelInputBox"],
-#antigravity\\.agentSidePanelInputBox,
+#antigravity\.agentSidePanelInputBox,
 div[class*="border-input"][class*="rounded-"],
 div.relative.flex.flex-col.items-stretch.rounded-2xl {
   background-color: var(--ag-chat-box-bg) !important;
@@ -725,12 +725,12 @@ div.relative.flex.flex-col.items-stretch.rounded-2xl {
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 16px !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.20) !important;
-  overflow: hidden !important;
+  overflow: visible !important;
 }
 
-div[id="antigravity.agentSidePanelInputBox"] > div,
-div[id="antigravity.agentSidePanelInputBox"] div.bg-card,
-div[id="antigravity.agentSidePanelInputBox"] div.bg-card-border {
+div[id="antigravity.agentSidePanelInputBox"] > div:not(.bottom-full):not([data-mention-menu]),
+div[id="antigravity.agentSidePanelInputBox"] div.bg-card:not(.bottom-full):not([data-mention-menu]),
+div[id="antigravity.agentSidePanelInputBox"] div.bg-card-border:not(.bottom-full):not([data-mention-menu]) {
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -754,25 +754,93 @@ textarea {
   caret-color: var(--ag-accent) !important;
 }
 
-/* 3.10 上下文选择二级菜单 & 快捷命令 Slash 菜单 */
+/* 3.10 上下文选择二级菜单 & 快捷命令 Slash / Actions 三级浮层 */
+/* 排除光标锚点微型节点，防止 6px 细黑长条伪影 */
+#typeahead-menu,
+div[id="typeahead-menu"] {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+
+/* 保护 Actions / Mentions / Slash 向上弹出的三级浮层卡片磨砂质感与层级 */
+div[id="antigravity.agentSidePanelInputBox"] div.bottom-full,
+div[id="antigravity.agentSidePanelInputBox"] div[data-mention-menu],
+div.bottom-full[role="listbox"],
+div.bottom-full.bg-card {
+  background-color: rgba(20, 24, 34, 0.78) !important;
+  backdrop-filter: blur(32px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  z-index: 1000 !important;
+}
+
+/* 移除浮层底部的渐变淡化遮罩，保持全部条目清晰可读 */
+div.bottom-full > div[style*="mask-image"],
+div[data-mention-menu] > div[style*="mask-image"] {
+  mask-image: none !important;
+  -webkit-mask-image: none !important;
+}
+
+/* 浮层内列表项与高亮态 Apple 极简工业风格 */
+div.bottom-full [role="option"],
+div[data-mention-menu] [role="option"] {
+  color: rgba(255, 255, 255, 0.90) !important;
+}
+div.bottom-full [role="option"] [data-testid="menu-option-label"],
+div[data-mention-menu] [role="option"] [data-testid="menu-option-label"] {
+  color: #ffffff !important;
+  font-weight: 500 !important;
+}
+div.bottom-full [role="option"] [data-testid="menu-option-description"],
+div[data-mention-menu] [role="option"] [data-testid="menu-option-description"] {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+div.bottom-full [role="option"] svg,
+div[data-mention-menu] [role="option"] svg {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+div.bottom-full [role="option"][aria-selected="true"] > div,
+div.bottom-full [role="option"]:hover > div,
+div[data-mention-menu] [role="option"][aria-selected="true"] > div,
+div[data-mention-menu] [role="option"]:hover > div {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-radius: 8px !important;
+  color: #ffffff !important;
+}
+
+/* Base UI / Radix 弹出菜单磨砂毛玻璃卡片（包含二级添加上下文菜单） */
 div[data-radix-popper-content-wrapper],
 div[role="menu"],
-div[role="listbox"],
+div[role="listbox"]:not(#typeahead-menu):not(.bottom-full),
 div.z-50.min-w-\\[8rem\\].overflow-hidden.rounded-md,
 div[class*="bg-popover"],
 div.bg-popover,
 .bg-popover {
-  background-color: rgba(22, 26, 36, 0.68) !important;
+  background-color: rgba(22, 26, 36, 0.72) !important;
   backdrop-filter: blur(32px) saturate(190%) !important;
   -webkit-backdrop-filter: blur(32px) saturate(190%) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   border-radius: 12px !important;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+
+/* 二级菜单文本统一纯白清晰度 */
+div[role="menu"] [role="menuitem"],
+div[role="menu"] [role="menuitem"] span {
+  color: #ffffff !important;
 }
 
 /* 菜单项悬停 Apple 风格纯净微透卡片 */
 div[role="menu"] [role="menuitem"]:hover,
-div[role="listbox"] [role="option"]:hover,
+div[role="listbox"]:not(.bottom-full) [role="option"]:hover,
 div.bg-popover button:hover,
 div.bg-popover [class*="hover:bg-accent"]:hover {
   background: rgba(255, 255, 255, 0.12) !important;
