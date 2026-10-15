@@ -19,7 +19,113 @@
       return;
     }
 
+    // Preload 在 Electron 隔离世界运行；Antigravity 的 nativeStorage 只暴露在页面主世界。
+    // 通过 DOM 脚本建立窄接口桥接，避免错误地退回按 localhost 端口隔离的 IndexedDB。
+    function installNativeStorageBridge() {
+      if (window.__ag_native_storage_bridge_requested) return;
+      window.__ag_native_storage_bridge_requested = true;
+      const bridge = document.createElement('script');
+      bridge.textContent = `(() => {
+        if (window.__agThemeStorageBridgeInstalled) return;
+        window.__agThemeStorageBridgeInstalled = true;
+        const waitForStorage = () => new Promise((resolve, reject) => {
+          const deadline = Date.now() + 15000;
+          const check = () => {
+            if (window.nativeStorage && typeof window.nativeStorage.getItems === 'function' && typeof window.nativeStorage.updateItems === 'function') return resolve(window.nativeStorage);
+            if (Date.now() >= deadline) return reject(new Error('Antigravity nativeStorage API 不可用'));
+            setTimeout(check, 50);
+          };
+          check();
+        });
+        document.addEventListener('ag-theme-storage-request', async (event) => {
+          const request = event.detail || {};
+          try {
+            const storage = await waitForStorage();
+            let value;
+            if (request.method === 'getItems') {
+              const items = await storage.getItems();
+              value = {
+                ag_theme_config_v1: items && items.ag_theme_config_v1,
+                ag_theme_asset_v1: items && items.ag_theme_asset_v1
+              };
+            } else if (request.method === 'updateItems') {
+              const changes = request.changes || {};
+              const allowedKeys = new Set(['ag_theme_config_v1', 'ag_theme_asset_v1']);
+              if (Object.keys(changes).some((key) => !allowedKeys.has(key))) throw new Error('主题存储桥接只允许修改主题配置与素材');
+              value = await storage.updateItems(changes);
+            } else {
+              throw new Error('未知的主题存储操作');
+            }
+            document.dispatchEvent(new CustomEvent('ag-theme-storage-result', { detail: { id: request.id, ok: true, value } }));
+          } catch (error) {
+            document.dispatchEvent(new CustomEvent('ag-theme-storage-result', { detail: { id: request.id, ok: false, error: String(error && error.message || error) } }));
+          }
+        });
+      })();`;
+      (document.head || document.documentElement).appendChild(bridge);
+      bridge.remove();
+    }
+
+    function callNativeStorage(method, changes) {
+      if (window.nativeStorage && typeof window.nativeStorage[method] === 'function') {
+        return method === 'updateItems' ? window.nativeStorage.updateItems(changes) : window.nativeStorage.getItems();
+      }
+      installNativeStorageBridge();
+      const id = `ag-theme-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          document.removeEventListener('ag-theme-storage-result', onResult);
+          reject(new Error('等待 Antigravity 主题存储响应超时'));
+        }, 20000);
+        const onResult = (event) => {
+          const result = event.detail || {};
+          if (result.id !== id) return;
+          clearTimeout(timeout);
+          document.removeEventListener('ag-theme-storage-result', onResult);
+          if (result.ok) resolve(result.value);
+          else reject(new Error(result.error || 'Antigravity 主题存储操作失败'));
+        };
+        document.addEventListener('ag-theme-storage-result', onResult);
+        document.dispatchEvent(new CustomEvent('ag-theme-storage-request', { detail: { id, method, changes } }));
+      });
+    }
+
+    // Electron 内置 storage 位于应用 userData，不受 localhost 动态端口变化影响。
+    // 先从主世界读取配置与素材，再初始化 UI，避免冷启动落入空的端口隔离缓存。
+    if (!window.__ag_theme_native_ready) {
+      if (window.__ag_theme_native_loading) return;
+      window.__ag_theme_native_loading = true;
+      callNativeStorage('getItems').then((items) => {
+        try {
+          const savedConfig = items && items.ag_theme_config_v1;
+          window.__ag_native_theme_config = savedConfig ? JSON.parse(savedConfig) : null;
+          const savedAsset = items && items.ag_theme_asset_v1;
+          window.__ag_native_asset_payload = savedAsset ? JSON.parse(savedAsset) : null;
+          window.__ag_theme_native_available = true;
+        } catch (err) {
+          console.warn('[Theme] 读取应用级主题存储失败', err);
+          window.__ag_native_theme_config = null;
+          window.__ag_native_asset_payload = null;
+          window.__ag_theme_native_available = false;
+        }
+        window.__ag_theme_native_ready = true;
+        window.__ag_theme_native_loading = false;
+        initAppleConsole();
+      }).catch((err) => {
+        console.warn('[Theme] 应用级存储不可用，回退到浏览器存储', err);
+        window.__ag_theme_native_available = false;
+        window.__ag_theme_native_ready = true;
+        window.__ag_theme_native_loading = false;
+        initAppleConsole();
+      });
+      return;
+    }
+
     // 0. 清除旧实例，实现热替换无缝刷新
+    if (window.__ag_theme_config_save_timer) {
+      clearTimeout(window.__ag_theme_config_save_timer);
+      window.__ag_theme_config_save_timer = null;
+    }
     if (window.__ag_emoji_timer) {
       clearInterval(window.__ag_emoji_timer);
       window.__ag_emoji_timer = null;
@@ -35,6 +141,9 @@
 
     // 1. 配置状态管理（默认模式：全局共享调节，左中右完全联动）
     const STORAGE_KEY = 'ag_theme_apple_config_v3';
+    const NATIVE_CONFIG_KEY = 'ag_theme_config_v1';
+    const NATIVE_ASSET_KEY = 'ag_theme_asset_v1';
+    const MAX_PERSISTENT_ASSET_BYTES = 50 * 1024 * 1024;
     const DEFAULT_CONFIG = {
       mode: 'glacier', // 'aurora' | 'custom' | 'glacier'
       textureStyle: 'glass', // 'glass' (晶莹磨砂) | 'paper' (柔雾类纸膜)
@@ -48,14 +157,15 @@
       centerOpacity: 0.50, // 中栏独立透明度 (主对话卡片/设置弹窗)
       rightOpacity: 0.50,  // 右栏独立透明度 (Aux Pane / Review / 终端)
       auroraSpeed: 1.0,
-      customAssetUrl: ''
+      customAssetUrl: '',
+      customAssetName: ''
     };
 
     let config = Object.assign({}, DEFAULT_CONFIG);
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = window.__ag_native_theme_config || localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        config = Object.assign(config, JSON.parse(saved));
+        config = Object.assign(config, typeof saved === 'string' ? JSON.parse(saved) : saved);
       }
     } catch (e) {
       console.warn('[Apple Theme] 读取缓存配置失败，使用预设值', e);
@@ -76,6 +186,37 @@
       config.customAssetType = 'image';
     }
 
+    function updateNativeStorage(changes) {
+      const previous = window.__ag_theme_storage_queue || Promise.resolve();
+      const next = previous.catch(() => {}).then(() => callNativeStorage('updateItems', changes));
+      window.__ag_theme_storage_queue = next.catch(() => {});
+      return next;
+    }
+
+    function persistConfig() {
+      const serialized = JSON.stringify(config);
+      try { localStorage.setItem(STORAGE_KEY, serialized); } catch (e) {}
+      if (window.__ag_theme_native_available || (window.nativeStorage && typeof window.nativeStorage.updateItems === 'function')) {
+        window.__ag_native_theme_config = config;
+        clearTimeout(window.__ag_theme_config_save_timer);
+        window.__ag_theme_config_save_timer = setTimeout(() => {
+          updateNativeStorage({ [NATIVE_CONFIG_KEY]: serialized }).catch((err) => {
+            console.warn('[Theme] 应用级配置写入失败', err);
+          });
+        }, 500);
+      }
+    }
+    async function persistConfigNow() {
+      const serialized = JSON.stringify(config);
+      try { localStorage.setItem(STORAGE_KEY, serialized); } catch (e) {}
+      clearTimeout(window.__ag_theme_config_save_timer);
+      if (window.__ag_theme_native_available || (window.nativeStorage && typeof window.nativeStorage.updateItems === 'function')) {
+        await updateNativeStorage({ [NATIVE_CONFIG_KEY]: serialized });
+        window.__ag_native_theme_config = config;
+      }
+    }
+    persistConfig();
+
     // 2. 注入全局 CSS 变量与穿透样式表
     const styleEl = document.createElement('style');
     styleEl.id = 'antarctica-glacier-theme';
@@ -92,7 +233,7 @@
         left: 0;
         width: 100vw;
         height: 100vh;
-        z-index: -9996;
+        z-index: 999990;
         pointer-events: none;
         display: none;
         opacity: 0.042;
@@ -127,50 +268,116 @@
     }
 
     let activeVideoBlobUrl = null;
+    let activeImageBlobUrl = null;
+    const MEDIA_DB_NAME = 'ag_media_db_v2';
 
-    // IndexedDB 异步存取本地 MP4 视频
-    function saveVideoToIndexedDB(blob) {
-      try {
-        const req = indexedDB.open('ag_media_db', 1);
-        req.onupgradeneeded = (e) => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains('media')) {
-            db.createObjectStore('media');
-          }
+    // IndexedDB 作为同源缓存；跨重启的正式副本保存在 Electron userData 的 nativeStorage。
+    function openMediaDb() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(MEDIA_DB_NAME, 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains('media')) db.createObjectStore('media');
         };
-        req.onsuccess = (e) => {
-          const db = e.target.result;
-          const tx = db.transaction('media', 'readwrite');
-          tx.objectStore('media').put(blob, 'bg_video');
-        };
-      } catch (err) {
-        console.warn('[Theme] IndexedDB 存储视频失败', err);
-      }
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error || new Error('无法打开素材数据库'));
+        req.onblocked = () => reject(new Error('素材数据库升级被其他窗口阻塞'));
+      });
     }
 
-    function loadVideoFromIndexedDB(callback) {
+    async function saveAssetToIndexedDB(blob) {
+      const db = await openMediaDb();
       try {
-        const req = indexedDB.open('ag_media_db', 1);
-        req.onupgradeneeded = (e) => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains('media')) {
-            db.createObjectStore('media');
-          }
-        };
-        req.onsuccess = (e) => {
-          const db = e.target.result;
-          if (!db.objectStoreNames.contains('media')) return;
-          const tx = db.transaction('media', 'readonly');
-          const getReq = tx.objectStore('media').get('bg_video');
-          getReq.onsuccess = () => {
-            if (getReq.result) {
-              callback(getReq.result);
-            }
-          };
-        };
-      } catch (err) {
-        console.warn('[Theme] IndexedDB 读取视频失败', err);
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction('media', 'readwrite');
+          tx.objectStore('media').put(blob, 'bg_asset');
+          tx.oncomplete = resolve;
+          tx.onerror = () => reject(tx.error || new Error('素材写入失败'));
+          tx.onabort = () => reject(tx.error || new Error('素材写入已取消'));
+        });
+      } finally { db.close(); }
+    }
+
+    async function loadAssetFromIndexedDB() {
+      const nativeAsset = window.__ag_native_asset_payload;
+      if (nativeAsset && nativeAsset.dataUrl) {
+        try { return await (await fetch(nativeAsset.dataUrl)).blob(); }
+        catch (err) { console.warn('[Theme] 原生存储素材解码失败，尝试浏览器缓存', err); }
       }
+      const db = await openMediaDb();
+      let currentAsset = null;
+      try {
+        currentAsset = await new Promise((resolve, reject) => {
+          const tx = db.transaction('media', 'readonly');
+          const req = tx.objectStore('media').get('bg_asset');
+          req.onsuccess = () => resolve(req.result || null);
+          req.onerror = () => reject(req.error || new Error('素材读取失败'));
+        });
+      } finally { db.close(); }
+      if (currentAsset) return currentAsset;
+
+      // 兼容旧版数据库（其中可能存有 bg_video 或较早构建的 bg_asset）。
+      return await new Promise((resolve) => {
+        const req = indexedDB.open('ag_media_db');
+        req.onsuccess = () => {
+          const legacyDb = req.result;
+          if (!legacyDb.objectStoreNames.contains('media')) { legacyDb.close(); resolve(null); return; }
+          const tx = legacyDb.transaction('media', 'readonly');
+          const store = tx.objectStore('media');
+          const assetReq = store.get('bg_asset');
+          assetReq.onsuccess = () => {
+            if (assetReq.result) { resolve(assetReq.result); return; }
+            const videoReq = store.get('bg_video');
+            videoReq.onsuccess = () => resolve(videoReq.result || null);
+            videoReq.onerror = () => resolve(null);
+          };
+          assetReq.onerror = () => resolve(null);
+          tx.oncomplete = () => legacyDb.close();
+          tx.onerror = () => legacyDb.close();
+        };
+        req.onerror = () => resolve(null);
+      });
+    }
+
+    async function clearAssetFromIndexedDB() {
+      const db = await openMediaDb();
+      try {
+        await new Promise((resolve, reject) => {
+          const tx = db.transaction('media', 'readwrite');
+          tx.objectStore('media').delete('bg_asset');
+          tx.oncomplete = resolve;
+          tx.onerror = () => reject(tx.error || new Error('素材删除失败'));
+          tx.onabort = () => reject(tx.error || new Error('素材删除已取消'));
+        });
+      } finally { db.close(); }
+    }
+
+    function blobToDataUrl(blob) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(reader.error || new Error('素材读取失败'));
+        reader.readAsDataURL(blob);
+      });
+    }
+
+    async function persistAsset(blob, type, name) {
+      if (window.__ag_theme_native_available || (window.nativeStorage && typeof window.nativeStorage.updateItems === 'function')) {
+        if (blob.size > MAX_PERSISTENT_ASSET_BYTES) {
+          throw new Error('跨重启永久保存目前支持不超过 50 MB 的素材，请压缩后重试');
+        }
+        clearTimeout(window.__ag_theme_config_save_timer);
+        const payload = { type, name, mime: blob.type || '', dataUrl: await blobToDataUrl(blob) };
+        await updateNativeStorage({
+          [NATIVE_ASSET_KEY]: JSON.stringify(payload),
+          [NATIVE_CONFIG_KEY]: JSON.stringify(config)
+        });
+        window.__ag_native_asset_payload = payload;
+        window.__ag_native_theme_config = config;
+        return;
+      }
+      await saveAssetToIndexedDB(blob);
+      await persistConfigNow();
     }
 
     function playVideoBlob(blob) {
@@ -191,11 +398,12 @@
       const root = document.documentElement;
       const [r, g, b] = config.accentRgb;
       
-      // 全局共享模式下，左、中、右三栏有效透明度严格受全局滑块联动调节
+      const clamp01 = (v) => Math.max(0, Math.min(1, Number.isFinite(v) ? v : 0.5));
       const isGlobal = config.tuneMode === 'global';
-      const effectiveLeft = isGlobal ? config.globalOpacity : config.leftOpacity;
-      const effectiveCenter = isGlobal ? config.globalOpacity : config.centerOpacity;
-      const effectiveRight = isGlobal ? config.globalOpacity : config.rightOpacity;
+      const globalOp = clamp01(config.globalOpacity);
+      const effectiveLeft = clamp01(isGlobal ? globalOp : config.leftOpacity);
+      const effectiveCenter = clamp01(isGlobal ? globalOp : config.centerOpacity);
+      const effectiveRight = clamp01(isGlobal ? globalOp : config.rightOpacity);
 
       // 质感风格状态同步
       const isPaper = config.textureStyle === 'paper';
@@ -209,39 +417,58 @@
 
       root.style.setProperty('--ag-accent', config.accentHex);
       root.style.setProperty('--ag-accent-rgb', `${r}, ${g}, ${b}`);
-      root.style.setProperty('--ag-ambient-tint', `rgba(${r}, ${g}, ${b}, 0.08)`);
+      root.style.setProperty('--ag-ambient-tint', `rgba(${r}, ${g}, ${b}, ${(0.08 * globalOp).toFixed(3)})`);
       
-      // 全局基础透底与高斯模糊
-      const effectiveBlur = isPaper ? Math.min(16, config.globalBlur) : config.globalBlur;
-      root.style.setProperty('--ag-global-blur', `${effectiveBlur}px`);
-      root.style.setProperty('--ag-bg-base-overlay', `rgba(10, 12, 16, ${Math.max(0.01, config.globalOpacity * 0.12)})`);
+      // 当分栏透明度为 0 时，联动归零对应模糊度，做到真正 100% 全透明无雾化残留
+      const baseBlur = Math.max(0, isPaper ? Math.min(16, config.globalBlur) : config.globalBlur);
+      const leftBlur = effectiveLeft === 0 ? 0 : baseBlur;
+      const centerBlur = effectiveCenter === 0 ? 0 : baseBlur;
+      const rightBlur = effectiveRight === 0 ? 0 : baseBlur;
 
-      // 顶栏 (Top Bar) 调高透明度，实现全局通透一致性
-      const topbarOpacity = Math.min(0.35, config.globalOpacity * 0.40);
-      root.style.setProperty('--ag-topbar-bg', `rgba(16, 18, 24, ${topbarOpacity})`);
+      root.style.setProperty('--ag-global-blur', `${baseBlur}px`);
+      // 根容器不再额外叠加底色，避免与左/中/右三栏产生二次 Alpha 累乘导致透明度失真
+      root.style.setProperty('--ag-bg-base-overlay', 'transparent');
 
-      // 聊天输入框 & 上下文弹出菜单 & 旁路提问专属低透明度磨砂 (通透轻薄，解决颜色过深问题)
-      const chatBoxOpacity = Math.min(0.50, effectiveCenter * 0.65);
-      root.style.setProperty('--ag-chat-box-bg', `rgba(18, 22, 32, ${chatBoxOpacity})`);
-      root.style.setProperty('--ag-chat-box-blur', `${Math.max(20, effectiveBlur)}px`);
+      // 顶栏 (Top Bar)：直接对应全局/中栏透明度，支持 0% 全透明 与 100% 全遮挡
+      root.style.setProperty('--ag-topbar-bg', `rgba(16, 18, 24, ${globalOp})`);
+      root.style.setProperty('--ag-topbar-blur', `${globalOp === 0 ? 0 : baseBlur}px`);
 
       // 左栏 (Sidebar)
       root.style.setProperty('--ag-left-bg', `rgba(16, 18, 24, ${effectiveLeft})`);
-      root.style.setProperty('--ag-left-blur', `${effectiveBlur}px`);
+      root.style.setProperty('--ag-left-blur', `${leftBlur}px`);
+      root.style.setProperty('--ag-left-border', `rgba(255, 255, 255, ${(0.08 * (effectiveLeft > 0 ? Math.max(0.25, effectiveLeft) : 0)).toFixed(3)})`);
 
-      // 中栏 (主视窗、Chat 卡片、设置弹窗)
+      // 中栏 (主视窗、Chat 卡片、输入框、代码块、设置弹窗) —— 严格与 effectiveCenter 对应
       root.style.setProperty('--ag-center-bg', `rgba(18, 20, 28, ${effectiveCenter})`);
-      root.style.setProperty('--ag-center-card-bg', `rgba(255, 255, 255, ${Math.max(0.02, Math.min(0.06, effectiveCenter * 0.06))})`);
-      root.style.setProperty('--ag-dialog-bg', `rgba(20, 22, 30, ${Math.min(0.85, effectiveCenter + 0.10)})`);
-      root.style.setProperty('--ag-center-blur', `${effectiveBlur}px`);
+      root.style.setProperty('--ag-center-blur', `${centerBlur}px`);
+      // 对话卡片、气泡、工具折叠框、代码块均随 effectiveCenter 线性缩放：0% 时完全透明(0)，100% 时完全不透(1)
+      const cardAlpha = effectiveCenter === 0 ? 0 : (effectiveCenter >= 0.99 ? 1 : Number((effectiveCenter * 0.22).toFixed(3)));
+      const cardBorderAlpha = effectiveCenter === 0 ? 0 : Number((0.08 * Math.max(0.3, effectiveCenter)).toFixed(3));
+      const cardShadowAlpha = effectiveCenter === 0 ? 0 : Number((0.16 * effectiveCenter).toFixed(3));
+      const subItemAlpha = effectiveCenter === 0 ? 0 : (effectiveCenter >= 0.99 ? 1 : Number((effectiveCenter * 0.14).toFixed(3)));
+      const codeBlockAlpha = effectiveCenter === 0 ? 0 : (effectiveCenter >= 0.99 ? 1 : Number((effectiveCenter * 0.75).toFixed(3)));
 
-      // 右栏 (Aux Pane / Review / Monaco / 终端)
+      root.style.setProperty('--ag-center-card-bg', effectiveCenter >= 0.99 ? `rgb(22, 25, 34)` : `rgba(255, 255, 255, ${cardAlpha})`);
+      root.style.setProperty('--ag-center-card-border', `rgba(255, 255, 255, ${cardBorderAlpha})`);
+      root.style.setProperty('--ag-center-card-shadow', `0 4px 16px rgba(0, 0, 0, ${cardShadowAlpha})`);
+      root.style.setProperty('--ag-center-subitem-bg', effectiveCenter >= 0.99 ? `rgb(26, 30, 40)` : `rgba(255, 255, 255, ${subItemAlpha})`);
+      root.style.setProperty('--ag-code-bg', `rgba(10, 12, 18, ${codeBlockAlpha})`);
+
+      // 聊天输入框：直接与中栏透明度 1:1 对应，支持 0% 全透明与 100% 全遮挡
+      root.style.setProperty('--ag-chat-box-bg', `rgba(18, 22, 32, ${effectiveCenter})`);
+      root.style.setProperty('--ag-chat-box-blur', `${centerBlur}px`);
+
+      // 弹窗与菜单：支持跟随中栏/全局透明度，0% 时保留微透或全透，100% 时 1.0 全遮挡
+      const dialogAlpha = effectiveCenter === 0 ? 0 : (effectiveCenter >= 0.99 ? 1 : Math.min(0.96, Math.max(0.75, effectiveCenter)));
+      root.style.setProperty('--ag-dialog-bg', `rgba(20, 22, 30, ${dialogAlpha})`);
+      root.style.setProperty('--ag-popover-bg', `rgba(20, 24, 34, ${effectiveCenter >= 0.99 ? 1 : 0.88})`);
+
+      // 右栏 (Aux Pane / Review / Monaco / 终端)：直接 1:1 对应 effectiveRight，无强制保底截断
       root.style.setProperty('--ag-right-bg', `rgba(16, 18, 24, ${effectiveRight})`);
       root.style.setProperty('--ag-right-review-bg', `rgba(16, 18, 24, ${effectiveRight})`);
-      root.style.setProperty('--ag-right-term-bg', `rgba(12, 14, 18, ${Math.min(0.92, Math.max(0.35, effectiveRight + 0.15))})`);
-      root.style.setProperty('--ag-right-blur', `${effectiveBlur}px`);
+      root.style.setProperty('--ag-right-term-bg', `rgba(12, 14, 18, ${effectiveRight})`);
+      root.style.setProperty('--ag-right-blur', `${rightBlur}px`);
 
-      // 同步右上角系统窗口控制按钮透明度
       syncTitleBarOverlay();
     }
 
@@ -270,6 +497,17 @@
   --background: transparent !important;
 }
 
+html,
+body,
+body[data-scroll-locked] {
+  width: 100% !important;
+  height: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background-color: transparent !important;
+}
+
 body {
   background-size: cover !important;
   background-position: center center !important;
@@ -277,12 +515,12 @@ body {
   background-attachment: fixed !important;
 }
 
-/* 全局工作区透光基底：消除最外层视窗死黑底衬 */
+/* 消除 4 层根容器重复叠加底色，全部设为 transparent */
 div.h-screen.w-screen.flex.flex-col.bg-background,
-div.relative.w-screen.h-\\[100dvh\\],
+div.relative.w-screen.h-\[100dvh\],
 #root > div.relative.w-screen,
 #root {
-  background-color: var(--ag-bg-base-overlay) !important;
+  background-color: transparent !important;
 }
 
 /* 消除所有中间嵌套层的背景阻断 (根本病因根除，保留中栏主视窗) */
@@ -308,40 +546,26 @@ div[data-aux-pane-open] div.relative.outline-none {
 /* ---------------------------------------------------- */
 /* 1. 左栏 (Sidebar) 区域全面重构为 Apple 极简通透风格    */
 /* ---------------------------------------------------- */
-div.h-full.w-full.bg-sidebar,
-div.h-full.w-full.flex.flex-col.bg-sidebar,
-div.flex.items-center.h-full.bg-sidebar,
-div[class*="bg-sidebar"],
-div.bg-sidebar,
-.bg-sidebar,
+aside,
 div[data-testid="sidebar-wrapper"],
-aside {
+div.bg-sidebar:not(aside *):not([data-testid="sidebar-wrapper"] *) {
   background-color: var(--ag-left-bg) !important;
   backdrop-filter: blur(var(--ag-left-blur)) saturate(160%) !important;
   -webkit-backdrop-filter: blur(var(--ag-left-blur)) saturate(160%) !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-right: 1px solid var(--ag-left-border, rgba(255, 255, 255, 0.08)) !important;
 }
 
-/* 消除左栏内所有子容器的深黑/深灰/暗土灰补丁底色 */
-div.bg-sidebar div.bg-sidebar,
-div.bg-sidebar div.bg-sidebar-muted,
-div.bg-sidebar div.bg-sidebar-secondary,
-div.bg-sidebar div.bg-muted,
-div.bg-sidebar div[class*="bg-sidebar"],
-div.bg-sidebar div[class*="w-full h-full group"],
-div.bg-sidebar div.w-full.h-full.group,
-div.bg-sidebar div[class*="group/header"],
-div.bg-sidebar div[class*="group/section-header"],
-div[data-testid="sidebar-wrapper"] .bg-sidebar,
-div[data-testid="sidebar-wrapper"] .bg-sidebar-muted,
-div[data-testid="sidebar-wrapper"] .bg-sidebar-secondary,
+aside [class*="bg-sidebar"],
+aside .bg-muted,
+div[data-testid="sidebar-wrapper"] [class*="bg-sidebar"],
 div[data-testid="sidebar-wrapper"] .bg-muted,
-div[data-testid="sidebar-wrapper"] div[class*="w-full h-full group"],
-aside .bg-sidebar,
-aside .bg-sidebar-muted,
-aside .bg-sidebar-secondary,
-div.group\\/section-header {
+div.bg-sidebar [class*="bg-sidebar"],
+div.bg-sidebar .bg-muted,
+div.bg-sidebar div.w-full.h-full.group,
+div[class*="group/section-header"] {
   background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   border-color: transparent !important;
 }
 
@@ -476,15 +700,14 @@ aside svg {
 /* 2. 顶栏 (Top Bar) 通透磨砂与右上角控制按钮平滑过度     */
 /* ---------------------------------------------------- */
 header,
-div[class*="border-b bg-background"],
-div[class*="h-11 flex items-center"],
-div[class*="h-10 flex items-center"],
 div[data-testid="top-nav-bar"],
 div[data-testid="header-bar"] {
+  position: relative !important;
+  z-index: 100 !important;
   background-color: var(--ag-topbar-bg) !important;
-  backdrop-filter: blur(28px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(var(--ag-topbar-blur, 24px)) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(var(--ag-topbar-blur, 24px)) saturate(180%) !important;
+  border-bottom: 1px solid var(--ag-left-border, rgba(255, 255, 255, 0.08)) !important;
 }
 
 /* 面包屑导航与标题 (纯白字) */
@@ -508,14 +731,18 @@ div[style*="-webkit-app-region: drag"] {
 /* 3. 中栏 (Main Chat Viewport) 主视窗整体磨砂底衬与 UI 风格纯净统一 */
 /* ---------------------------------------------------- */
 /* 3.0 中栏最外层主视窗容器挂载 --ag-center-bg 与磨砂模糊，彻底解决中栏调控失效 */
-div[data-pane-id="pane-1"],
-div.group\\/pane[data-pane-id="pane-1"],
-div.flex-1.flex.flex-col.min-w-0.h-full:has(> div[data-pane-id="pane-1"]),
-div[data-testid="conversation-view"] {
+div[data-pane-id="pane-1"] {
   background-color: var(--ag-center-bg) !important;
   backdrop-filter: blur(var(--ag-center-blur)) saturate(160%) !important;
   -webkit-backdrop-filter: blur(var(--ag-center-blur)) saturate(160%) !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-right: 1px solid var(--ag-left-border, rgba(255, 255, 255, 0.08)) !important;
+}
+
+div.flex-1.flex.flex-col.min-w-0.h-full:has(> div[data-pane-id="pane-1"]),
+div[data-pane-id="pane-1"] [data-testid="conversation-view"] {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* 中栏主视窗内部嵌套滚动层背景全部透通，杜绝死黑与多层杂色阻断 */
@@ -528,21 +755,13 @@ div[data-pane-id="pane-1"] .bg-background {
   background-color: transparent !important;
 }
 
-/* 为真实的主滚动容器强制注入顶部安全留白内边距，文字绝不顶格钻入顶栏遮挡 */
-div.flex-1.min-h-0.overflow-y-auto,
-div.flex-1.min-h-0.overflow-auto,
-div.overflow-y-auto.flex-1,
-div[class*="overflow-y-auto"][class*="flex-1"],
-div.w-full.flex.h-full.min-h-0.flex-col.items-center.relative.outline-none.overflow-y-auto,
-div.h-full.overflow-y-auto.min-h-0.w-full.isolate {
-  padding-top: 56px !important;
-  scroll-padding-top: 56px !important;
+div[data-pane-id="pane-1"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.relative.outline-none.overflow-y-auto,
+div[data-pane-id="pane-1"] div.h-full.overflow-y-auto.min-h-0.w-full.isolate {
+  padding-top: 24px !important;
+  scroll-padding-top: 24px !important;
 }
 
-/* 消除所有强制顶格的 sticky 粘滞黑条与渐变蒙版 */
-div.sticky.top-0,
-div[class*="sticky top-0"],
-div.sticky {
+div.md-sticky-message-bleed {
   position: relative !important;
   top: auto !important;
   background-color: transparent !important;
@@ -559,21 +778,17 @@ div[style*="-webkit-mask-image"] {
 }
 
 /* 3.1 主对话 Turn 容器：统一纯净磨砂玻璃微透卡片 */
-div[class*="scroll-mt-4"],
-[data-testid="chat-turn-container"],
-div[class*="group/turn"],
-div[data-turn-id],
-div[class*="border-border/50"],
-div[class*="bg-background/50"] {
+div[data-pane-id="pane-1"] div[class*="scroll-mt-4"],
+div[data-pane-id="pane-1"] [data-testid="chat-turn-container"],
+div[data-pane-id="pane-1"] div[class*="group/turn"],
+div[data-pane-id="pane-1"] div[data-turn-id] {
   background-color: var(--ag-center-card-bg) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid var(--ag-center-card-border, rgba(255, 255, 255, 0.08)) !important;
   border-radius: 14px !important;
   margin: 10px 0 !important;
   padding: 14px 18px !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: var(--ag-center-card-shadow, 0 4px 16px rgba(0, 0, 0, 0.12)) !important;
+  transition: background-color 0.18s ease, border-color 0.18s ease !important;
 }
 
 /* 3.2 彻底清除 Turn 内部一切无意义的死黑死灰堆叠层 (中栏风格统一核心) */
@@ -597,7 +812,7 @@ div[class*="scroll-mt-4"] div.md-sticky-message-bleed::after {
 /* 3.3 用户提问卡片统一：高雅纯净半透微光胶囊 */
 div[class*="scroll-mt-4"] div[data-testid="user-input-step"] div[data-testid="lifted-context-menu-trigger"],
 div[class*="scroll-mt-4"] div[data-testid="user-input-step"] div[class*="bg-card-border"] {
-  background: rgba(255, 255, 255, 0.06) !important;
+  background: var(--ag-center-subitem-bg) !important;
   border: 1px solid rgba(255, 255, 255, 0.09) !important;
   border-radius: 12px !important;
   backdrop-filter: blur(10px) !important;
@@ -617,7 +832,7 @@ div.user-input-buttons-container {
 div[class*="scroll-mt-4"] button.group.tabular-nums,
 div[class*="scroll-mt-4"] button[class*="tabular-nums"],
 div[class*="scroll-mt-4"] div.relative:has(> button.tabular-nums) {
-  background: rgba(255, 255, 255, 0.04) !important;
+  background: var(--ag-center-subitem-bg) !important;
   border: 1px solid rgba(255, 255, 255, 0.07) !important;
   border-radius: 8px !important;
   color: rgba(255, 255, 255, 0.88) !important;
@@ -635,7 +850,7 @@ div[class*="scroll-mt-4"] button.group.tabular-nums:hover {
 
 /* 3.5 子智能体任务卡片 (Agent Subtask Card) 统一风格 */
 div[class*="scroll-mt-4"] div[class*="group/agent-card"] {
-  background: rgba(255, 255, 255, 0.04) !important;
+  background: var(--ag-center-subitem-bg) !important;
   border: 1px solid rgba(255, 255, 255, 0.07) !important;
   border-radius: 10px !important;
   backdrop-filter: blur(10px) !important;
@@ -652,7 +867,7 @@ div[class*="scroll-mt-4"] div[class*="group/agent-card"]:hover {
 /* 3.6 更改文件统计条与审阅按钮统一风格 */
 div[class*="scroll-mt-4"] div.files-changed-header,
 div.files-changed-header {
-  background: rgba(255, 255, 255, 0.04) !important;
+  background: var(--ag-center-subitem-bg) !important;
   border: 1px solid rgba(255, 255, 255, 0.07) !important;
   border-radius: 10px !important;
   backdrop-filter: blur(10px) !important;
@@ -716,15 +931,15 @@ div[class*="markdown-alert"] {
 /* 3.9 底部输入框整体磨砂与子智能体状态栏无缝整合 */
 div[data-testid="chat-input-container"],
 div[id="antigravity.agentSidePanelInputBox"],
-#antigravity\.agentSidePanelInputBox,
-div[class*="border-input"][class*="rounded-"],
-div.relative.flex.flex-col.items-stretch.rounded-2xl {
+#antigravity\.agentSidePanelInputBox {
+  position: relative !important;
+  z-index: 60 !important;
   background-color: var(--ag-chat-box-bg) !important;
   backdrop-filter: blur(var(--ag-chat-box-blur)) saturate(180%) !important;
   -webkit-backdrop-filter: blur(var(--ag-chat-box-blur)) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid var(--ag-center-card-border, rgba(255, 255, 255, 0.12)) !important;
   border-radius: 16px !important;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.20) !important;
+  box-shadow: var(--ag-center-card-shadow, 0 4px 20px rgba(0, 0, 0, 0.20)) !important;
   overflow: visible !important;
 }
 
@@ -755,12 +970,10 @@ textarea {
 }
 
 /* 3.10 上下文选择二级菜单 & 快捷命令 Slash / Actions 三级浮层 */
-/* 排除光标锚点微型节点，防止 6px 细黑长条伪影 */
-#typeahead-menu,
-div[id="typeahead-menu"] {
+/* 仅当 #typeahead-menu 为空锚点时隐藏，避免误杀有效补全菜单 */
+#typeahead-menu:empty,
+div[id="typeahead-menu"]:empty {
   background: transparent !important;
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
   border: none !important;
   box-shadow: none !important;
   width: 0 !important;
@@ -768,18 +981,18 @@ div[id="typeahead-menu"] {
   overflow: hidden !important;
 }
 
-/* 保护 Actions / Mentions / Slash 向上弹出的三级浮层卡片磨砂质感与层级 */
+/* 底部向上弹出的 Actions / Mention 菜单层级设为 99990 */
 div[id="antigravity.agentSidePanelInputBox"] div.bottom-full,
 div[id="antigravity.agentSidePanelInputBox"] div[data-mention-menu],
 div.bottom-full[role="listbox"],
 div.bottom-full.bg-card {
-  background-color: rgba(20, 24, 34, 0.78) !important;
+  background-color: var(--ag-popover-bg, rgba(20, 24, 34, 0.88)) !important;
   backdrop-filter: blur(32px) saturate(190%) !important;
   -webkit-backdrop-filter: blur(32px) saturate(190%) !important;
   border: 1px solid rgba(255, 255, 255, 0.14) !important;
   border-radius: 16px !important;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
-  z-index: 1000 !important;
+  z-index: 99990 !important;
 }
 
 /* 移除浮层底部的渐变淡化遮罩，保持全部条目清晰可读 */
@@ -816,20 +1029,27 @@ div[data-mention-menu] [role="option"]:hover > div {
   color: #ffffff !important;
 }
 
-/* Base UI / Radix 弹出菜单磨砂毛玻璃卡片（包含二级添加上下文菜单） */
-div[data-radix-popper-content-wrapper],
+/* Radix Popper 外层定位包装器：仅提升层级至 100000（高于 .bottom-full），严禁加 border / background / backdrop-filter */
+div[data-radix-popper-content-wrapper] {
+  z-index: 100000 !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 仅对多级菜单的真实内容卡片添加毛玻璃与边框，消除双层越界边框与缩放抖动 */
 div[role="menu"],
 div[role="listbox"]:not(#typeahead-menu):not(.bottom-full),
-div.z-50.min-w-\\[8rem\\].overflow-hidden.rounded-md,
-div[class*="bg-popover"],
-div.bg-popover,
-.bg-popover {
-  background-color: rgba(22, 26, 36, 0.72) !important;
+div[data-radix-popper-content-wrapper] > div.bg-popover,
+div[data-radix-popper-content-wrapper] > div[class*="bg-popover"] {
+  background-color: var(--ag-popover-bg, rgba(22, 26, 36, 0.88)) !important;
   backdrop-filter: blur(32px) saturate(190%) !important;
   -webkit-backdrop-filter: blur(32px) saturate(190%) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   border-radius: 12px !important;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.40), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
 }
 
 /* 二级菜单文本统一纯白清晰度 */
@@ -932,15 +1152,12 @@ div:has(> [data-aux-pane-open]) {
 }
 
 /* 6.1 右栏最外层主视窗挂载 --ag-right-bg 磨砂底衬 */
-div.h-full.w-full[data-aux-pane-open],
-div.h-full.w-full[data-aux-pane-open="true"],
 div[data-aux-pane-open="true"],
-div[data-aux-pane-open],
-div[data-testid="review-pane"] {
+div[data-aux-pane-open]:not([data-aux-pane-open="false"]) {
   background-color: var(--ag-right-bg) !important;
   backdrop-filter: blur(var(--ag-right-blur)) saturate(160%) !important;
   -webkit-backdrop-filter: blur(var(--ag-right-blur)) saturate(160%) !important;
-  border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-left: 1px solid var(--ag-left-border, rgba(255, 255, 255, 0.08)) !important;
 }
 
 /* 6.2 右栏内部嵌套视窗、Diff 审阅与文件列表消除死黑阻断 */
@@ -964,14 +1181,18 @@ div[data-aux-pane-open] .monaco-workbench .part.editor > .content {
 }
 
 /* 6.4 终端 (xterm) 专属磨砂与消除死黑 */
+div[data-aux-pane-open] [data-testid="review-pane"],
+div[data-aux-pane-open] .terminal,
 div[data-aux-pane-open] .xterm,
 div[data-aux-pane-open] .xterm-viewport,
-div[data-aux-pane-open] .xterm-screen,
-div[data-aux-pane-open] .terminal,
+div[data-aux-pane-open] .xterm-screen {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 div[data-aux-pane-open] [data-testid="terminal-container"] {
   background-color: var(--ag-right-term-bg) !important;
-  backdrop-filter: blur(var(--ag-right-blur)) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(var(--ag-right-blur)) saturate(160%) !important;
 }
 
 div[data-aux-pane-open] .xterm-scrollable-element,
@@ -997,7 +1218,7 @@ div[data-aux-pane-open] button[aria-label*="标签页"].bg-secondary {
 /* 6.6 右栏卡片组件 (Subagent 列表项) */
 div[data-aux-pane-open] [data-testid="subagent-node"],
 div[data-aux-pane-open] div.flex.flex-col.rounded-lg.overflow-hidden.cursor-pointer {
-  background: rgba(255, 255, 255, 0.04) !important;
+  background: var(--ag-center-subitem-bg) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 8px !important;
   color: #ffffff !important;
@@ -1016,7 +1237,7 @@ div[data-aux-pane-open] div.flex.flex-col.rounded-lg.overflow-hidden.cursor-poin
 /* 6.7 右栏文件胶囊与产物条目 */
 div[data-aux-pane-open] button.inline-pill,
 div[data-aux-pane-open] button[class*="inline-pill"] {
-  background: rgba(255, 255, 255, 0.06) !important;
+  background: var(--ag-center-subitem-bg) !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   border-radius: 6px !important;
   color: #ffffff !important;
@@ -1171,24 +1392,41 @@ div[data-aux-pane-open] button {
       } else if (modeKey === 'custom' && customUrl) {
         if (videoBg) { videoBg.style.display = 'none'; videoBg.pause(); }
         stageCanvas.style.display = 'none';
-        config.customAssetUrl = customUrl;
         document.body.style.backgroundImage = `url('${customUrl}')`;
       } else {
         // 默认冰川底图
         if (videoBg) { videoBg.style.display = 'none'; videoBg.pause(); }
         stageCanvas.style.display = 'none';
-        const defBg = config.customAssetUrl || (typeof window !== 'undefined' && window.__ag_default_wallpaper ? window.__ag_default_wallpaper : '');
+        const defBg = (typeof window !== 'undefined' && window.__ag_default_wallpaper ? window.__ag_default_wallpaper : '');
         document.body.style.backgroundImage = defBg ? `url('${defBg}')` : '';
       }
       applyCssVariables();
     }
 
-    // 尝试从 IndexedDB 恢复可能已导入的 MP4 视频
-    if (config.mode === 'custom' && config.customAssetType === 'video') {
-      loadVideoFromIndexedDB((savedBlob) => {
-        if (savedBlob && config.mode === 'custom' && config.customAssetType === 'video') {
-          playVideoBlob(savedBlob);
+    // 恢复图片或视频素材。素材正文放 IndexedDB，配置只记录类型和文件名。
+    if (config.mode === 'custom') {
+      loadAssetFromIndexedDB().then((savedBlob) => {
+        if (config.mode !== 'custom') return;
+        if (savedBlob && config.customAssetType === 'video') playVideoBlob(savedBlob);
+        else if (savedBlob) {
+          activeImageBlobUrl = URL.createObjectURL(savedBlob);
+          applyMode('custom', activeImageBlobUrl);
+        } else if (config.customAssetType === 'image' && config.customAssetUrl.startsWith('data:image/')) {
+          // 兼容旧版保存在 localStorage 的图片，并迁移到 IndexedDB。
+          const legacyUrl = config.customAssetUrl;
+          fetch(legacyUrl).then(r => r.blob()).then(blob => saveAssetToIndexedDB(blob).then(() => {
+            config.customAssetUrl = '';
+            persistConfig();
+          })).catch(() => {});
+          applyMode('custom', legacyUrl);
+        } else {
+          throw new Error('数据库中没有找到已保存的素材');
         }
+      }).catch((err) => {
+        console.warn('[Theme] 恢复本地素材失败', err);
+        config.mode = 'glacier';
+        config.customAssetUrl = '';
+        persistConfig();
       });
     }
 
@@ -1450,6 +1688,7 @@ div[data-aux-pane-open] button {
               JPG / PNG / WebP 图片 或 MP4 动态视频 (全屏循环铺满)
             </div>
           </div>
+          <button id="ag-clear-asset" type="button" style="width: 100%; margin-top: 6px; padding: 5px 8px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10); border-radius: 8px; color: rgba(255,255,255,.88); font-size: 10px; cursor: pointer;">清除已保存素材</button>
         </div>
 
         <!-- 进阶特性 1：质感风格一键切换 (晶莹磨砂 vs 柔雾类纸膜) -->
@@ -1484,7 +1723,7 @@ div[data-aux-pane-open] button {
                 <span style="color: #ffffff;">全局视窗透明度 (全域联动)</span>
                 <span class="val" id="val-global-opacity" style="color: #ffffff;">${Math.round(config.globalOpacity * 100)}%</span>
               </div>
-              <input type="range" class="ag-apple-slider" id="slide-global-opacity" min="15" max="95" value="${Math.round(config.globalOpacity * 100)}" />
+              <input type="range" class="ag-apple-slider" id="slide-global-opacity" min="0" max="100" step="1" value="${Math.round(config.globalOpacity * 100)}" />
             </div>
 
             <div class="ag-apple-slider-row">
@@ -1504,7 +1743,7 @@ div[data-aux-pane-open] button {
                 <span style="color: #ffffff;">左栏侧边栏 (Sidebar)</span>
                 <span class="val" id="val-left-opacity" style="color: #ffffff;">${Math.round(config.leftOpacity * 100)}%</span>
               </div>
-              <input type="range" class="ag-apple-slider" id="slide-left-opacity" min="15" max="95" value="${Math.round(config.leftOpacity * 100)}" />
+              <input type="range" class="ag-apple-slider" id="slide-left-opacity" min="0" max="100" step="1" value="${Math.round(config.leftOpacity * 100)}" />
             </div>
 
             <div class="ag-apple-slider-row">
@@ -1512,7 +1751,7 @@ div[data-aux-pane-open] button {
                 <span style="color: #ffffff;">中栏对话与设置 (Chat & Modal)</span>
                 <span class="val" id="val-center-opacity" style="color: #ffffff;">${Math.round(config.centerOpacity * 100)}%</span>
               </div>
-              <input type="range" class="ag-apple-slider" id="slide-center-opacity" min="15" max="95" value="${Math.round(config.centerOpacity * 100)}" />
+              <input type="range" class="ag-apple-slider" id="slide-center-opacity" min="0" max="100" step="1" value="${Math.round(config.centerOpacity * 100)}" />
             </div>
 
             <div class="ag-apple-slider-row">
@@ -1520,7 +1759,7 @@ div[data-aux-pane-open] button {
                 <span style="color: #ffffff;">右栏审阅与工作区 (Review & Terminal)</span>
                 <span class="val" id="val-right-opacity" style="color: #ffffff;">${Math.round(config.rightOpacity * 100)}%</span>
               </div>
-              <input type="range" class="ag-apple-slider" id="slide-right-opacity" min="15" max="95" value="${Math.round(config.rightOpacity * 100)}" />
+              <input type="range" class="ag-apple-slider" id="slide-right-opacity" min="0" max="100" step="1" value="${Math.round(config.rightOpacity * 100)}" />
               <div style="font-size: 9px; color: rgba(255, 255, 255, 0.75);">支持深度透明调节，终端视窗自动保留字符反差增强</div>
             </div>
           </div>
@@ -1738,7 +1977,7 @@ div[data-aux-pane-open] button {
       if (slideB) { slideB.value = b; document.getElementById('val-rgb-b').textContent = b; }
 
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+        persistConfig();
       } catch (e) {}
     }
 
@@ -1839,7 +2078,7 @@ div[data-aux-pane-open] button {
       config.textureStyle = 'glass';
       updateTextureUI();
       applyCssVariables();
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(config)); } catch (e) {}
+      try { persistConfig(); } catch (e) {}
       showToast('已开启晶莹磨砂质感');
     };
 
@@ -1847,7 +2086,7 @@ div[data-aux-pane-open] button {
       config.textureStyle = 'paper';
       updateTextureUI();
       applyCssVariables();
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(config)); } catch (e) {}
+      try { persistConfig(); } catch (e) {}
       showToast('已开启柔雾类纸膜护眼质感');
     };
 
@@ -1864,7 +2103,7 @@ div[data-aux-pane-open] button {
       boxTuneGlobal.style.display = 'block';
       boxTuneSplit.style.display = 'none';
       applyCssVariables();
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(config)); } catch (e) {}
+      try { persistConfig(); } catch (e) {}
       showToast('已切换至全局共享联动调节');
     };
 
@@ -1875,7 +2114,7 @@ div[data-aux-pane-open] button {
       boxTuneSplit.style.display = 'block';
       boxTuneGlobal.style.display = 'none';
       applyCssVariables();
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(config)); } catch (e) {}
+      try { persistConfig(); } catch (e) {}
       showToast('已切换至三栏独立微调');
     };
 
@@ -1910,34 +2149,53 @@ div[data-aux-pane-open] button {
       }
     };
 
+    document.getElementById('ag-clear-asset').onclick = async (e) => {
+      e.stopPropagation();
+      try {
+        if (window.__ag_theme_native_available || (window.nativeStorage && typeof window.nativeStorage.updateItems === 'function')) {
+          await updateNativeStorage({ [NATIVE_ASSET_KEY]: null });
+          window.__ag_native_asset_payload = null;
+        }
+        await clearAssetFromIndexedDB();
+        if (activeVideoBlobUrl) { URL.revokeObjectURL(activeVideoBlobUrl); activeVideoBlobUrl = null; }
+        if (activeImageBlobUrl) { URL.revokeObjectURL(activeImageBlobUrl); activeImageBlobUrl = null; }
+        if (videoBg) { videoBg.pause(); videoBg.removeAttribute('src'); videoBg.load(); videoBg.style.display = 'none'; }
+        config.mode = 'glacier';
+        config.customAssetUrl = '';
+        config.customAssetName = '';
+        applyMode('glacier');
+        await persistConfigNow();
+        showToast('已清除素材并恢复默认壁纸');
+      } catch (err) { showToast(`清除失败：${err.message || '存储不可用'}`); }
+    };
+
     function handleFile(file) {
       if (!file) return;
       const isVideo = file.type.startsWith('video/') || file.name.toLowerCase().endsWith('.mp4');
-      if (isVideo) {
-        showToast(`正在载入 MP4 动态视频 ${file.name}...`);
-        try {
-          saveVideoToIndexedDB(file);
-        } catch (e) {}
-        playVideoBlob(file);
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-        } catch (e) {}
-        showToast('MP4 动态视频壁纸已激活循环播放！');
-      } else {
-        showToast(`正在载入图片素材 ${file.name}...`);
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-          const dataUri = evt.target.result;
-          config.customAssetType = 'image';
-          applyMode('custom', dataUri);
-          try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
-          } catch (e) {}
-          showToast('素材底图已更新！');
-        };
-        reader.onerror = () => showToast('素材载入失败，已触发防崩回退');
-        reader.readAsDataURL(file);
-      }
+      if (!isVideo && !file.type.startsWith('image/')) { showToast('仅支持图片或视频文件'); return; }
+      const previousConfig = Object.assign({}, config);
+      config.customAssetType = isVideo ? 'video' : 'image';
+      config.customAssetName = file.name;
+      config.customAssetUrl = '';
+      config.mode = 'custom';
+      showToast(`正在保存素材 ${file.name}...`);
+      persistAsset(file, isVideo ? 'video' : 'image', file.name).then(() => {
+        if (isVideo) {
+          if (activeImageBlobUrl) { URL.revokeObjectURL(activeImageBlobUrl); activeImageBlobUrl = null; }
+          playVideoBlob(file);
+        }
+        else {
+          if (activeImageBlobUrl) URL.revokeObjectURL(activeImageBlobUrl);
+          if (activeVideoBlobUrl) { URL.revokeObjectURL(activeVideoBlobUrl); activeVideoBlobUrl = null; }
+          activeImageBlobUrl = URL.createObjectURL(file);
+          applyMode('custom', activeImageBlobUrl);
+        }
+        showToast(`${isVideo ? '视频' : '图片'}素材已保存，重启后会恢复`);
+      }).catch((err) => {
+        config = previousConfig;
+        console.error('[Theme] 持久保存素材失败', err);
+        showToast(`素材保存失败：${err.message || '存储不可用'}`);
+      });
     }
 
     // 滑块事件统一绑定
@@ -1951,7 +2209,7 @@ div[data-aux-pane-open] button {
         label.textContent = `${el.value}${unit}`;
         applyCssVariables();
         try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+          persistConfig();
         } catch (err) {}
       };
     }
@@ -1966,7 +2224,7 @@ div[data-aux-pane-open] button {
     document.getElementById('ag-btn-reset').onclick = () => {
       config = Object.assign({}, DEFAULT_CONFIG);
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+        persistConfig();
       } catch (e) {}
       applyCssVariables();
       updateTextureUI();
@@ -1981,7 +2239,7 @@ div[data-aux-pane-open] button {
     // 固化配置
     document.getElementById('ag-btn-save').onclick = () => {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+        persistConfig();
         showToast('配置已固化保存！');
       } catch (e) {
         showToast('保存失败: ' + e.message);
