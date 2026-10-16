@@ -1,0 +1,36 @@
+/**
+ * Antigravity V2 - Ocean Mode Tokens (晶格海洋模式)
+ * 职责：WebGL 粒子波浪锐利展现，卡片绝对禁用高斯模糊，微透纯底衬
+ */
+
+body[data-theme-mode="ocean"] {
+  --background: transparent !important;
+  --card: 10 14 22 / 0.12 !important;
+  --sidebar: 10 14 22 / 0.88 !important;
+  --popover: 14 18 26 / 0.94 !important;
+  --muted: transparent !important;
+  --border: transparent !important;
+}
+
+body[data-theme-mode="ocean"] #ag-center-ocean-canvas {
+  display: block !important;
+}
+
+/* 核心禁忌法则：高频粒子波浪上方绝对禁止挂载模糊滤镜 */
+body[data-theme-mode="ocean"] div[class*="scroll-mt-4"] {
+  background-color: rgba(10, 14, 22, 0.12) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  box-shadow: none !important;
+}
+
+/* 侧边栏微透深黑遮光，保护左侧项目列表对比度 */
+body[data-theme-mode="ocean"] aside,
+body[data-theme-mode="ocean"] [data-testid="sidebar"],
+body[data-theme-mode="ocean"] div.bg-sidebar {
+  background-color: rgba(10, 14, 22, 0.88) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.06) !important;
+}

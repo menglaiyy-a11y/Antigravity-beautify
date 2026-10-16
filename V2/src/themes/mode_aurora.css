@@ -1,0 +1,37 @@
+/**
+ * Antigravity V2 - Aurora & Custom Mode Tokens (流体极光与自定义壁纸模式)
+ * 职责：毛玻璃透视模态，底层渲染层自然透出，支持温润高斯模糊
+ */
+
+body[data-theme-mode="aurora"],
+body[data-theme-mode="custom"] {
+  --background: transparent !important;
+  --card: 14 18 26 / 0.35 !important;
+  --sidebar: 10 14 22 / 0.45 !important;
+  --border: 255 255 255 / 0.08 !important;
+}
+
+body[data-theme-mode="aurora"] #ag-stage-canvas {
+  display: block !important;
+}
+
+body[data-theme-mode="aurora"] div[class*="scroll-mt-4"],
+body[data-theme-mode="custom"] div[class*="scroll-mt-4"] {
+  background-color: rgba(14, 18, 26, 0.35) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+}
+
+/* 侧边栏通透毛玻璃：彻底消除实黑遮挡 */
+body[data-theme-mode="aurora"] aside,
+body[data-theme-mode="aurora"] [data-testid="sidebar"],
+body[data-theme-mode="aurora"] div.bg-sidebar,
+body[data-theme-mode="custom"] aside,
+body[data-theme-mode="custom"] [data-testid="sidebar"],
+body[data-theme-mode="custom"] div.bg-sidebar {
+  background-color: rgba(10, 14, 22, 0.45) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}

@@ -1,0 +1,2231 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Google Antigravity Desktop — Gemini 菱形波纹海洋 UI 动效复刻工作台</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #07090e;
+      color: #f1f5f9;
+      margin: 0;
+      padding: 0;
+      overflow-x: hidden;
+    }
+    .font-mono-code {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.4);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.25);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.45);
+    }
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      background: rgba(255, 255, 255, 0.1);
+      height: 5px;
+      border-radius: 999px;
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #38bdf8;
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.8);
+      transition: transform 0.15s ease;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.2);
+    }
+    input[type="color"] {
+      -webkit-appearance: none;
+      appearance: none;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+    }
+    input[type="color"]::-webkit-color-swatch-wrapper {
+      padding: 0;
+    }
+    input[type="color"]::-webkit-color-swatch {
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 8px;
+    }
+    @keyframes floatSlow {
+      0%, 100% { transform: translateY(0px); }
+      50% { transform: translateY(-5px); }
+    }
+    .animate-float-slow {
+      animation: floatSlow 4.8s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#07090e] text-slate-100 selection:bg-sky-500/30 selection:text-sky-200">
+
+  <!-- Top Antigravity Desktop Window Titlebar & Navigation -->
+  <header class="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-[#0b0e17]/90 backdrop-blur-xl border-b border-white/[0.07]">
+    <!-- macOS / Desktop Window Controls & Brand -->
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-1.5 mr-1">
+        <span class="w-3 h-3 rounded-full bg-[#ff5f56] border border-black/20 inline-block"></span>
+        <span class="w-3 h-3 rounded-full bg-[#ffbd2e] border border-black/20 inline-block"></span>
+        <span class="w-3 h-3 rounded-full bg-[#27c93f] border border-black/20 inline-block"></span>
+      </div>
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 flex items-center justify-center">
+          <!-- Antigravity 1:1 Official Arch-Wing Icon in Header (Frameless) -->
+          <svg class="w-5 h-5 text-white drop-shadow-[0_0_8px_rgba(56,189,248,0.6)]" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12.0 2.6C9.4 2.6 8.1 5.0 6.7 9.2C5.2 13.6 3.9 17.2 2.1 20.0C1.7 20.6 2.3 21.2 3.1 20.7C5.1 19.5 6.8 16.6 8.2 14.0C9.4 11.7 10.6 10.6 12.0 10.6C13.4 10.6 14.6 11.7 15.8 14.0C17.2 16.6 18.9 19.5 20.9 20.7C21.7 21.2 22.3 20.6 21.9 20.0C20.1 17.2 18.8 13.6 17.3 9.2C15.9 5.0 14.6 2.6 12.0 2.6Z"/>
+          </svg>
+        </div>
+        <span class="font-semibold text-sm tracking-tight text-white">Google Antigravity</span>
+        <span class="text-[11px] font-mono-code px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-300 border border-sky-400/20">v2.0 Desktop</span>
+      </div>
+    </div>
+
+    <!-- Center Surface Mode Switcher -->
+    <nav class="flex items-center gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.06]" aria-label="桌面端视图模式">
+      <button id="tab-overlay" type="button" class="surface-tab px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-gradient-to-r from-blue-600/80 to-indigo-600/80 text-white shadow">
+        Alt+Space 桌面唤醒浮层
+      </button>
+      <button id="tab-manager" type="button" class="surface-tab px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-400 hover:text-white">
+        Agent Manager 指挥中心
+      </button>
+      <button id="tab-ide" type="button" class="surface-tab px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-400 hover:text-white">
+        IDE Editor 侧栏模式
+      </button>
+      <button id="tab-code" type="button" class="surface-tab px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-emerald-300 hover:text-emerald-200 flex items-center gap-1">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+        桌面端源码导出
+      </button>
+    </nav>
+
+    <!-- Right Quick Controls (Audio Synth & Inspector Toggle) -->
+    <div class="flex items-center gap-2">
+      <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.03] border border-white/[0.06] text-[11px] text-slate-400">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span id="fps-counter" class="font-mono-code text-slate-300">60 FPS</span>
+        <span class="text-slate-600">|</span>
+        <span id="header-shape-badge" class="text-sky-300">✦ 四芒星晶格</span>
+      </div>
+      <button id="btn-audio-toggle" type="button" class="px-2.5 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-xs text-slate-300 flex items-center gap-1.5 transition" title="切换波纹声效反馈">
+        <span id="audio-icon">🔇</span>
+        <span id="audio-label" class="hidden md:inline">音效已静音</span>
+      </button>
+      <button id="btn-toggle-drawer" type="button" class="px-3 py-1.5 rounded-lg bg-sky-500/15 hover:bg-sky-500/25 border border-sky-400/30 text-xs font-medium text-sky-300 flex items-center gap-1.5 transition">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+        <span>Shader 参数台</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace Area -->
+  <div class="flex-1 flex flex-col lg:flex-row relative overflow-hidden">
+
+    <!-- Left / Center Stage: Interactive Antigravity Desktop Viewport -->
+    <main class="flex-1 flex flex-col justify-between relative p-4 sm:p-6 lg:p-7 overflow-y-auto">
+
+      <!-- Ambient Desktop Wallpaper Grid Background -->
+      <div class="pointer-events-none absolute inset-0 opacity-25" style="background-image: radial-gradient(rgba(56, 189, 248, 0.16) 1px, transparent 1px), radial-gradient(rgba(168, 85, 247, 0.12) 1px, transparent 1px); background-size: 32px 32px; background-position: 0 0, 16px 16px;"></div>
+
+      <!-- Top Status Banner & State Presets -->
+      <div class="relative z-10 flex flex-wrap items-center justify-between gap-3 mb-3 max-w-5xl mx-auto w-full">
+        <div>
+          <h1 id="surface-title" class="text-base sm:text-lg font-semibold text-white flex items-center gap-2">
+            <span>Antigravity 全局桌面唤醒框 (Alt + Space)</span>
+            <span class="text-xs font-normal px-2 py-0.5 rounded bg-white/[0.06] text-slate-300">Gemini 4 Argon Engine</span>
+          </h1>
+          <p id="surface-subtitle" class="text-xs text-slate-400 mt-0.5">
+            工作区中央已搭载 1:1 严格还原、纯无边框（Frameless）的经典四配色边缘流光图标（Gemini / Antigravity / Windows / Apple）。
+          </p>
+        </div>
+
+        <!-- Animation State Quick Triggers -->
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button type="button" data-state="idle" class="state-preset-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-slate-300 transition">
+            🌊 静默呼吸 (Idle)
+          </button>
+          <button type="button" data-state="focus" class="state-preset-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-sky-500/20 border border-sky-400/40 text-sky-200 transition">
+            ✨ 聚焦唤醒 (Focused)
+          </button>
+          <button type="button" data-state="thinking" class="state-preset-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-purple-300 transition">
+            🚀 智能体涌浪 (Liftoff Surge)
+          </button>
+          <button type="button" data-state="voice" class="state-preset-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-pink-300 transition">
+            🎙️ Gemini Live 声浪
+          </button>
+        </div>
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- INTERACTIVE STAGE: Holds the Mock IDE Context + Diamond Ocean -->
+      <!-- ============================================================== -->
+      <div id="stage-wrapper" class="relative z-10 flex-1 flex flex-col items-center justify-center w-full max-w-5xl mx-auto my-auto">
+
+        <!-- Optional Mock IDE Background Cards (shown in Manager / IDE modes) -->
+        <div id="manager-context-bar" class="hidden w-full mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div class="p-3 rounded-2xl bg-[#0e131f]/90 border border-white/[0.07] flex items-center justify-between">
+            <div>
+              <div class="text-[11px] text-slate-400">Active Agent #1</div>
+              <div class="text-xs font-semibold text-white mt-0.5">UI Shader Synthesizer</div>
+              <div class="text-[11px] text-emerald-400 mt-0.5 flex items-center gap-1">● Running Browser Verification</div>
+            </div>
+            <span class="px-2 py-1 rounded text-[10px] font-mono-code bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">Argon</span>
+          </div>
+          <div class="p-3 rounded-2xl bg-[#0e131f]/90 border border-white/[0.07] flex items-center justify-between">
+            <div>
+              <div class="text-[11px] text-slate-400">Active Agent #2</div>
+              <div class="text-xs font-semibold text-white mt-0.5">WebGL Uniform Optimizer</div>
+              <div class="text-[11px] text-sky-400 mt-0.5 flex items-center gap-1">● 60fps Frame Pacing Locked</div>
+            </div>
+            <span class="px-2 py-1 rounded text-[10px] font-mono-code bg-sky-500/10 text-sky-300 border border-sky-500/20">3.8 Flash</span>
+          </div>
+          <div class="p-3 rounded-2xl bg-[#0e131f]/90 border border-white/[0.07] flex items-center justify-between">
+            <div>
+              <div class="text-[11px] text-slate-400">Workspace Target</div>
+              <div class="text-xs font-semibold text-white mt-0.5">antigravity-desktop-ui</div>
+              <div class="text-[11px] text-purple-300 mt-0.5">3 Artifacts Ready</div>
+            </div>
+            <button id="btn-spawn-wave-burst" type="button" class="px-2.5 py-1 rounded-lg text-[11px] font-medium bg-purple-500/20 hover:bg-purple-500/30 text-purple-200 border border-purple-400/30 transition">
+              触发多源共振
+            </button>
+          </div>
+        </div>
+
+        <!-- Layout Container that switches between Full Floating Overlay, Manager Dock, or Split IDE View -->
+        <div id="desktop-layout-grid" class="w-full flex flex-col lg:flex-row items-stretch justify-center gap-4 transition-all duration-300">
+
+          <!-- Left Mock Code Editor Pane (Only visible in IDE Editor Side-Dock Mode) -->
+          <div id="ide-code-pane" class="hidden lg:w-7/12 rounded-3xl bg-[#0b0f19]/95 border border-white/[0.08] p-4 flex-col justify-between shadow-2xl">
+            <div>
+              <div class="flex items-center justify-between border-b border-white/[0.06] pb-2.5 mb-3">
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-mono-code text-sky-400">DiamondOceanShader.frag</span>
+                  <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/[0.05] text-slate-400">GLSL ES 3.0</span>
+                </div>
+                <span class="text-[11px] text-emerald-400 font-mono-code">● Live Linked to Right Dock</span>
+              </div>
+              <pre class="font-mono-code text-[11px] leading-relaxed text-slate-300 overflow-x-auto"><code><span class="text-slate-500">// 1. 居中无边框四色流光商标能量场 (Frameless Emblem Aura)</span>
+float centerDist = length(cellCenterWorld - vec2(0.0, 0.08));
+float emblemAura = u_emblemEnabled * exp(-centerDist * 3.8) * (0.45 + 0.35 * sin(u_time * 3.2));
+
+<span class="text-slate-500">// 2. 多图元有符号距离场 (Multi-Shape 2D SDF Evaluation)</span>
+float sdfDist = evaluateMotifDistance(motifP, u_shapeType, u_starSharpness, morphFactor);
+
+<span class="text-slate-500">// 3. 动态 4 节点自定义过渡色插值 (Custom 4-Stop Gradient)</span>
+vec3 col = evaluateCustomGradient(colorPhase);</code></pre>
+            </div>
+            <div class="mt-4 pt-3 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-slate-400">
+              <span>Antigravity Editor View • Frameless Official Logos</span>
+              <span class="text-sky-300">右侧输入框实时渲染中 →</span>
+            </div>
+          </div>
+
+          <!-- ==================================================================== -->
+          <!-- CORE GEMINI DIAMOND RIPPLE OCEAN CONTAINER (WebGL Canvas + Chat Box) -->
+          <!-- ==================================================================== -->
+          <div id="ocean-stage-card" class="relative w-full max-w-4xl mx-auto rounded-[32px] overflow-hidden shadow-[0_25px_85px_-12px_rgba(14,165,233,0.32)] border border-white/[0.12] bg-[#060911] transition-all duration-500 flex flex-col justify-between min-h-[420px] sm:min-h-[460px]">
+
+            <!-- Interactive WebGL Shader Canvas -->
+            <canvas id="ocean-webgl-canvas" class="absolute inset-0 w-full h-full cursor-crosshair"></canvas>
+
+            <!-- Top Floating HUD inside the Ocean Stage -->
+            <div class="relative z-10 flex flex-wrap items-center justify-between gap-2 px-5 pt-4 pointer-events-none">
+              <div class="flex items-center gap-2 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/10 text-[11px] text-slate-200">
+                <span id="active-mode-dot" class="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_8px_#38bdf8]"></span>
+                <span id="shader-state-readout">状态：聚焦唤醒 (Focused Ocean)</span>
+              </div>
+
+              <div class="flex flex-wrap items-center gap-1.5 pointer-events-auto">
+                <!-- Toggle Center Glowing Emblem Button in Stage HUD -->
+                <button id="btn-stage-toggle-emblem" type="button" class="px-2.5 py-1 rounded-full bg-sky-500/25 hover:bg-sky-500/35 backdrop-blur-md border border-sky-400/40 text-[11px] text-sky-200 font-medium flex items-center gap-1 transition">
+                  <span id="stage-emblem-status-dot" class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                  <span id="stage-emblem-btn-label">居中流光图标：开启</span>
+                </button>
+
+                <!-- Quick 4-Icon Style Switcher Pill in Stage HUD -->
+                <select id="stage-emblem-selector" aria-label="切换居中发光图标样式" class="px-2.5 py-1 rounded-full bg-black/55 hover:bg-black/75 backdrop-blur-md border border-white/15 text-[11px] text-amber-200 focus:outline-none cursor-pointer">
+                  <option value="gemini" class="bg-[#0b0f19] text-white">✦ 经典 Gemini 图标</option>
+                  <option value="antigravity" class="bg-[#0b0f19] text-white">🚀 Antigravity 图标</option>
+                  <option value="windows" class="bg-[#0b0f19] text-white">⊞ Windows 图标</option>
+                  <option value="apple" class="bg-[#0b0f19] text-white"> Apple 图标</option>
+                </select>
+
+                <select id="mask-mode-selector" aria-label="切换海洋遮罩区域模式" class="px-2.5 py-1 rounded-full bg-black/55 hover:bg-black/75 backdrop-blur-md border border-white/15 text-[11px] text-sky-200 focus:outline-none cursor-pointer">
+                  <option value="0" class="bg-[#0b0f19] text-white">🌊 框内深海 + 环绕流光 (Hybrid)</option>
+                  <option value="1" class="bg-[#0b0f19] text-white">💎 仅聊天框内嵌菱形海 (Inner Box)</option>
+                  <option value="2" class="bg-[#0b0f19] text-white">🌌 全景无界菱形海洋 (Full Stage)</option>
+                </select>
+                <button id="btn-random-ripple" type="button" class="px-2.5 py-1 rounded-full bg-black/50 hover:bg-black/70 backdrop-blur-md border border-white/15 text-[11px] text-sky-300 transition">
+                  💧 随机投石激起波纹
+                </button>
+              </div>
+            </div>
+
+            <!-- ========================================================================= -->
+            <!-- WORKSPACE CENTER: FRAMELESS 1:1 TRADEMARK ICON WITH EDGE FLOWING LIGHT    -->
+            <!-- ========================================================================= -->
+            <div class="relative z-10 px-6 my-auto py-2 flex flex-col items-center justify-center gap-3 pointer-events-none text-center">
+
+              <!-- Pure Frameless Center Glowing Emblem Wrapper (Zero container box, zero border!) -->
+              <div id="center-emblem-wrapper" class="pointer-events-auto relative flex items-center justify-center transition-all duration-500 animate-float-slow cursor-pointer group select-none" title="点击无边框流光图标向四周海面发射四色环形冲击波">
+
+                <!-- Pure SVG Official Trademark Silhouette (No container box, no stroke border) -->
+                <svg id="center-emblem-svg" class="relative z-10 w-24 h-24 sm:w-28 sm:h-28 overflow-visible transition-transform duration-300 group-hover:scale-110 group-active:scale-95" viewBox="0 0 24 24">
+                  <defs>
+                    <!-- 1:1 Official Trademark Vector Paths in 24x24 Coordinate Space -->
+                    <!-- 1. Official Google Gemini Sparkle Trademark -->
+                    <path id="tm-path-gemini" d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81T4.68 11.04Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81Z" />
+
+                    <!-- 2. Official Google Antigravity Arch-Wing Trademark (Matched to Screenshot) -->
+                    <path id="tm-path-antigravity" d="M12.0 2.6C9.4 2.6 8.1 5.0 6.7 9.2C5.2 13.6 3.9 17.2 2.1 20.0C1.7 20.6 2.3 21.2 3.1 20.7C5.1 19.5 6.8 16.6 8.2 14.0C9.4 11.7 10.6 10.6 12.0 10.6C13.4 10.6 14.6 11.7 15.8 14.0C17.2 16.6 18.9 19.5 20.9 20.7C21.7 21.2 22.3 20.6 21.9 20.0C20.1 17.2 18.8 13.6 17.3 9.2C15.9 5.0 14.6 2.6 12.0 2.6Z" />
+
+                    <!-- 3. Official Microsoft Windows Four-Square Trademark -->
+                    <path id="tm-path-windows" d="M1.5 1.5H11.1V11.1H1.5ZM12.9 1.5H22.5V11.1H12.9ZM1.5 12.9H11.1V22.5H1.5ZM12.9 12.9H22.5V22.5H12.9Z" />
+
+                    <!-- 4. Official Apple Trademark (Simple Icons Exact Vector Path) -->
+                    <path id="tm-path-apple" d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701Z" />
+
+                    <!-- Classic 4-Color Rotating Gradient for the Main Body Fill -->
+                    <linearGradient id="classic-four-grad" gradientUnits="userSpaceOnUse" x1="2" y1="2" x2="22" y2="22">
+                      <stop id="emblem-grad-stop1" offset="0%" stop-color="#4285F4" />
+                      <stop id="emblem-grad-stop2" offset="33%" stop-color="#EA4335" />
+                      <stop id="emblem-grad-stop3" offset="66%" stop-color="#FBBC05" />
+                      <stop id="emblem-grad-stop4" offset="100%" stop-color="#34A853" />
+                      <animateTransform id="emblem-body-rot" attributeName="gradientTransform" type="rotate" from="0 12 12" to="360 12 12" dur="5.5s" repeatCount="indefinite" />
+                    </linearGradient>
+
+                    <!-- Counter-Rotating High-Luminance Edge Flowing Light Gradient (Frameless Edge Stream) -->
+                    <linearGradient id="edge-flow-grad" gradientUnits="userSpaceOnUse" x1="0" y1="12" x2="24" y2="12">
+                      <stop offset="0%" stop-color="#FFFFFF" />
+                      <stop id="edge-stop-a" offset="22%" stop-color="#4285F4" />
+                      <stop id="edge-stop-b" offset="50%" stop-color="#EA4335" />
+                      <stop id="edge-stop-c" offset="78%" stop-color="#FBBC05" />
+                      <stop offset="100%" stop-color="#34A853" />
+                      <animateTransform id="emblem-edge-rot" attributeName="gradientTransform" type="rotate" from="360 12 12" to="0 12 12" dur="2.8s" repeatCount="indefinite" />
+                    </linearGradient>
+
+                    <!-- Filter 1: Silhouetted Multi-Stage Soft 4-Color Aura (Conforms strictly to icon shape, no box!) -->
+                    <filter id="emblem-aura-filter" x="-60%" y="-60%" width="220%" height="220%">
+                      <feGaussianBlur in="SourceGraphic" stdDeviation="1.6" result="glowNear" />
+                      <feGaussianBlur in="SourceGraphic" stdDeviation="3.8" result="glowFar" />
+                      <feMerge>
+                        <feMergeNode in="glowFar" />
+                        <feMergeNode in="glowNear" />
+                      </feMerge>
+                    </filter>
+
+                    <!-- Filter 2: Frameless Inner-Edge Flowing Rim Light (Extracts soft glowing contour inside the icon without any stroke border!) -->
+                    <filter id="emblem-edge-rim-filter" x="-30%" y="-30%" width="160%" height="160%">
+                      <feMorphology in="SourceAlpha" operator="erode" radius="0.65" result="eroded" />
+                      <feGaussianBlur in="eroded" stdDeviation="0.55" result="blurredInner" />
+                      <feComposite in="SourceGraphic" in2="blurredInner" operator="out" result="innerRimBand" />
+                      <feGaussianBlur in="innerRimBand" stdDeviation="0.35" result="softRimGlow" />
+                      <feMerge>
+                        <feMergeNode in="softRimGlow" />
+                        <feMergeNode in="innerRimBand" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+
+                  <!-- STYLE 1: CLASSIC GEMINI ICON (Frameless) -->
+                  <g id="icon-group-gemini">
+                    <use href="#tm-path-gemini" fill="url(#edge-flow-grad)" filter="url(#emblem-aura-filter)" opacity="0.85" />
+                    <use href="#tm-path-gemini" fill="url(#classic-four-grad)" opacity="0.92" />
+                    <use href="#tm-path-gemini" fill="url(#edge-flow-grad)" filter="url(#emblem-edge-rim-filter)" opacity="0.98" />
+                  </g>
+
+                  <!-- STYLE 2: ANTIGRAVITY ICON (Frameless 1:1 Official Arch-Wing) -->
+                  <g id="icon-group-antigravity" class="hidden">
+                    <use href="#tm-path-antigravity" fill="url(#edge-flow-grad)" filter="url(#emblem-aura-filter)" opacity="0.85" />
+                    <use href="#tm-path-antigravity" fill="url(#classic-four-grad)" opacity="0.92" />
+                    <use href="#tm-path-antigravity" fill="url(#edge-flow-grad)" filter="url(#emblem-edge-rim-filter)" opacity="0.98" />
+                  </g>
+
+                  <!-- STYLE 3: WINDOWS ICON (Frameless 1:1 Official 4-Square) -->
+                  <g id="icon-group-windows" class="hidden">
+                    <use href="#tm-path-windows" fill="url(#edge-flow-grad)" filter="url(#emblem-aura-filter)" opacity="0.85" />
+                    <use href="#tm-path-windows" fill="url(#classic-four-grad)" opacity="0.92" />
+                    <use href="#tm-path-windows" fill="url(#edge-flow-grad)" filter="url(#emblem-edge-rim-filter)" opacity="0.98" />
+                  </g>
+
+                  <!-- STYLE 4: APPLE ICON (Frameless 1:1 Official Apple Trademark) -->
+                  <g id="icon-group-apple" class="hidden">
+                    <use href="#tm-path-apple" fill="url(#edge-flow-grad)" filter="url(#emblem-aura-filter)" opacity="0.85" />
+                    <use href="#tm-path-apple" fill="url(#classic-four-grad)" opacity="0.92" />
+                    <use href="#tm-path-apple" fill="url(#edge-flow-grad)" filter="url(#emblem-edge-rim-filter)" opacity="0.98" />
+                  </g>
+                </svg>
+              </div>
+
+              <!-- Prompt Status Pill below the Center Emblem -->
+              <div id="chat-history-pills" class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0a0e1a]/65 backdrop-blur-md border border-white/10 text-xs text-slate-200 shadow-lg">
+                <svg class="w-3.5 h-3.5 text-sky-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81T4.68 11.04Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81Z"/>
+                </svg>
+                <span id="agent-prompt-bubble">居中图标已严格按官方商标 1:1 矢量还原并去除一切外框，四色流光直接沿图标自身轮廓流动</span>
+              </div>
+            </div>
+
+            <!-- Bottom Gemini / Antigravity Translucent Glassmorphic Chat Composer -->
+            <div class="relative z-10 p-4 sm:p-6 pt-1">
+              <div id="composer-glass-box" class="relative rounded-[26px] bg-[#080c16]/45 backdrop-blur-[5px] border border-white/[0.18] shadow-[0_12px_45px_rgba(0,0,0,0.65),inset_0_1px_1px_rgba(255,255,255,0.18)] p-3.5 sm:p-4 transition-all duration-300">
+
+                <!-- Top Composer Row: Textarea / Input -->
+                <div class="flex items-start gap-3">
+                  <!-- Animated Official Gemini Four-Pointed Star Icon (Frameless) -->
+                  <div class="mt-0.5 w-7 h-7 flex items-center justify-center shrink-0">
+                    <svg id="gemini-star-svg" class="w-5 h-5 text-sky-300 drop-shadow-[0_0_10px_rgba(56,189,248,0.6)] transition-transform duration-700" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81T4.68 11.04Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81Z"/>
+                    </svg>
+                  </div>
+
+                  <div class="flex-1">
+                    <input
+                      id="gemini-chat-input"
+                      type="text"
+                      autocomplete="off"
+                      placeholder="输入任何问题，输入 @ 引用上下文，输入 / 调用指令..."
+                      class="w-full bg-transparent text-sm sm:text-base text-white placeholder-slate-200/65 focus:outline-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]"
+                    />
+                  </div>
+                </div>
+
+                <!-- Bottom Composer Toolbar: Model Pill, Quick Shape Selector, Quick Color Swatches, Voice & Liftoff -->
+                <div class="flex flex-wrap items-center justify-between gap-2 mt-3 pt-2.5 border-t border-white/[0.1]">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <!-- Plus / Context Attachment Button -->
+                    <button id="btn-attach-context" type="button" class="w-7 h-7 rounded-full bg-black/40 hover:bg-black/60 border border-white/15 flex items-center justify-center text-slate-200 transition" title="添加上下文文件并激起左翼波纹">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                    </button>
+
+                    <!-- Model Selector Pill -->
+                    <select id="model-selector" aria-label="选择模型" class="px-2.5 py-1 rounded-full bg-black/40 hover:bg-black/60 border border-white/15 text-xs text-slate-100 font-medium focus:outline-none cursor-pointer">
+                      <option value="argon" class="bg-[#0f1420] text-white">✦ Gemini 4 Argon</option>
+                      <option value="flash" class="bg-[#0f1420] text-white">⚡ Gemini 3.8 Flash 高 (High)</option>
+                      <option value="pro" class="bg-[#0f1420] text-white">💎 Gemini 3.1 Pro</option>
+                    </select>
+
+                    <!-- Quick Lattice Shape Selector Pill in Composer -->
+                    <select id="quick-shape-selector" aria-label="快速切换晶格形状" class="px-2.5 py-1 rounded-full bg-sky-500/20 hover:bg-sky-500/30 border border-sky-400/35 text-xs text-sky-200 font-medium focus:outline-none cursor-pointer">
+                      <option value="0" class="bg-[#0f1420] text-white">✦ 四芒星晶格 (Sparkle Star)</option>
+                      <option value="1" class="bg-[#0f1420] text-white">◆ 纯正几何菱形 (Pure Diamond)</option>
+                      <option value="2" class="bg-[#0f1420] text-white">● 半色调圆点 (Halftone Dot)</option>
+                      <option value="3" class="bg-[#0f1420] text-white">⬡ 六边形蜂巢 (Hexagon Cell)</option>
+                      <option value="4" class="bg-[#0f1420] text-white">✚ 极客十字星 (Crosshair Plus)</option>
+                      <option value="5" class="bg-[#0f1420] text-white">◎ 同心波纹环 (Hollow Ring)</option>
+                    </select>
+
+                    <!-- Color Palette Selector Pill -->
+                    <select id="palette-selector" aria-label="选择光谱主题" class="px-2.5 py-1 rounded-full bg-black/40 hover:bg-black/60 border border-white/15 text-xs text-purple-200 font-medium focus:outline-none cursor-pointer">
+                      <option value="0" class="bg-[#0f1420] text-white">🌈 Gemini 经典极光光谱</option>
+                      <option value="1" class="bg-[#0f1420] text-white">🌊 Argon 深海蓝青光谱</option>
+                      <option value="2" class="bg-[#0f1420] text-white">🔮 Antigravity 星云紫金</option>
+                      <option value="3" class="bg-[#0f1420] text-white">🧪 赛博翡翠矩阵光谱</option>
+                      <option value="4" class="bg-[#0f1420] text-white">🎵 初音苍绿幻境 (Miku Teal)</option>
+                      <option value="5" class="bg-[#0f1420] text-white">🌅 落日熔金晚霞 (Sunset Glow)</option>
+                      <option value="custom" class="bg-[#0f1420] text-amber-300">🎨 自定义四色过渡光谱</option>
+                    </select>
+                  </div>
+
+                  <div class="flex items-center gap-2">
+                    <!-- Gemini Live Voice Wave Toggle -->
+                    <button id="btn-voice-live" type="button" class="px-3 py-1.5 rounded-full bg-black/40 hover:bg-black/60 border border-white/15 text-xs text-slate-100 flex items-center gap-1.5 transition">
+                      <span id="voice-indicator-dot" class="w-2 h-2 rounded-full bg-slate-400"></span>
+                      <span>Talk Live</span>
+                    </button>
+
+                    <!-- Liftoff / Send Button -->
+                    <button id="btn-send-liftoff" type="button" class="px-4 py-1.5 rounded-full bg-gradient-to-r from-[#217BFE] via-[#07AEFA] to-[#AC87EB] hover:brightness-110 text-white text-xs font-semibold shadow-[0_0_22px_rgba(33,123,254,0.55)] flex items-center gap-1.5 transition active:scale-95">
+                      <span>Liftoff</span>
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Bottom Feature Highlights Bar -->
+        <div class="w-full grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-3.5">
+          <div class="px-3.5 py-2.5 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+            <div class="text-[11px] text-amber-300 font-medium">1:1 官方商标无边框流光</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">去除外框，四色流光严格贴合 Gemini / Antigravity / Win / Apple 轮廓</div>
+          </div>
+          <div class="px-3.5 py-2.5 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+            <div class="text-[11px] text-sky-400 font-medium">6 种可替换 SDF 晶格形状</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">四芒星 / 正菱形 / 圆点 / 六边形 / 十字星 / 波纹环</div>
+          </div>
+          <div class="px-3.5 py-2.5 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+            <div class="text-[11px] text-purple-400 font-medium">4 节点自由过渡色选色器</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">支持任意拾取 4 段渐变色并同步联动居中图标</div>
+          </div>
+          <div class="px-3.5 py-2.5 rounded-2xl bg-white/[0.02] border border-white/[0.06]">
+            <div class="text-[11px] text-emerald-400 font-medium">源码实时内联导出</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">无边框官方矢量徽标、晶格形状与 4 段配色全部编译进 TSX</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- ============================================================== -->
+      <!-- CODE EXPORT VIEW (Shown when "桌面端源码导出" tab is active)   -->
+      <!-- ============================================================== -->
+      <div id="code-export-panel" class="hidden relative z-10 w-full max-w-5xl mx-auto my-auto bg-[#0b0f19] border border-white/[0.1] rounded-3xl p-5 sm:p-6 shadow-2xl">
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-white/[0.08]">
+          <div>
+            <h2 class="text-base font-semibold text-white">Antigravity 桌面端集成源码 (含 1:1 无边框四色流光商标 + 6 种晶格 + 4 段选色)</h2>
+            <p class="text-xs text-slate-400 mt-0.5">你当前选择的居中无边框图标样式（Gemini / Antigravity / Windows / Apple）、开关状态、晶格图元与 4 段过渡色均已自动同步。</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <!-- Export Format Switcher -->
+            <div class="flex items-center gap-1 p-1 rounded-xl bg-white/[0.04] border border-white/[0.08]">
+              <button id="export-fmt-tsx" type="button" class="px-2.5 py-1 rounded-lg text-xs font-medium bg-sky-500/25 text-sky-200 border border-sky-400/40 transition">
+                React / Next.js (.tsx)
+              </button>
+              <button id="export-fmt-glsl" type="button" class="px-2.5 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition">
+                纯 GLSL 着色器 (.frag)
+              </button>
+            </div>
+            <button id="btn-copy-code" type="button" class="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/40 text-xs font-medium text-emerald-200 flex items-center gap-1.5 transition">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+              <span id="copy-btn-text">一键复制完整 TSX 组件</span>
+            </button>
+            <button id="btn-back-to-stage" type="button" class="px-3 py-1.5 rounded-xl bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-xs text-slate-300 transition">
+              返回交互预览
+            </button>
+          </div>
+        </div>
+        <pre id="exported-code-block" class="mt-4 p-4 rounded-2xl bg-[#06080f] border border-white/[0.06] font-mono-code text-xs text-slate-200 overflow-x-auto max-h-[420px] leading-relaxed select-all"></pre>
+      </div>
+
+    </main>
+
+    <!-- Right Dock: Live Shader Uniform Inspector Drawer -->
+    <aside id="shader-inspector-drawer" class="w-full lg:w-[350px] bg-[#0b0e17]/95 backdrop-blur-2xl border-t lg:border-t-0 lg:border-l border-white/[0.08] p-5 flex flex-col justify-between shrink-0 overflow-y-auto max-h-screen">
+      <div class="space-y-4">
+        <div class="flex items-center justify-between pb-2.5 border-b border-white/[0.08]">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-sky-400"></span>
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-200">徽标、晶格与选色工作台</h2>
+          </div>
+          <button id="btn-reset-params" type="button" class="text-[11px] text-sky-400 hover:text-sky-300 transition">
+            重置默认
+          </button>
+        </div>
+
+        <!-- =============================================================== -->
+        <!-- SECTION 0: CENTER GLOWING EMBLEM (工作区居中四配色无边框流光图标) -->
+        <!-- =============================================================== -->
+        <div class="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.08]">
+          <div class="flex items-center justify-between mb-2.5">
+            <div>
+              <span class="text-xs font-semibold text-white">0. 居中无边框四色流光图标</span>
+              <span id="emblem-current-label" class="ml-1.5 text-[11px] font-mono-code text-amber-300">✦ Gemini</span>
+            </div>
+            <!-- Master Enable/Disable Switch for Center Emblem -->
+            <button id="btn-toggle-emblem" type="button" role="switch" aria-checked="true" class="w-10 h-5 rounded-full bg-emerald-500 p-0.5 transition-colors relative flex items-center" title="开启或关闭工作区居中发光图标">
+              <span id="emblem-toggle-knob" class="w-4 h-4 rounded-full bg-white shadow transform translate-x-5 transition-transform"></span>
+            </button>
+          </div>
+
+          <!-- 4 Official Trademark Emblem Style Cards: Gemini / Antigravity / Windows / Apple -->
+          <div class="grid grid-cols-4 gap-1.5">
+            <button type="button" data-emblem="gemini" class="emblem-style-btn px-1.5 py-2 rounded-xl text-xs font-medium bg-sky-500/25 border border-sky-400/50 text-sky-200 flex flex-col items-center gap-1 transition shadow-[0_0_12px_rgba(56,189,248,0.25)]">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81T4.68 11.04Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81Z"/></svg>
+              <span class="text-[10px]">Gemini</span>
+            </button>
+            <button type="button" data-emblem="antigravity" class="emblem-style-btn px-1.5 py-2 rounded-xl text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 flex flex-col items-center gap-1 transition">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12.0 2.6C9.4 2.6 8.1 5.0 6.7 9.2C5.2 13.6 3.9 17.2 2.1 20.0C1.7 20.6 2.3 21.2 3.1 20.7C5.1 19.5 6.8 16.6 8.2 14.0C9.4 11.7 10.6 10.6 12.0 10.6C13.4 10.6 14.6 11.7 15.8 14.0C17.2 16.6 18.9 19.5 20.9 20.7C21.7 21.2 22.3 20.6 21.9 20.0C20.1 17.2 18.8 13.6 17.3 9.2C15.9 5.0 14.6 2.6 12.0 2.6Z"/></svg>
+              <span class="text-[10px]">Antigravity</span>
+            </button>
+            <button type="button" data-emblem="windows" class="emblem-style-btn px-1.5 py-2 rounded-xl text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 flex flex-col items-center gap-1 transition">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M1.5 1.5H11.1V11.1H1.5ZM12.9 1.5H22.5V11.1H12.9ZM1.5 12.9H11.1V22.5H1.5ZM12.9 12.9H22.5V22.5H12.9Z"/></svg>
+              <span class="text-[10px]">Windows</span>
+            </button>
+            <button type="button" data-emblem="apple" class="emblem-style-btn px-1.5 py-2 rounded-xl text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 flex flex-col items-center gap-1 transition">
+              <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701Z"/></svg>
+              <span class="text-[10px]">Apple</span>
+            </button>
+          </div>
+
+          <!-- Emblem Color Mode (Classic 4-Color vs Sync with Ocean LUT) & Scale Slider -->
+          <div class="mt-3 pt-2.5 border-t border-white/[0.06] space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] text-slate-300">图标流光配色模式</span>
+              <select id="emblem-color-mode" aria-label="图标流光配色模式" class="px-2 py-0.5 rounded-lg bg-black/45 border border-white/15 text-[11px] text-sky-200 focus:outline-none cursor-pointer">
+                <option value="classic">🌈 经典四配色 (#4285F4·#EA4335·#FBBC05·#34A853)</option>
+                <option value="sync">🔗 同步下方 4 段海面过渡色</option>
+              </select>
+            </div>
+            <div>
+              <div class="flex justify-between text-[11px] mb-1">
+                <label for="param-emblem-scale" class="text-slate-300">图标尺寸与流光速度</label>
+                <span id="val-emblem-scale" class="font-mono-code text-sky-300">1.00x</span>
+              </div>
+              <input id="param-emblem-scale" type="range" min="0.65" max="1.65" step="0.05" value="1.00" class="w-full" />
+            </div>
+          </div>
+        </div>
+
+        <!-- ======================================================= -->
+        <!-- SECTION A: LATTICE SHAPE SELECTOR (晶格图元形状切换)     -->
+        <!-- ======================================================= -->
+        <div class="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.07]">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold text-white">1. 替换晶格形状 (SDF Motif)</span>
+            <span id="current-shape-label" class="text-[11px] font-mono-code text-sky-300">✦ 四芒星</span>
+          </div>
+
+          <!-- 6 Shape Visual Grid Buttons -->
+          <div class="grid grid-cols-3 gap-1.5">
+            <button type="button" data-shape="0" class="shape-card-btn px-2 py-1.5 rounded-xl text-xs font-medium bg-sky-500/25 border border-sky-400/50 text-sky-200 flex flex-col items-center gap-0.5 transition">
+              <span class="text-sm leading-none">✦</span>
+              <span class="text-[10px]">四芒星</span>
+            </button>
+            <button type="button" data-shape="1" class="shape-card-btn px-2 py-1.5 rounded-xl text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 flex flex-col items-center gap-0.5 transition">
+              <span class="text-sm leading-none">◆</span>
+              <span class="text-[10px]">正菱形</span>
+            </button>
+            <button type="button" data-shape="2" class="shape-card-btn px-2 py-1.5 rounded-xl text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 flex flex-col items-center gap-0.5 transition">
+              <span class="text-sm leading-none">●</span>
+              <span class="text-[10px]">圆点阵</span>
+            </button>
+            <button type="button" data-shape="3" class="shape-card-btn px-2 py-1.5 rounded-xl text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 flex flex-col items-center gap-0.5 transition">
+              <span class="text-sm leading-none">⬡</span>
+              <span class="text-[10px]">六边形</span>
+            </button>
+            <button type="button" data-shape="4" class="shape-card-btn px-2 py-1.5 rounded-xl text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 flex flex-col items-center gap-0.5 transition">
+              <span class="text-sm leading-none">✚</span>
+              <span class="text-[10px]">十字星</span>
+            </button>
+            <button type="button" data-shape="5" class="shape-card-btn px-2 py-1.5 rounded-xl text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 flex flex-col items-center gap-0.5 transition">
+              <span class="text-sm leading-none">◎</span>
+              <span class="text-[10px]">波纹环</span>
+            </button>
+          </div>
+
+          <!-- Dynamic Morphing Toggle (波谷圆点 -> 波峰目标形状平滑过渡) -->
+          <div class="mt-2.5 pt-2 border-t border-white/[0.06] flex items-center justify-between">
+            <div>
+              <div class="text-[11px] text-slate-200 font-medium">波谷→波峰动态形变过渡</div>
+              <div class="text-[10px] text-slate-400">微弱处为圆点，随海浪波峰渐变为目标形状</div>
+            </div>
+            <button id="btn-toggle-morph" type="button" role="switch" aria-checked="true" class="w-10 h-5 rounded-full bg-sky-500 p-0.5 transition-colors relative flex items-center">
+              <span id="morph-knob" class="w-4 h-4 rounded-full bg-white shadow transform translate-x-5 transition-transform"></span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ======================================================= -->
+        <!-- SECTION B: CUSTOM 4-STOP GRADIENT COLOR PICKER          -->
+        <!-- ======================================================= -->
+        <div class="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.07]">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold text-white">2. 过渡色选色器 (4-Stop LUT)</span>
+            <button id="btn-random-palette" type="button" class="px-2 py-0.5 rounded-md bg-purple-500/20 hover:bg-purple-500/30 border border-purple-400/30 text-[11px] text-purple-200 transition">
+              🎲 随机灵感配色
+            </button>
+          </div>
+
+          <!-- Live Gradient Preview Bar -->
+          <div id="gradient-preview-bar" class="w-full h-3 rounded-full mb-2.5 border border-white/20 shadow-inner" style="background: linear-gradient(90deg, #2980ff, #0ac2ff, #ad85f2, #f570b3);"></div>
+
+          <!-- 4 Color Pickers Grid -->
+          <div class="grid grid-cols-2 gap-1.5">
+            <label class="flex items-center gap-2 p-1.5 rounded-xl bg-black/35 border border-white/[0.07] cursor-pointer hover:border-white/20 transition">
+              <input id="color-stop-1" type="color" value="#2980ff" class="w-5 h-5 shrink-0" />
+              <div class="min-w-0">
+                <div class="text-[10px] text-slate-400 leading-tight">起始主色 #1</div>
+                <div id="hex-stop-1" class="text-[11px] font-mono-code text-slate-200 uppercase">#2980FF</div>
+              </div>
+            </label>
+            <label class="flex items-center gap-2 p-1.5 rounded-xl bg-black/35 border border-white/[0.07] cursor-pointer hover:border-white/20 transition">
+              <input id="color-stop-2" type="color" value="#0ac2ff" class="w-5 h-5 shrink-0" />
+              <div class="min-w-0">
+                <div class="text-[10px] text-slate-400 leading-tight">过渡色 #2</div>
+                <div id="hex-stop-2" class="text-[11px] font-mono-code text-slate-200 uppercase">#0AC2FF</div>
+              </div>
+            </label>
+            <label class="flex items-center gap-2 p-1.5 rounded-xl bg-black/35 border border-white/[0.07] cursor-pointer hover:border-white/20 transition">
+              <input id="color-stop-3" type="color" value="#ad85f2" class="w-5 h-5 shrink-0" />
+              <div class="min-w-0">
+                <div class="text-[10px] text-slate-400 leading-tight">过渡色 #3</div>
+                <div id="hex-stop-3" class="text-[11px] font-mono-code text-slate-200 uppercase">#AD85F2</div>
+              </div>
+            </label>
+            <label class="flex items-center gap-2 p-1.5 rounded-xl bg-black/35 border border-white/[0.07] cursor-pointer hover:border-white/20 transition">
+              <input id="color-stop-4" type="color" value="#f570b3" class="w-5 h-5 shrink-0" />
+              <div class="min-w-0">
+                <div class="text-[10px] text-slate-400 leading-tight">波峰尾色 #4</div>
+                <div id="hex-stop-4" class="text-[11px] font-mono-code text-slate-200 uppercase">#F570B3</div>
+              </div>
+            </label>
+          </div>
+
+          <!-- Gradient Spread / Cycle Frequency Slider -->
+          <div class="mt-2.5 pt-2 border-t border-white/[0.06]">
+            <div class="flex justify-between text-xs mb-1">
+              <label for="param-color-spread" class="text-slate-300">过渡色空间跨度 (Color Spread)</label>
+              <span id="val-color-spread" class="font-mono-code text-sky-300">1.00</span>
+            </div>
+            <input id="param-color-spread" type="range" min="0.25" max="2.50" step="0.05" value="1.00" class="w-full" />
+          </div>
+        </div>
+
+        <!-- ======================================================= -->
+        <!-- SECTION C: SHADER PHYSICS & GEOMETRY SLIDERS            -->
+        <!-- ======================================================= -->
+        <div class="space-y-3 pt-0.5">
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <label for="param-density" class="text-slate-300">晶格密度 (Grid Density)</label>
+              <span id="val-density" class="font-mono-code text-sky-300">48.0</span>
+            </div>
+            <input id="param-density" type="range" min="22" max="84" step="1" value="48" class="w-full" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <label for="param-sharpness" class="text-slate-300">形状锐度/线宽参数 (Sharpness k)</label>
+              <span id="val-sharpness" class="font-mono-code text-sky-300">0.54</span>
+            </div>
+            <input id="param-sharpness" type="range" min="0.38" max="1.20" step="0.02" value="0.54" class="w-full" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <label for="param-rotation" class="text-slate-300">晶格倾角 (Lattice Angle)</label>
+              <span id="val-rotation" class="font-mono-code text-sky-300">45°</span>
+            </div>
+            <input id="param-rotation" type="range" min="0" max="90" step="1" value="45" class="w-full" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <label for="param-speed" class="text-slate-300">海洋涌浪速度 (Swell Speed)</label>
+              <span id="val-speed" class="font-mono-code text-sky-300">0.62</span>
+            </div>
+            <input id="param-speed" type="range" min="0.1" max="1.8" step="0.05" value="0.62" class="w-full" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <label for="param-ripple" class="text-slate-300">交互波纹振幅 (Ripple Force)</label>
+              <span id="val-ripple" class="font-mono-code text-sky-300">0.95</span>
+            </div>
+            <input id="param-ripple" type="range" min="0.1" max="1.6" step="0.05" value="0.95" class="w-full" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <label for="param-parallax" class="text-slate-300">波峰 3D 视差位移 (Parallax)</label>
+              <span id="val-parallax" class="font-mono-code text-sky-300">0.024</span>
+            </div>
+            <input id="param-parallax" type="range" min="0.0" max="0.06" step="0.002" value="0.024" class="w-full" />
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <label for="param-halo" class="text-slate-300">边框光晕衰减 (Halo Falloff)</label>
+              <span id="val-halo" class="font-mono-code text-sky-300">8.5</span>
+            </div>
+            <input id="param-halo" type="range" min="3.0" max="20.0" step="0.5" value="8.5" class="w-full" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Architecture Note -->
+      <div class="mt-4 p-3 rounded-2xl bg-sky-500/[0.06] border border-sky-400/20 text-[11px] text-slate-300 leading-relaxed">
+        <div class="font-semibold text-sky-300 mb-0.5">💡 纯无边框轮廓流光原理</div>
+        <p>利用 SVG <code class="text-sky-200 font-mono-code">feMorphology</code> 形态学内蚀与旋转梯度场合成，彻底移除外框与描边，使四色流光严格贴合商标自身轮廓流动。</p>
+      </div>
+    </aside>
+
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. WEBGL SHADER SOURCE (Supports Center Emblem Aura + 6 Shapes + 4-Stop RGB)
+    // =========================================================================
+    const VERTEX_SHADER_SRC = `
+      attribute vec2 a_position;
+      varying vec2 v_uv;
+      void main() {
+        v_uv = a_position * 0.5 + 0.5;
+        gl_Position = vec4(a_position, 0.0, 1.0);
+      }
+    `;
+
+    const FRAGMENT_SHADER_SRC = `
+      precision highp float;
+
+      varying vec2 v_uv;
+      uniform vec2 u_resolution;
+      uniform float u_time;
+      uniform vec2 u_mouse;
+      uniform float u_intensity;
+      uniform float u_voiceLevel;
+      uniform float u_gridDensity;
+      uniform float u_starSharpness;
+      uniform float u_gridAngle;
+      uniform float u_swellSpeed;
+      uniform float u_rippleForce;
+      uniform float u_parallax;
+      uniform float u_haloFalloff;
+      uniform int u_maskMode;        // 0 = 框内深海+边框流光, 1 = 仅框内, 2 = 全景深海
+
+      // 可替换晶格形状与波峰形变开关
+      uniform int u_shapeType;       // 0=四芒星, 1=正菱形, 2=圆点, 3=六边形, 4=十字星, 5=波纹环
+      uniform float u_morphEnabled;  // 1.0 = 开启波谷圆点->波峰目标形状过渡, 0.0 = 固定纯形状
+
+      // 工作区居中发光图标能量场开关与缩放
+      uniform float u_emblemEnabled; // 1.0 = 开启居中图标辐射海浪场, 0.0 = 关闭
+      uniform float u_emblemScale;
+
+      // 4 节点自定义过渡色 Uniform 向量与颜色跨度
+      uniform vec3 u_col1;
+      uniform vec3 u_col2;
+      uniform vec3 u_col3;
+      uniform vec3 u_col4;
+      uniform float u_colorSpread;
+
+      // 8通道交互波纹队列: xy = 归一化坐标, z = 触发时间, w = 振幅权重
+      uniform vec4 u_ripples[8];
+
+      float hash21(vec2 p) {
+        p = fract(p * vec2(234.34, 435.345));
+        p += dot(p, p + 34.23);
+        return fract(p.x * p.y);
+      }
+
+      vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+      vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+      vec3 permute(vec3 x) { return mod289(((x * 34.0) + 1.0) * x); }
+
+      float snoise(vec2 v) {
+        const vec4 C = vec4(
+          0.211324865405187,
+          0.366025403784439,
+          -0.577350269189626,
+          0.024390243902439
+        );
+        vec2 i  = floor(v + dot(v, C.yy));
+        vec2 x0 = v - i + dot(i, C.xx);
+        vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+        vec4 x12 = x0.xyxy + C.xxzz;
+        x12.xy -= i1;
+        i = mod289(i);
+        vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+        vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
+        m = m * m;
+        m = m * m;
+        vec3 x = 2.0 * fract(p * C.www) - 1.0;
+        vec3 h = abs(x) - 0.5;
+        vec3 ox = floor(x + 0.5);
+        vec3 a0 = x - ox;
+        m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
+        vec3 g;
+        g.x  = a0.x  * x0.x  + h.x  * x0.y;
+        g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+        return 130.0 * dot(m, g);
+      }
+
+      float sdRoundedBox(vec2 p, vec2 b, float r) {
+        vec2 q = abs(p) - b + r;
+        return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
+      }
+
+      float sdDiamondStar(vec2 p, float k) {
+        vec2 ap = abs(p) + 1e-4;
+        return pow(pow(ap.x, k) + pow(ap.y, k), 1.0 / k);
+      }
+
+      float sdHexagonMetric(vec2 p) {
+        p = abs(p);
+        return max(dot(p, vec2(0.8660254, 0.5)), p.y);
+      }
+
+      float sdCrossPlusMetric(vec2 p, float armRatio) {
+        vec2 ap = abs(p);
+        float armA = max(ap.x, ap.y / max(0.18, armRatio));
+        float armB = max(ap.y, ap.x / max(0.18, armRatio));
+        return min(armA, armB);
+      }
+
+      float evaluateMotifDistance(vec2 p, int shapeType, float kParam, float morphFactor) {
+        float circleDist = length(p);
+        float targetDist = circleDist;
+
+        if (shapeType == 0) {
+          float k = mix(1.45, kParam, morphFactor);
+          return sdDiamondStar(p, k);
+        } else if (shapeType == 1) {
+          targetDist = (abs(p.x) + abs(p.y)) * 0.78;
+        } else if (shapeType == 2) {
+          targetDist = circleDist;
+        } else if (shapeType == 3) {
+          targetDist = sdHexagonMetric(p) * 1.06;
+        } else if (shapeType == 4) {
+          float armRatio = clamp(kParam * 0.55, 0.20, 0.58);
+          targetDist = sdCrossPlusMetric(p, armRatio);
+        } else {
+          targetDist = circleDist;
+        }
+
+        return mix(circleDist, targetDist, morphFactor);
+      }
+
+      vec3 evaluateCustomGradient(float t) {
+        float c = fract(t);
+        if (c < 0.25) return mix(u_col1, u_col2, smoothstep(0.0, 0.25, c));
+        if (c < 0.50) return mix(u_col2, u_col3, smoothstep(0.25, 0.50, c));
+        if (c < 0.75) return mix(u_col3, u_col4, smoothstep(0.50, 0.75, c));
+        return mix(u_col4, u_col1, smoothstep(0.75, 1.0, c));
+      }
+
+      void main() {
+        vec2 aspect = vec2(u_resolution.x / u_resolution.y, 1.0);
+        vec2 uv = (v_uv - 0.5) * aspect;
+        vec2 mouseWorld = (u_mouse - 0.5) * aspect;
+
+        // 1. 计算底部聊天输入框圆角矩形 SDF 与工作区中心徽标辐射遮罩
+        vec2 composerCenter = uv - vec2(0.0, -0.24);
+        vec2 boxHalfSize = vec2(aspect.x * 0.45, 0.155);
+        float boxDist = sdRoundedBox(composerCenter, boxHalfSize, 0.075);
+
+        float insideComposer = 1.0 - smoothstep(-0.01, 0.025, boxDist);
+        float borderHalo = exp(-abs(boxDist) * u_haloFalloff);
+        float bottomSwellZone = smoothstep(0.46, -0.46, v_uv.y);
+
+        // 工作区居中发光图标能量圈 (位于 y = +0.10 处)
+        vec2 emblemCenter = vec2(0.0, 0.10);
+        float emblemCenterDist = length(uv - emblemCenter);
+        float emblemHaloMask = u_emblemEnabled * exp(-emblemCenterDist * (3.6 / max(0.6, u_emblemScale)));
+
+        float regionMask = 1.0;
+        if (u_maskMode == 0) {
+          regionMask = clamp(insideComposer * 0.92 + borderHalo * 1.15 + bottomSwellZone * 0.65 + emblemHaloMask * 0.95, 0.0, 1.0);
+        } else if (u_maskMode == 1) {
+          regionMask = clamp(insideComposer + exp(-max(0.0, boxDist) * (u_haloFalloff * 2.2)) + emblemHaloMask * 0.75, 0.0, 1.0);
+        } else {
+          regionMask = 1.0;
+        }
+
+        // 2. 连续海浪场与 3D 波峰法线视差位移
+        float t = u_time * u_swellSpeed;
+        float baseWave1 = snoise(uv * 2.3 + vec2(t * 0.62, t * 0.28));
+        float baseWave2 = snoise(uv * 4.6 - vec2(t * 0.45, -t * 0.52));
+        vec2 waveGrad = vec2(baseWave1, baseWave2);
+
+        vec2 warpedUV = uv + waveGrad * u_parallax * u_intensity;
+
+        // 3. 旋转坐标系构建斜向交错晶格
+        float cosA = cos(u_gridAngle);
+        float sinA = sin(u_gridAngle);
+        mat2 rotMat = mat2(cosA, -sinA, sinA, cosA);
+        mat2 invRotMat = mat2(cosA, sinA, -sinA, cosA);
+
+        vec2 gridSpace = rotMat * warpedUV * u_gridDensity;
+        vec2 cellId = floor(gridSpace);
+        vec2 localP = fract(gridSpace) - 0.5;
+
+        vec2 cellCenterWorld = invRotMat * ((cellId + 0.5) / u_gridDensity);
+
+        // 4. 在离散晶格中心采样双层 FBM 海洋涌浪 + 焦散波峰棱线 + 居中徽标环形脉冲波
+        float swellA = snoise(cellCenterWorld * 2.4 + vec2(t * 0.55, t * 0.24));
+        float swellB = snoise(cellCenterWorld * 5.0 - vec2(t * 0.38, -t * 0.46));
+        float oceanHeight = (swellA * 0.62 + swellB * 0.38) * 0.5 + 0.5;
+
+        float wavePhase = cellCenterWorld.x * 3.2 + cellCenterWorld.y * 2.1 - t * 1.15 + swellA * 1.6;
+        float causticRidge = pow(1.0 - abs(sin(wavePhase)), 3.2) * 0.42;
+
+        // 居中发光图标向外辐射的柔和能量波环
+        float cellDistToEmblem = length(cellCenterWorld - emblemCenter);
+        float emblemPulseWave = u_emblemEnabled * (0.28 + 0.22 * sin(cellDistToEmblem * 18.0 - u_time * 3.8)) * exp(-cellDistToEmblem * 3.2);
+
+        float cellRand = hash21(cellId);
+        float twinkle = 0.88 + 0.12 * sin(u_time * 3.8 + cellRand * 6.2831);
+
+        // 5. 采样光标实时导引波 + 8 通道按键/点击径向冲击波队列
+        float distMouse = length(cellCenterWorld - mouseWorld);
+        float cursorWave = sin(distMouse * 22.0 - u_time * 6.0) * exp(-distMouse * 3.1) * 0.36 * u_rippleForce;
+        float cursorHoverGlow = exp(-distMouse * 4.2) * 0.28 * u_rippleForce;
+
+        float rippleAccum = 0.0;
+        for (int i = 0; i < 8; i++) {
+          vec4 rp = u_ripples[i];
+          if (rp.z >= 0.0) {
+            float age = u_time - rp.z;
+            if (age >= 0.0 && age < 2.8) {
+              vec2 rpPos = (rp.xy - 0.5) * aspect;
+              float d = length(cellCenterWorld - rpPos);
+              float radius = age * 0.74;
+              float ring = cos((d - radius) * 28.0) * exp(-abs(d - radius) * 6.2);
+              float fade = exp(-age * 1.3) * rp.w;
+              rippleAccum += ring * fade;
+            }
+          }
+        }
+
+        // 6. Gemini Live 声浪频谱调制
+        float voiceWave = 0.0;
+        if (u_voiceLevel > 0.01) {
+          float radialDist = length(cellCenterWorld - vec2(0.0, -0.22));
+          voiceWave = sin(radialDist * 26.0 - u_time * 9.5) * u_voiceLevel * exp(-radialDist * 1.6);
+        }
+
+        // 7. 汇总总波浪能量并计算多形状 SDF 遮罩
+        float rawEnergy = (oceanHeight * 0.58 + causticRidge + emblemPulseWave + cursorWave + cursorHoverGlow + rippleAccum * u_rippleForce + voiceWave * 0.7) * twinkle;
+        float energy = clamp(rawEnergy * regionMask * (0.55 + 0.62 * u_intensity), 0.0, 1.0);
+
+        vec2 motifP = invRotMat * localP;
+        float morphFactor = mix(1.0, smoothstep(0.14, 0.82, energy), u_morphEnabled);
+        float sdfDist = evaluateMotifDistance(motifP, u_shapeType, u_starSharpness, morphFactor);
+
+        float radius = 0.49 * pow(energy, 1.12);
+        float aa = 0.052;
+        float shapeMask = 0.0;
+
+        if (u_shapeType == 5) {
+          float ringThick = clamp(u_starSharpness * 0.24, 0.06, 0.22) * (0.5 + 0.5 * energy);
+          float ringDist = abs(sdfDist - radius * 0.72);
+          shapeMask = 1.0 - smoothstep(ringThick - aa, ringThick + aa, ringDist);
+        } else {
+          shapeMask = 1.0 - smoothstep(radius - aa, radius + aa, sdfDist);
+        }
+
+        float coreHighlight = (1.0 - smoothstep(0.0, radius * 0.45, sdfDist)) * smoothstep(0.42, 0.95, energy);
+
+        // 8. 自定义 4 节点过渡色采样与底光合成
+        float colorPhase = (cellCenterWorld.x * 0.46 + cellCenterWorld.y * 0.34) * u_colorSpread - u_time * 0.15 + oceanHeight * 0.40 + rippleAccum * 0.18;
+        vec3 spectralCol = evaluateCustomGradient(colorPhase);
+        vec3 motifCol = mix(spectralCol, vec3(0.98, 0.99, 1.0), coreHighlight * 0.82);
+
+        vec3 bgCol = vec3(0.024, 0.035, 0.066);
+        float underGlow = regionMask * (0.14 + 0.32 * oceanHeight + causticRidge * 0.4 + emblemPulseWave * 0.45 + max(0.0, rippleAccum) * 0.28) * u_intensity;
+        vec3 finalColor = bgCol + spectralCol * underGlow * 0.44;
+
+        float alphaWeight = shapeMask * smoothstep(0.03, 0.20, energy);
+        finalColor = mix(finalColor, motifCol, alphaWeight);
+
+        // 聊天框外圈流光细边
+        float rimLine = exp(-abs(boxDist) * 85.0) * (0.42 + 0.52 * oceanHeight + max(0.0, rippleAccum) * 0.4) * u_intensity;
+        finalColor += mix(spectralCol, vec3(1.0), 0.45) * rimLine;
+
+        gl_FragColor = vec4(finalColor, 1.0);
+      }
+    `;
+
+    // =========================================================================
+    // 2. PRESET PALETTES, SHAPE DEFINITIONS & 1:1 OFFICIAL TRADEMARK PATHS
+    // =========================================================================
+    const PALETTE_PRESETS = {
+      '0': ['#2980ff', '#0ac2ff', '#ad85f2', '#f570b3'], // Gemini 经典极光光谱
+      '1': ['#0d6bff', '#00dbff', '#26f2cc', '#618aff'], // Argon 深海蓝青光谱
+      '2': ['#7a47fa', '#e05cf0', '#ffa847', '#5299ff'], // Antigravity 星云紫金
+      '3': ['#0ad199', '#1ff5d9', '#38a8ff', '#99fa70'], // 赛博翡翠矩阵光谱
+      '4': ['#39c5bb', '#66f0e6', '#3b82f6', '#c084fc'], // 初音苍绿幻境 (Miku Teal)
+      '5': ['#f43f5e', '#fb7185', '#f59e0b', '#8b5cf6']  // 落日熔金晚霞 (Sunset Glow)
+    };
+
+    const CLASSIC_FOUR_COLORS = ['#4285F4', '#EA4335', '#FBBC05', '#34A853'];
+
+    const OFFICIAL_TRADEMARK_PATHS = {
+      gemini: "M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81T4.68 11.04Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81Z",
+      antigravity: "M12.0 2.6C9.4 2.6 8.1 5.0 6.7 9.2C5.2 13.6 3.9 17.2 2.1 20.0C1.7 20.6 2.3 21.2 3.1 20.7C5.1 19.5 6.8 16.6 8.2 14.0C9.4 11.7 10.6 10.6 12.0 10.6C13.4 10.6 14.6 11.7 15.8 14.0C17.2 16.6 18.9 19.5 20.9 20.7C21.7 21.2 22.3 20.6 21.9 20.0C20.1 17.2 18.8 13.6 17.3 9.2C15.9 5.0 14.6 2.6 12.0 2.6Z",
+      windows: "M1.5 1.5H11.1V11.1H1.5ZM12.9 1.5H22.5V11.1H12.9ZM1.5 12.9H11.1V22.5H1.5ZM12.9 12.9H22.5V22.5H12.9Z",
+      apple: "M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701Z"
+    };
+
+    const SHAPE_META = [
+      { id: 0, icon: '✦', name: '四芒星', badge: '✦ 四芒星晶格' },
+      { id: 1, icon: '◆', name: '正菱形', badge: '◆ 正菱形晶格' },
+      { id: 2, icon: '●', name: '圆点阵', badge: '● 半色调圆点' },
+      { id: 3, icon: '⬡', name: '六边形', badge: '⬡ 六边形蜂巢' },
+      { id: 4, icon: '✚', name: '十字星', badge: '✚ 极客十字星' },
+      { id: 5, icon: '◎', name: '波纹环', badge: '◎ 同心波纹环' }
+    ];
+
+    const EMBLEM_META = {
+      gemini: { id: 'gemini', icon: '✦', name: '经典 Gemini 图标', short: '✦ Gemini' },
+      antigravity: { id: 'antigravity', icon: '🚀', name: 'Antigravity 图标', short: '🚀 Antigravity' },
+      windows: { id: 'windows', icon: '⊞', name: 'Windows 图标', short: '⊞ Windows' },
+      apple: { id: 'apple', icon: '', name: 'Apple 图标', short: ' Apple' }
+    };
+
+    function hexToRgbNorm(hex) {
+      const clean = hex.replace('#', '');
+      const num = parseInt(clean, 16);
+      return [
+        ((num >> 16) & 255) / 255,
+        ((num >> 8) & 255) / 255,
+        (num & 255) / 255
+      ];
+    }
+
+    const state = {
+      surfaceMode: 'overlay',
+      exportFormat: 'tsx',
+      animPreset: 'focus',
+      targetIntensity: 0.92,
+      currentIntensity: 0.92,
+      voiceActive: false,
+      voiceLevel: 0.0,
+      audioEnabled: false,
+      mouse: { x: 0.5, y: 0.30 },
+      params: {
+        emblemEnabled: true,
+        emblemStyle: 'gemini',     // 'gemini' | 'antigravity' | 'windows' | 'apple'
+        emblemColorMode: 'classic', // 'classic' | 'sync'
+        emblemScale: 1.0,
+        shapeType: 0,
+        morphEnabled: true,
+        colorsHex: ['#2980ff', '#0ac2ff', '#ad85f2', '#f570b3'],
+        colorSpread: 1.0,
+        gridDensity: 48.0,
+        starSharpness: 0.54,
+        gridAngleDeg: 45.0,
+        swellSpeed: 0.62,
+        rippleForce: 0.95,
+        parallax: 0.024,
+        haloFalloff: 8.5,
+        paletteKey: '0',
+        maskMode: 0
+      },
+      ripples: Array.from({ length: 8 }, () => [0.5, 0.5, -10.0, 0.0]),
+      rippleCursor: 0,
+      startTime: performance.now()
+    };
+
+    let audioCtx = null;
+    function playRippleSynth(freqBase = 520, isLiftoff = false) {
+      if (!state.audioEnabled) return;
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          audioCtx = new AudioContextClass();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = isLiftoff ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(freqBase, now);
+        osc.frequency.exponentialRampToValueAtTime(isLiftoff ? freqBase * 1.85 : freqBase * 1.35, now + (isLiftoff ? 0.38 : 0.16));
+
+        gain.gain.setValueAtTime(isLiftoff ? 0.09 : 0.04, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + (isLiftoff ? 0.42 : 0.18));
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + (isLiftoff ? 0.44 : 0.2));
+      } catch (e) {
+        // Ignore audio errors
+      }
+    }
+
+    function spawnRipple(normX, normY, weight = 1.0) {
+      const elapsed = (performance.now() - state.startTime) * 0.001;
+      state.ripples[state.rippleCursor] = [normX, normY, elapsed, weight];
+      state.rippleCursor = (state.rippleCursor + 1) % 8;
+    }
+
+    // =========================================================================
+    // 3. INITIALIZE WEBGL PIPELINE
+    // =========================================================================
+    const canvas = document.getElementById('ocean-webgl-canvas');
+    const gl = canvas.getContext('webgl', { antialias: true, alpha: false });
+
+    let program = null;
+    let uniformLocs = {};
+
+    function initWebGL() {
+      if (!gl) return;
+      const compile = (type, src) => {
+        const s = gl.createShader(type);
+        gl.shaderSource(s, src);
+        gl.compileShader(s);
+        return s;
+      };
+      const vs = compile(gl.VERTEX_SHADER, VERTEX_SHADER_SRC);
+      const fs = compile(gl.FRAGMENT_SHADER, FRAGMENT_SHADER_SRC);
+      program = gl.createProgram();
+      gl.attachShader(program, vs);
+      gl.attachShader(program, fs);
+      gl.linkProgram(program);
+      gl.useProgram(program);
+
+      const buf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+      gl.bufferData(
+        gl.ARRAY_BUFFER,
+        new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+        gl.STATIC_DRAW
+      );
+
+      const posLoc = gl.getAttribLocation(program, 'a_position');
+      gl.enableVertexAttribArray(posLoc);
+      gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
+
+      uniformLocs = {
+        u_resolution: gl.getUniformLocation(program, 'u_resolution'),
+        u_time: gl.getUniformLocation(program, 'u_time'),
+        u_mouse: gl.getUniformLocation(program, 'u_mouse'),
+        u_intensity: gl.getUniformLocation(program, 'u_intensity'),
+        u_voiceLevel: gl.getUniformLocation(program, 'u_voiceLevel'),
+        u_gridDensity: gl.getUniformLocation(program, 'u_gridDensity'),
+        u_starSharpness: gl.getUniformLocation(program, 'u_starSharpness'),
+        u_gridAngle: gl.getUniformLocation(program, 'u_gridAngle'),
+        u_swellSpeed: gl.getUniformLocation(program, 'u_swellSpeed'),
+        u_rippleForce: gl.getUniformLocation(program, 'u_rippleForce'),
+        u_parallax: gl.getUniformLocation(program, 'u_parallax'),
+        u_haloFalloff: gl.getUniformLocation(program, 'u_haloFalloff'),
+        u_maskMode: gl.getUniformLocation(program, 'u_maskMode'),
+        u_shapeType: gl.getUniformLocation(program, 'u_shapeType'),
+        u_morphEnabled: gl.getUniformLocation(program, 'u_morphEnabled'),
+        u_emblemEnabled: gl.getUniformLocation(program, 'u_emblemEnabled'),
+        u_emblemScale: gl.getUniformLocation(program, 'u_emblemScale'),
+        u_col1: gl.getUniformLocation(program, 'u_col1'),
+        u_col2: gl.getUniformLocation(program, 'u_col2'),
+        u_col3: gl.getUniformLocation(program, 'u_col3'),
+        u_col4: gl.getUniformLocation(program, 'u_col4'),
+        u_colorSpread: gl.getUniformLocation(program, 'u_colorSpread'),
+        u_ripples: []
+      };
+      for (let i = 0; i < 8; i++) {
+        uniformLocs.u_ripples.push(gl.getUniformLocation(program, `u_ripples[${i}]`));
+      }
+
+      spawnRipple(0.5, 0.58, 1.25);
+      spawnRipple(0.5, 0.26, 1.15);
+    }
+
+    // =========================================================================
+    // 4. RENDER LOOP & FPS COUNTER
+    // =========================================================================
+    let frameCount = 0;
+    let lastFpsUpdate = performance.now();
+    const fpsEl = document.getElementById('fps-counter');
+
+    function renderLoop(now) {
+      frameCount++;
+      if (now - lastFpsUpdate >= 600) {
+        const fps = Math.min(60, Math.round((frameCount * 1000) / (now - lastFpsUpdate)));
+        if (fpsEl) fpsEl.textContent = `${fps} FPS`;
+        frameCount = 0;
+        lastFpsUpdate = now;
+      }
+
+      if (gl && program) {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const w = Math.max(1, Math.floor(canvas.clientWidth * dpr));
+        const h = Math.max(1, Math.floor(canvas.clientHeight * dpr));
+        if (canvas.width !== w || canvas.height !== h) {
+          canvas.width = w;
+          canvas.height = h;
+          gl.viewport(0, 0, w, h);
+        }
+
+        const elapsed = (now - state.startTime) * 0.001;
+        state.currentIntensity += (state.targetIntensity - state.currentIntensity) * 0.07;
+
+        if (state.voiceActive) {
+          const v = 0.48 + 0.35 * Math.sin(elapsed * 7.5) + 0.22 * Math.cos(elapsed * 13.8);
+          state.voiceLevel += (v - state.voiceLevel) * 0.16;
+        } else {
+          state.voiceLevel *= 0.88;
+        }
+
+        const c1 = hexToRgbNorm(state.params.colorsHex[0]);
+        const c2 = hexToRgbNorm(state.params.colorsHex[1]);
+        const c3 = hexToRgbNorm(state.params.colorsHex[2]);
+        const c4 = hexToRgbNorm(state.params.colorsHex[3]);
+
+        gl.uniform2f(uniformLocs.u_resolution, canvas.width, canvas.height);
+        gl.uniform1f(uniformLocs.u_time, elapsed);
+        gl.uniform2f(uniformLocs.u_mouse, state.mouse.x, state.mouse.y);
+        gl.uniform1f(uniformLocs.u_intensity, state.currentIntensity);
+        gl.uniform1f(uniformLocs.u_voiceLevel, state.voiceLevel);
+        gl.uniform1f(uniformLocs.u_gridDensity, state.params.gridDensity);
+        gl.uniform1f(uniformLocs.u_starSharpness, state.params.starSharpness);
+        gl.uniform1f(uniformLocs.u_gridAngle, (state.params.gridAngleDeg * Math.PI) / 180.0);
+        gl.uniform1f(uniformLocs.u_swellSpeed, state.params.swellSpeed);
+        gl.uniform1f(uniformLocs.u_rippleForce, state.params.rippleForce);
+        gl.uniform1f(uniformLocs.u_parallax, state.params.parallax);
+        gl.uniform1f(uniformLocs.u_haloFalloff, state.params.haloFalloff);
+        gl.uniform1i(uniformLocs.u_maskMode, state.params.maskMode);
+        gl.uniform1i(uniformLocs.u_shapeType, state.params.shapeType);
+        gl.uniform1f(uniformLocs.u_morphEnabled, state.params.morphEnabled ? 1.0 : 0.0);
+        gl.uniform1f(uniformLocs.u_emblemEnabled, state.params.emblemEnabled ? 1.0 : 0.0);
+        gl.uniform1f(uniformLocs.u_emblemScale, state.params.emblemScale);
+        gl.uniform3f(uniformLocs.u_col1, c1[0], c1[1], c1[2]);
+        gl.uniform3f(uniformLocs.u_col2, c2[0], c2[1], c2[2]);
+        gl.uniform3f(uniformLocs.u_col3, c3[0], c3[1], c3[2]);
+        gl.uniform3f(uniformLocs.u_col4, c4[0], c4[1], c4[2]);
+        gl.uniform1f(uniformLocs.u_colorSpread, state.params.colorSpread);
+
+        for (let i = 0; i < 8; i++) {
+          const r = state.ripples[i];
+          gl.uniform4f(uniformLocs.u_ripples[i], r[0], r[1], r[2], r[3]);
+        }
+
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+      }
+
+      requestAnimationFrame(renderLoop);
+    }
+
+    // =========================================================================
+    // 5. GENERATE LIVE EXPORTABLE REACT / ANTIGRAVITY DESKTOP COMPONENT CODE
+    // =========================================================================
+    function buildExportableCode() {
+      const p = state.params;
+      const shapeInfo = SHAPE_META[p.shapeType] || SHAPE_META[0];
+      const emblemInfo = EMBLEM_META[p.emblemStyle] || EMBLEM_META.gemini;
+      const rgb1 = hexToRgbNorm(p.colorsHex[0]).map((n) => n.toFixed(3));
+      const rgb2 = hexToRgbNorm(p.colorsHex[1]).map((n) => n.toFixed(3));
+      const rgb3 = hexToRgbNorm(p.colorsHex[2]).map((n) => n.toFixed(3));
+      const rgb4 = hexToRgbNorm(p.colorsHex[3]).map((n) => n.toFixed(3));
+      const emblemColors = p.emblemColorMode === 'classic' ? CLASSIC_FOUR_COLORS : p.colorsHex;
+
+      if (state.exportFormat === 'glsl') {
+        return `// DiamondOceanShader.frag — Google Antigravity Desktop GLSL Fragment Shader
+// 当前居中无边框流光商标: ${emblemInfo.name} (${p.emblemEnabled ? '开启' : '关闭'}, Scale = ${p.emblemScale.toFixed(2)})
+// 当前晶格形状: ${shapeInfo.icon} ${shapeInfo.name} (u_shapeType = ${p.shapeType}, u_morphEnabled = ${p.morphEnabled ? '1.0' : '0.0'})
+// 当前 4 节点过渡色: ${p.colorsHex.join(' -> ')} (u_colorSpread = ${p.colorSpread.toFixed(2)})
+
+${FRAGMENT_SHADER_SRC.trim()}`;
+      }
+
+      return `// AntigravityGeminiOceanChat.tsx
+// 适用于 Google Antigravity Desktop (Electron / VS Code Webview / Next.js)
+// 已内联：1:1 官方商标无边框四色边缘流光图标 (${emblemInfo.name}) + ${shapeInfo.icon}${shapeInfo.name}晶格 + 4段自定义过渡色
+"use client";
+
+import React, { useEffect, useRef, useState } from "react";
+
+export type EmblemStyle = "gemini" | "antigravity" | "windows" | "apple";
+
+const OFFICIAL_TRADEMARK_PATHS: Record<EmblemStyle, string> = {
+  gemini: "${OFFICIAL_TRADEMARK_PATHS.gemini}",
+  antigravity: "${OFFICIAL_TRADEMARK_PATHS.antigravity}",
+  windows: "${OFFICIAL_TRADEMARK_PATHS.windows}",
+  apple: "${OFFICIAL_TRADEMARK_PATHS.apple}",
+};
+
+const SHADER_DEFAULTS = {
+  emblemEnabled: ${p.emblemEnabled},
+  emblemStyle: "${p.emblemStyle}" as EmblemStyle,
+  emblemScale: ${p.emblemScale.toFixed(2)},
+  emblemColors: ${JSON.stringify(emblemColors)},
+  shapeType: ${p.shapeType}, // ${shapeInfo.icon} ${shapeInfo.name}
+  morphEnabled: ${p.morphEnabled ? 1.0 : 0.0},
+  col1: [${rgb1.join(", ")}] as [number, number, number], // ${p.colorsHex[0]}
+  col2: [${rgb2.join(", ")}] as [number, number, number], // ${p.colorsHex[1]}
+  col3: [${rgb3.join(", ")}] as [number, number, number], // ${p.colorsHex[2]}
+  col4: [${rgb4.join(", ")}] as [number, number, number], // ${p.colorsHex[3]}
+  colorSpread: ${p.colorSpread.toFixed(2)},
+  gridDensity: ${p.gridDensity.toFixed(1)},
+  starSharpness: ${p.starSharpness.toFixed(2)},
+  gridAngleRad: ${((p.gridAngleDeg * Math.PI) / 180).toFixed(4)},
+  swellSpeed: ${p.swellSpeed.toFixed(2)},
+  rippleForce: ${p.rippleForce.toFixed(2)},
+  parallax: ${p.parallax.toFixed(3)},
+  haloFalloff: ${p.haloFalloff.toFixed(1)},
+  maskMode: ${p.maskMode},
+};
+
+const VERTEX_SHADER = \`${VERTEX_SHADER_SRC.trim()}\`;
+
+const FRAGMENT_SHADER = \`${FRAGMENT_SHADER_SRC.trim()}\`;
+
+export default function AntigravityGeminiOceanChat() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [prompt, setPrompt] = useState("");
+  const [focused, setFocused] = useState(true);
+  const [showEmblem, setShowEmblem] = useState<boolean>(SHADER_DEFAULTS.emblemEnabled);
+  const [emblemStyle, setEmblemStyle] = useState<EmblemStyle>(SHADER_DEFAULTS.emblemStyle);
+
+  const ripplesRef = useRef<number[][]>(
+    Array.from({ length: 8 }, () => [0.5, 0.5, -10.0, 0.0])
+  );
+  const cursorIdxRef = useRef(0);
+  const mouseRef = useRef({ x: 0.5, y: 0.3 });
+  const startTimeRef = useRef(performance.now());
+
+  const triggerRipple = (x: number, y: number, strength = 1.0) => {
+    const t = (performance.now() - startTimeRef.current) * 0.001;
+    ripplesRef.current[cursorIdxRef.current] = [x, y, t, strength];
+    cursorIdxRef.current = (cursorIdxRef.current + 1) % 8;
+  };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const gl = canvas.getContext("webgl", { antialias: true });
+    if (!gl) return;
+
+    const compile = (type: number, src: string) => {
+      const s = gl.createShader(type)!;
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      return s;
+    };
+    const prog = gl.createProgram()!;
+    gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERTEX_SHADER));
+    gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAGMENT_SHADER));
+    gl.linkProgram(prog);
+    gl.useProgram(prog);
+
+    const buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(
+      gl.ARRAY_BUFFER,
+      new Float32Array([-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1]),
+      gl.STATIC_DRAW
+    );
+    const pos = gl.getAttribLocation(prog, "a_position");
+    gl.enableVertexAttribArray(pos);
+    gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
+
+    let rafId: number;
+    const render = (now: number) => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      if (canvas.width !== canvas.clientWidth * dpr || canvas.height !== canvas.clientHeight * dpr) {
+        canvas.width = canvas.clientWidth * dpr;
+        canvas.height = canvas.clientHeight * dpr;
+        gl.viewport(0, 0, canvas.width, canvas.height);
+      }
+      const elapsed = (now - startTimeRef.current) * 0.001;
+      gl.uniform2f(gl.getUniformLocation(prog, "u_resolution"), canvas.width, canvas.height);
+      gl.uniform1f(gl.getUniformLocation(prog, "u_time"), elapsed);
+      gl.uniform2f(gl.getUniformLocation(prog, "u_mouse"), mouseRef.current.x, mouseRef.current.y);
+      gl.uniform1f(gl.getUniformLocation(prog, "u_intensity"), focused ? 0.95 : 0.42);
+      gl.uniform1f(gl.getUniformLocation(prog, "u_voiceLevel"), 0.0);
+      gl.uniform1f(gl.getUniformLocation(prog, "u_gridDensity"), SHADER_DEFAULTS.gridDensity);
+      gl.uniform1f(gl.getUniformLocation(prog, "u_starSharpness"), SHADER_DEFAULTS.starSharpness);
+      gl.uniform1f(gl.getUniformLocation(prog, "u_gridAngle"), SHADER_DEFAULTS.gridAngleRad);
+      gl.uniform1f(gl.getUniformLocation(prog, "u_swellSpeed"), SHADER_DEFAULTS.swellSpeed);
+      gl.uniform1f(gl.getUniformLocation(prog, "u_rippleForce"), SHADER_DEFAULTS.rippleForce);
+      gl.uniform1f(gl.getUniformLocation(prog, "u_parallax"), SHADER_DEFAULTS.parallax);
+      gl.uniform1f(gl.getUniformLocation(prog, "u_haloFalloff"), SHADER_DEFAULTS.haloFalloff);
+      gl.uniform1i(gl.getUniformLocation(prog, "u_maskMode"), SHADER_DEFAULTS.maskMode);
+      gl.uniform1i(gl.getUniformLocation(prog, "u_shapeType"), SHADER_DEFAULTS.shapeType);
+      gl.uniform1f(gl.getUniformLocation(prog, "u_morphEnabled"), SHADER_DEFAULTS.morphEnabled);
+      gl.uniform1f(gl.getUniformLocation(prog, "u_emblemEnabled"), showEmblem ? 1.0 : 0.0);
+      gl.uniform1f(gl.getUniformLocation(prog, "u_emblemScale"), SHADER_DEFAULTS.emblemScale);
+      gl.uniform3fv(gl.getUniformLocation(prog, "u_col1"), SHADER_DEFAULTS.col1);
+      gl.uniform3fv(gl.getUniformLocation(prog, "u_col2"), SHADER_DEFAULTS.col2);
+      gl.uniform3fv(gl.getUniformLocation(prog, "u_col3"), SHADER_DEFAULTS.col3);
+      gl.uniform3fv(gl.getUniformLocation(prog, "u_col4"), SHADER_DEFAULTS.col4);
+      gl.uniform1f(gl.getUniformLocation(prog, "u_colorSpread"), SHADER_DEFAULTS.colorSpread);
+
+      for (let i = 0; i < 8; i++) {
+        const r = ripplesRef.current[i];
+        gl.uniform4f(gl.getUniformLocation(prog, \`u_ripples[\${i}]\`), r[0], r[1], r[2], r[3]);
+      }
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+      rafId = requestAnimationFrame(render);
+    };
+    rafId = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(rafId);
+  }, [focused, showEmblem]);
+
+  const [c1, c2, c3, c4] = SHADER_DEFAULTS.emblemColors;
+  const activePath = OFFICIAL_TRADEMARK_PATHS[emblemStyle];
+
+  return (
+    <div
+      onPointerMove={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        mouseRef.current = {
+          x: (e.clientX - rect.left) / rect.width,
+          y: 1.0 - (e.clientY - rect.top) / rect.height,
+        };
+      }}
+      onClick={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        triggerRipple(
+          (e.clientX - rect.left) / rect.width,
+          1.0 - (e.clientY - rect.top) / rect.height,
+          1.25
+        );
+      }}
+      className="relative w-full max-w-4xl h-[440px] rounded-[32px] overflow-hidden bg-[#060911] border border-white/10 flex flex-col justify-between p-6"
+    >
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" />
+
+      {/* Top Controls for Toggleable Frameless 4-Color Center Emblem */}
+      <div className="relative z-10 flex items-center justify-end gap-2">
+        <button
+          onClick={(e) => { e.stopPropagation(); setShowEmblem(!showEmblem); }}
+          className="px-3 py-1 rounded-full bg-black/50 border border-white/15 text-xs text-sky-200"
+        >
+          {showEmblem ? "隐藏居中图标" : "显示居中图标"}
+        </button>
+        <select
+          value={emblemStyle}
+          onChange={(e) => setEmblemStyle(e.target.value as EmblemStyle)}
+          onClick={(e) => e.stopPropagation()}
+          className="px-3 py-1 rounded-full bg-black/50 border border-white/15 text-xs text-amber-200"
+        >
+          <option value="gemini">✦ Gemini</option>
+          <option value="antigravity">🚀 Antigravity</option>
+          <option value="windows">⊞ Windows</option>
+          <option value="apple"> Apple</option>
+        </select>
+      </div>
+
+      {/* Pure Frameless 1:1 Official Trademark Emblem with Flowing-Edge Light */}
+      {showEmblem && (
+        <div
+          onClick={(e) => { e.stopPropagation(); triggerRipple(0.5, 0.6, 1.5); }}
+          className="relative z-10 my-auto mx-auto flex items-center justify-center cursor-pointer select-none"
+          style={{ transform: \`scale(\${SHADER_DEFAULTS.emblemScale})\` }}
+        >
+          <svg className="w-28 h-28 overflow-visible" viewBox="0 0 24 24">
+            <defs>
+              <linearGradient id="ag-body-grad" gradientUnits="userSpaceOnUse" x1="2" y1="2" x2="22" y2="22">
+                <stop offset="0%" stopColor={c1} />
+                <stop offset="33%" stopColor={c2} />
+                <stop offset="66%" stopColor={c3} />
+                <stop offset="100%" stopColor={c4} />
+                <animateTransform attributeName="gradientTransform" type="rotate" from="0 12 12" to="360 12 12" dur="5.5s" repeatCount="indefinite" />
+              </linearGradient>
+              <linearGradient id="ag-edge-grad" gradientUnits="userSpaceOnUse" x1="0" y1="12" x2="24" y2="12">
+                <stop offset="0%" stopColor="#FFFFFF" />
+                <stop offset="22%" stopColor={c1} />
+                <stop offset="50%" stopColor={c2} />
+                <stop offset="78%" stopColor={c3} />
+                <stop offset="100%" stopColor={c4} />
+                <animateTransform attributeName="gradientTransform" type="rotate" from="360 12 12" to="0 12 12" dur="2.8s" repeatCount="indefinite" />
+              </linearGradient>
+              <filter id="ag-aura" x="-60%" y="-60%" width="220%" height="220%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="1.6" result="g1" />
+                <feGaussianBlur in="SourceGraphic" stdDeviation="3.8" result="g2" />
+                <feMerge><feMergeNode in="g2" /><feMergeNode in="g1" /></feMerge>
+              </filter>
+              <filter id="ag-rim" x="-30%" y="-30%" width="160%" height="160%">
+                <feMorphology in="SourceAlpha" operator="erode" radius="0.65" result="eroded" />
+                <feGaussianBlur in="eroded" stdDeviation="0.55" result="blurIn" />
+                <feComposite in="SourceGraphic" in2="blurIn" operator="out" result="rim" />
+                <feGaussianBlur in="rim" stdDeviation="0.35" result="softRim" />
+                <feMerge><feMergeNode in="softRim" /><feMergeNode in="rim" /></feMerge>
+              </filter>
+            </defs>
+            <path d={activePath} fill="url(#ag-edge-grad)" filter="url(#ag-aura)" opacity="0.85" />
+            <path d={activePath} fill="url(#ag-body-grad)" opacity="0.92" />
+            <path d={activePath} fill="url(#ag-edge-grad)" filter="url(#ag-rim)" opacity="0.98" />
+          </svg>
+        </div>
+      )}
+
+      {/* Bottom Glassmorphic Chat Composer */}
+      <div className="relative z-10 flex items-center gap-3 px-5 py-4 rounded-[24px] bg-[#080c16]/45 backdrop-blur-[5px] border border-white/20">
+        <input
+          value={prompt}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          onChange={(e) => {
+            setPrompt(e.target.value);
+            triggerRipple(0.2 + Math.random() * 0.6, 0.25, 0.95);
+          }}
+          placeholder="输入任何问题，输入 @ 引用上下文，输入 / 调用指令..."
+          className="flex-1 bg-transparent text-white focus:outline-none"
+        />
+      </div>
+    </div>
+  );
+}`;
+    }
+
+    function refreshCodeExportView() {
+      const codeBlock = document.getElementById('exported-code-block');
+      if (codeBlock) {
+        codeBlock.textContent = buildExportableCode();
+      }
+    }
+
+    // =========================================================================
+    // 6. UI SYNC HELPERS FOR FRAMELESS CENTER EMBLEM, SHAPE & COLOR PICKERS
+    // =========================================================================
+    function syncEmblemUI() {
+      const p = state.params;
+      const wrapper = document.getElementById('center-emblem-wrapper');
+      const svgEl = document.getElementById('center-emblem-svg');
+      const stageToggleLabel = document.getElementById('stage-emblem-btn-label');
+      const stageStatusDot = document.getElementById('stage-emblem-status-dot');
+      const stageToggleBtn = document.getElementById('btn-stage-toggle-emblem');
+      const inspectorSwitch = document.getElementById('btn-toggle-emblem');
+      const inspectorKnob = document.getElementById('emblem-toggle-knob');
+      const stageSelector = document.getElementById('stage-emblem-selector');
+      const currentLabel = document.getElementById('emblem-current-label');
+
+      // 1. Visibility & toggle states
+      if (p.emblemEnabled) {
+        wrapper.classList.remove('hidden');
+        stageToggleLabel.textContent = '居中流光图标：开启';
+        stageStatusDot.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400';
+        stageToggleBtn.className = 'px-2.5 py-1 rounded-full bg-sky-500/25 hover:bg-sky-500/35 backdrop-blur-md border border-sky-400/40 text-[11px] text-sky-200 font-medium flex items-center gap-1 transition';
+        inspectorSwitch.setAttribute('aria-checked', 'true');
+        inspectorSwitch.className = 'w-10 h-5 rounded-full bg-emerald-500 p-0.5 transition-colors relative flex items-center';
+        inspectorKnob.className = 'w-4 h-4 rounded-full bg-white shadow transform translate-x-5 transition-transform';
+      } else {
+        wrapper.classList.add('hidden');
+        stageToggleLabel.textContent = '居中流光图标：已关闭';
+        stageStatusDot.className = 'w-1.5 h-1.5 rounded-full bg-slate-500';
+        stageToggleBtn.className = 'px-2.5 py-1 rounded-full bg-black/55 hover:bg-black/75 backdrop-blur-md border border-white/15 text-[11px] text-slate-400 font-medium flex items-center gap-1 transition';
+        inspectorSwitch.setAttribute('aria-checked', 'false');
+        inspectorSwitch.className = 'w-10 h-5 rounded-full bg-slate-700 p-0.5 transition-colors relative flex items-center';
+        inspectorKnob.className = 'w-4 h-4 rounded-full bg-slate-300 shadow transform translate-x-0 transition-transform';
+      }
+
+      // 2. Switch active SVG icon group (gemini | antigravity | windows | apple)
+      ['gemini', 'antigravity', 'windows', 'apple'].forEach((styleKey) => {
+        const g = document.getElementById(`icon-group-${styleKey}`);
+        if (g) {
+          if (styleKey === p.emblemStyle) {
+            g.classList.remove('hidden');
+          } else {
+            g.classList.add('hidden');
+          }
+        }
+      });
+
+      const meta = EMBLEM_META[p.emblemStyle] || EMBLEM_META.gemini;
+      if (currentLabel) currentLabel.textContent = meta.short;
+      if (stageSelector) stageSelector.value = p.emblemStyle;
+
+      document.querySelectorAll('.emblem-style-btn').forEach((btn) => {
+        const key = btn.getAttribute('data-emblem');
+        if (key === p.emblemStyle) {
+          btn.className = 'emblem-style-btn px-1.5 py-2 rounded-xl text-xs font-medium bg-sky-500/25 border border-sky-400/50 text-sky-200 flex flex-col items-center gap-1 transition shadow-[0_0_12px_rgba(56,189,248,0.25)]';
+        } else {
+          btn.className = 'emblem-style-btn px-1.5 py-2 rounded-xl text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 flex flex-col items-center gap-1 transition';
+        }
+      });
+
+      // 3. Scale & Rotation Speed directly on the frameless SVG
+      if (svgEl) {
+        svgEl.style.transform = `scale(${p.emblemScale})`;
+      }
+      const bodyRot = document.getElementById('emblem-body-rot');
+      const edgeRot = document.getElementById('emblem-edge-rot');
+      if (bodyRot) bodyRot.setAttribute('dur', `${Math.max(2.2, 5.5 / p.emblemScale).toFixed(2)}s`);
+      if (edgeRot) edgeRot.setAttribute('dur', `${Math.max(1.2, 2.8 / p.emblemScale).toFixed(2)}s`);
+
+      // 4. Sync 4-Color Gradient (Classic Google 4-Color vs Synced with Ocean LUT)
+      const activeFour = p.emblemColorMode === 'classic' ? CLASSIC_FOUR_COLORS : p.colorsHex;
+      const [c1, c2, c3, c4] = activeFour;
+
+      const stopIds = ['emblem-grad-stop1', 'emblem-grad-stop2', 'emblem-grad-stop3', 'emblem-grad-stop4'];
+      stopIds.forEach((id, idx) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.setAttribute('stop-color', activeFour[idx]);
+        }
+      });
+
+      const edgeA = document.getElementById('edge-stop-a');
+      const edgeB = document.getElementById('edge-stop-b');
+      const edgeC = document.getElementById('edge-stop-c');
+      if (edgeA) edgeA.setAttribute('stop-color', c1);
+      if (edgeB) edgeB.setAttribute('stop-color', c2);
+      if (edgeC) edgeC.setAttribute('stop-color', c3);
+
+      refreshCodeExportView();
+    }
+
+    function syncShapeUI(shapeIdx) {
+      state.params.shapeType = shapeIdx;
+      const meta = SHAPE_META[shapeIdx] || SHAPE_META[0];
+      document.getElementById('current-shape-label').textContent = `${meta.icon} ${meta.name}`;
+      document.getElementById('header-shape-badge').textContent = meta.badge;
+      document.getElementById('quick-shape-selector').value = String(shapeIdx);
+
+      document.querySelectorAll('.shape-card-btn').forEach((btn) => {
+        const idx = parseInt(btn.getAttribute('data-shape'), 10);
+        if (idx === shapeIdx) {
+          btn.className = 'shape-card-btn px-2 py-1.5 rounded-xl text-xs font-medium bg-sky-500/25 border border-sky-400/50 text-sky-200 flex flex-col items-center gap-0.5 transition shadow-[0_0_15px_rgba(56,189,248,0.2)]';
+        } else {
+          btn.className = 'shape-card-btn px-2 py-1.5 rounded-xl text-xs font-medium bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-slate-300 flex flex-col items-center gap-0.5 transition';
+        }
+      });
+
+      refreshCodeExportView();
+    }
+
+    function syncColorsUI(hexArray, paletteKey = 'custom') {
+      state.params.colorsHex = hexArray.map((h) => h.toLowerCase());
+      state.params.paletteKey = paletteKey;
+
+      for (let i = 0; i < 4; i++) {
+        const picker = document.getElementById(`color-stop-${i + 1}`);
+        const hexText = document.getElementById(`hex-stop-${i + 1}`);
+        if (picker) picker.value = state.params.colorsHex[i];
+        if (hexText) hexText.textContent = state.params.colorsHex[i].toUpperCase();
+      }
+
+      const previewBar = document.getElementById('gradient-preview-bar');
+      if (previewBar) {
+        previewBar.style.background = `linear-gradient(90deg, ${state.params.colorsHex.join(', ')})`;
+      }
+
+      const liftoffBtn = document.getElementById('btn-send-liftoff');
+      if (liftoffBtn) {
+        liftoffBtn.style.backgroundImage = `linear-gradient(90deg, ${state.params.colorsHex[0]}, ${state.params.colorsHex[1]}, ${state.params.colorsHex[2]})`;
+      }
+
+      const paletteSel = document.getElementById('palette-selector');
+      if (paletteSel) {
+        paletteSel.value = paletteKey;
+      }
+
+      if (state.params.emblemColorMode === 'sync') {
+        syncEmblemUI();
+      } else {
+        refreshCodeExportView();
+      }
+    }
+
+    // =========================================================================
+    // 7. UI EVENT LISTENERS & INTERACTIVITY
+    // =========================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      initWebGL();
+      syncEmblemUI();
+      refreshCodeExportView();
+      requestAnimationFrame(renderLoop);
+
+      const stageCard = document.getElementById('ocean-stage-card');
+      const chatInput = document.getElementById('gemini-chat-input');
+      const promptBubble = document.getElementById('agent-prompt-bubble');
+      const stateReadout = document.getElementById('shader-state-readout');
+      const starSvg = document.getElementById('gemini-star-svg');
+
+      stageCard.addEventListener('pointermove', (e) => {
+        const rect = stageCard.getBoundingClientRect();
+        state.mouse.x = (e.clientX - rect.left) / rect.width;
+        state.mouse.y = 1.0 - (e.clientY - rect.top) / rect.height;
+      });
+
+      canvas.addEventListener('pointerdown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const nx = (e.clientX - rect.left) / rect.width;
+        const ny = 1.0 - (e.clientY - rect.top) / rect.height;
+        spawnRipple(nx, ny, 1.3);
+        playRippleSynth(440 + Math.round(nx * 260), false);
+      });
+
+      // Clicking the Frameless Center Glowing Emblem triggers a multi-ring shockwave from the center
+      document.getElementById('center-emblem-wrapper').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const meta = EMBLEM_META[state.params.emblemStyle] || EMBLEM_META.gemini;
+        spawnRipple(0.5, 0.60, 1.55);
+        setTimeout(() => spawnRipple(0.5, 0.60, 1.25), 110);
+        promptBubble.textContent = `🌟 已激活工作区无边框「${meta.name}」— 四色流光沿商标边缘旋转并向全海面辐射同心波纹`;
+        playRippleSynth(640, true);
+      });
+
+      // Toggle Center Emblem On/Off (Both Stage HUD & Inspector Switch)
+      const toggleEmblemHandler = () => {
+        state.params.emblemEnabled = !state.params.emblemEnabled;
+        syncEmblemUI();
+        spawnRipple(0.5, 0.58, 1.25);
+        playRippleSynth(state.params.emblemEnabled ? 580 : 420, false);
+        promptBubble.textContent = state.params.emblemEnabled
+          ? `✨ 已开启工作区无边框四色流光图标（${EMBLEM_META[state.params.emblemStyle].name}）`
+          : '🌑 已关闭工作区居中图标，现仅展示纯粹的底部与环绕菱形波纹海洋';
+      };
+      document.getElementById('btn-stage-toggle-emblem').addEventListener('click', toggleEmblemHandler);
+      document.getElementById('btn-toggle-emblem').addEventListener('click', toggleEmblemHandler);
+
+      // Switch Emblem Style (Gemini / Antigravity / Windows / Apple)
+      document.querySelectorAll('.emblem-style-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const styleKey = btn.getAttribute('data-emblem');
+          state.params.emblemStyle = styleKey;
+          state.params.emblemEnabled = true;
+          syncEmblemUI();
+          const meta = EMBLEM_META[styleKey];
+          promptBubble.textContent = `🎯 居中无边框流光商标已切换为 1:1 官方还原「${meta.name}」`;
+          spawnRipple(0.5, 0.60, 1.4);
+          playRippleSynth(540, false);
+        });
+      });
+
+      document.getElementById('stage-emblem-selector').addEventListener('change', (e) => {
+        state.params.emblemStyle = e.target.value;
+        state.params.emblemEnabled = true;
+        syncEmblemUI();
+        const meta = EMBLEM_META[state.params.emblemStyle];
+        promptBubble.textContent = `🎯 居中无边框流光商标已切换为 1:1 官方还原「${meta.name}」`;
+        spawnRipple(0.5, 0.60, 1.4);
+        playRippleSynth(540, false);
+      });
+
+      // Emblem Color Mode Switcher (Classic 4-Color vs Sync with Ocean LUT)
+      document.getElementById('emblem-color-mode').addEventListener('change', (e) => {
+        state.params.emblemColorMode = e.target.value;
+        syncEmblemUI();
+        spawnRipple(0.5, 0.60, 1.25);
+      });
+
+      // Emblem Scale Slider
+      document.getElementById('param-emblem-scale').addEventListener('input', (e) => {
+        const v = parseFloat(e.target.value);
+        state.params.emblemScale = v;
+        document.getElementById('val-emblem-scale').textContent = `${v.toFixed(2)}x`;
+        syncEmblemUI();
+      });
+
+      chatInput.addEventListener('focus', () => {
+        setAnimationPreset('focus');
+        spawnRipple(0.5, 0.26, 1.05);
+      });
+
+      chatInput.addEventListener('input', (e) => {
+        const len = e.target.value.length;
+        const caretNormX = Math.min(0.85, 0.18 + (len % 36) * 0.018);
+        spawnRipple(caretNormX, 0.25 + (Math.random() - 0.5) * 0.05, 0.96);
+        playRippleSynth(580 + (len % 12) * 28, false);
+        starSvg.style.transform = `rotate(${len * 45}deg) scale(1.12)`;
+      });
+
+      chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          triggerLiftoffSubmission();
+        }
+      });
+
+      document.getElementById('btn-send-liftoff').addEventListener('click', () => {
+        triggerLiftoffSubmission();
+      });
+
+      function triggerLiftoffSubmission() {
+        const meta = SHAPE_META[state.params.shapeType] || SHAPE_META[0];
+        const emblemMeta = EMBLEM_META[state.params.emblemStyle] || EMBLEM_META.gemini;
+        const text = chatInput.value.trim() || `在 Antigravity 桌面端启用无边框 ${emblemMeta.name} 与 ${meta.icon}${meta.name} 波纹海洋`;
+        promptBubble.textContent = `🚀 已发送指令：“${text}” — 居中无边框流光图标与海面同步进入 Liftoff 涌浪状态`;
+        chatInput.value = '';
+        setAnimationPreset('thinking');
+        spawnRipple(0.5, 0.26, 1.48);
+        if (state.params.emblemEnabled) {
+          setTimeout(() => spawnRipple(0.5, 0.60, 1.42), 80);
+        }
+        setTimeout(() => spawnRipple(0.28, 0.32, 1.2), 140);
+        setTimeout(() => spawnRipple(0.72, 0.32, 1.2), 210);
+        playRippleSynth(520, true);
+      }
+
+      document.getElementById('btn-attach-context').addEventListener('click', () => {
+        spawnRipple(0.16, 0.22, 1.25);
+        promptBubble.textContent = '📎 已挂载工作区上下文：ui_panel_template.js • 激起左翼波纹';
+        playRippleSynth(480, false);
+      });
+
+      // Shape Selector Buttons (Right Inspector) & Quick Shape Pill (Bottom Composer)
+      document.querySelectorAll('.shape-card-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.getAttribute('data-shape'), 10);
+          syncShapeUI(idx);
+          const meta = SHAPE_META[idx];
+          promptBubble.textContent = `✨ 已切换晶格图元为「${meta.icon} ${meta.name}」— 波峰扫过时将实时呈现该几何形态`;
+          spawnRipple(0.5, 0.32, 1.35);
+          playRippleSynth(500 + idx * 45, false);
+        });
+      });
+
+      document.getElementById('quick-shape-selector').addEventListener('change', (e) => {
+        const idx = parseInt(e.target.value, 10);
+        syncShapeUI(idx);
+        const meta = SHAPE_META[idx];
+        promptBubble.textContent = `✨ 已切换晶格图元为「${meta.icon} ${meta.name}」`;
+        spawnRipple(0.42, 0.28, 1.3);
+        playRippleSynth(500 + idx * 45, false);
+      });
+
+      // Dynamic Crest Morphing Toggle
+      const morphBtn = document.getElementById('btn-toggle-morph');
+      const morphKnob = document.getElementById('morph-knob');
+      morphBtn.addEventListener('click', () => {
+        state.params.morphEnabled = !state.params.morphEnabled;
+        morphBtn.setAttribute('aria-checked', String(state.params.morphEnabled));
+        if (state.params.morphEnabled) {
+          morphBtn.className = 'w-10 h-5 rounded-full bg-sky-500 p-0.5 transition-colors relative flex items-center';
+          morphKnob.className = 'w-4 h-4 rounded-full bg-white shadow transform translate-x-5 transition-transform';
+        } else {
+          morphBtn.className = 'w-10 h-5 rounded-full bg-slate-700 p-0.5 transition-colors relative flex items-center';
+          morphKnob.className = 'w-4 h-4 rounded-full bg-slate-300 shadow transform translate-x-0 transition-transform';
+        }
+        spawnRipple(0.5, 0.3, 1.15);
+        refreshCodeExportView();
+      });
+
+      // 4 Custom Color Pickers Binding
+      for (let i = 0; i < 4; i++) {
+        const picker = document.getElementById(`color-stop-${i + 1}`);
+        picker.addEventListener('input', (e) => {
+          const nextColors = [...state.params.colorsHex];
+          nextColors[i] = e.target.value;
+          syncColorsUI(nextColors, 'custom');
+        });
+        picker.addEventListener('change', () => {
+          spawnRipple(0.25 + i * 0.16, 0.3, 1.2);
+          playRippleSynth(480 + i * 60, false);
+        });
+      }
+
+      // Randomize Palette Button
+      document.getElementById('btn-random-palette').addEventListener('click', () => {
+        const hslToHex = (h, s, l) => {
+          l /= 100;
+          const a = (s * Math.min(l, 1 - l)) / 100;
+          const f = (n) => {
+            const k = (n + h / 30) % 12;
+            const color = l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+            return Math.round(255 * color).toString(16).padStart(2, '0');
+          };
+          return `#${f(0)}${f(8)}${f(4)}`;
+        };
+        const baseHue = Math.floor(Math.random() * 360);
+        const randomHexes = [
+          hslToHex(baseHue, 90, 58),
+          hslToHex((baseHue + 42) % 360, 92, 60),
+          hslToHex((baseHue + 95) % 360, 86, 65),
+          hslToHex((baseHue + 150) % 360, 88, 62)
+        ];
+        syncColorsUI(randomHexes, 'custom');
+        promptBubble.textContent = `🎨 已生成随机 4 段过渡光谱：${randomHexes.map((c) => c.toUpperCase()).join(' → ')}`;
+        spawnRipple(0.5, 0.32, 1.4);
+        playRippleSynth(600, false);
+      });
+
+      // Preset Palette Selector
+      document.getElementById('palette-selector').addEventListener('change', (e) => {
+        const key = e.target.value;
+        if (PALETTE_PRESETS[key]) {
+          syncColorsUI(PALETTE_PRESETS[key], key);
+          spawnRipple(0.5, 0.3, 1.3);
+          playRippleSynth(550, false);
+        }
+      });
+
+      // Model Selector
+      document.getElementById('model-selector').addEventListener('change', (e) => {
+        const val = e.target.value;
+        if (val === 'argon') {
+          syncColorsUI(PALETTE_PRESETS['0'], '0');
+        } else if (val === 'flash') {
+          syncColorsUI(PALETTE_PRESETS['1'], '1');
+        } else {
+          syncColorsUI(PALETTE_PRESETS['2'], '2');
+        }
+        spawnRipple(0.35, 0.25, 1.25);
+      });
+
+      // Mask mode selector
+      document.getElementById('mask-mode-selector').addEventListener('change', (e) => {
+        state.params.maskMode = parseInt(e.target.value, 10);
+        spawnRipple(0.5, 0.3, 1.25);
+        refreshCodeExportView();
+      });
+
+      // Random ripple drop button
+      document.getElementById('btn-random-ripple').addEventListener('click', () => {
+        const rx = 0.15 + Math.random() * 0.7;
+        const ry = 0.2 + Math.random() * 0.6;
+        spawnRipple(rx, ry, 1.38);
+        playRippleSynth(460 + Math.random() * 240, false);
+      });
+
+      // Multi-wave burst in Manager view
+      const burstBtn = document.getElementById('btn-spawn-wave-burst');
+      if (burstBtn) {
+        burstBtn.addEventListener('click', () => {
+          spawnRipple(0.25, 0.45, 1.35);
+          spawnRipple(0.50, 0.60, 1.45);
+          spawnRipple(0.75, 0.45, 1.35);
+          playRippleSynth(620, true);
+        });
+      }
+
+      // Voice Live button
+      const voiceBtn = document.getElementById('btn-voice-live');
+      const voiceDot = document.getElementById('voice-indicator-dot');
+      voiceBtn.addEventListener('click', () => {
+        if (state.animPreset === 'voice') {
+          setAnimationPreset('focus');
+        } else {
+          setAnimationPreset('voice');
+        }
+      });
+
+      function setAnimationPreset(preset) {
+        state.animPreset = preset;
+        state.voiceActive = preset === 'voice';
+
+        if (preset === 'idle') {
+          state.targetIntensity = 0.42;
+          stateReadout.textContent = '状态：静默呼吸 (Ambient Idle)';
+        } else if (preset === 'focus') {
+          state.targetIntensity = 0.92;
+          stateReadout.textContent = '状态：聚焦唤醒 (Focused Ocean)';
+        } else if (preset === 'thinking') {
+          state.targetIntensity = 1.32;
+          stateReadout.textContent = '状态：智能体高速涌浪 (Liftoff Surge)';
+          spawnRipple(0.5, 0.30, 1.45);
+        } else if (preset === 'voice') {
+          state.targetIntensity = 1.18;
+          stateReadout.textContent = '状态：Gemini Live 实时声浪律动';
+          spawnRipple(0.5, 0.25, 1.3);
+        }
+
+        if (state.voiceActive) {
+          voiceDot.className = 'w-2 h-2 rounded-full bg-pink-400 animate-ping';
+          voiceBtn.classList.add('border-pink-400/50', 'bg-pink-500/20');
+        } else {
+          voiceDot.className = 'w-2 h-2 rounded-full bg-slate-400';
+          voiceBtn.classList.remove('border-pink-400/50', 'bg-pink-500/20');
+        }
+
+        document.querySelectorAll('.state-preset-btn').forEach((btn) => {
+          if (btn.getAttribute('data-state') === preset) {
+            btn.className = 'state-preset-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-sky-500/25 border border-sky-400/50 text-sky-200 transition';
+          } else {
+            btn.className = 'state-preset-btn px-2.5 py-1 rounded-lg text-xs font-medium bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-slate-300 transition';
+          }
+        });
+      }
+
+      document.querySelectorAll('.state-preset-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          setAnimationPreset(btn.getAttribute('data-state'));
+          playRippleSynth(540, false);
+        });
+      });
+
+      // Surface Mode Tabs
+      const stageWrapper = document.getElementById('stage-wrapper');
+      const codePanel = document.getElementById('code-export-panel');
+      const managerBar = document.getElementById('manager-context-bar');
+      const idePane = document.getElementById('ide-code-pane');
+      const surfaceTitle = document.getElementById('surface-title');
+
+      function switchSurfaceTab(mode) {
+        state.surfaceMode = mode;
+        const tabs = {
+          overlay: document.getElementById('tab-overlay'),
+          manager: document.getElementById('tab-manager'),
+          ide: document.getElementById('tab-ide'),
+          code: document.getElementById('tab-code')
+        };
+
+        Object.keys(tabs).forEach((k) => {
+          if (k === mode) {
+            tabs[k].className = 'surface-tab px-3 py-1.5 rounded-lg text-xs font-medium transition-all bg-gradient-to-r from-blue-600/80 to-indigo-600/80 text-white shadow flex items-center gap-1';
+          } else {
+            tabs[k].className = 'surface-tab px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-slate-400 hover:text-white flex items-center gap-1';
+          }
+        });
+
+        if (mode === 'code') {
+          stageWrapper.classList.add('hidden');
+          codePanel.classList.remove('hidden');
+          refreshCodeExportView();
+          return;
+        }
+
+        codePanel.classList.add('hidden');
+        stageWrapper.classList.remove('hidden');
+
+        if (mode === 'overlay') {
+          managerBar.classList.add('hidden');
+          idePane.classList.add('hidden');
+          idePane.classList.remove('flex');
+          stageCard.className = 'relative w-full max-w-4xl mx-auto rounded-[32px] overflow-hidden shadow-[0_25px_85px_-12px_rgba(14,165,233,0.32)] border border-white/[0.12] bg-[#060911] transition-all duration-500 flex flex-col justify-between min-h-[420px] sm:min-h-[460px]';
+          surfaceTitle.innerHTML = '<span>Antigravity 全局桌面唤醒框 (Alt + Space)</span><span class="text-xs font-normal px-2 py-0.5 rounded bg-white/[0.06] text-slate-300">Floating Overlay</span>';
+        } else if (mode === 'manager') {
+          managerBar.classList.remove('hidden');
+          idePane.classList.add('hidden');
+          idePane.classList.remove('flex');
+          stageCard.className = 'relative w-full rounded-[32px] overflow-hidden shadow-[0_25px_85px_-12px_rgba(168,85,247,0.32)] border border-white/[0.12] bg-[#060911] transition-all duration-500 flex flex-col justify-between min-h-[400px]';
+          surfaceTitle.innerHTML = '<span>Antigravity Agent Manager 指挥中心</span><span class="text-xs font-normal px-2 py-0.5 rounded bg-purple-500/15 text-purple-300">Multi-Agent Hub</span>';
+        } else if (mode === 'ide') {
+          managerBar.classList.add('hidden');
+          idePane.classList.remove('hidden');
+          idePane.classList.add('flex');
+          stageCard.className = 'relative w-full lg:w-5/12 rounded-[28px] overflow-hidden shadow-[0_25px_85px_-12px_rgba(14,165,233,0.28)] border border-white/[0.12] bg-[#060911] transition-all duration-500 flex flex-col justify-between min-h-[420px]';
+          surfaceTitle.innerHTML = '<span>Antigravity IDE 编辑器内嵌侧栏</span><span class="text-xs font-normal px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300">Editor Dock View</span>';
+        }
+        spawnRipple(0.5, 0.32, 1.2);
+      }
+
+      document.getElementById('tab-overlay').addEventListener('click', () => switchSurfaceTab('overlay'));
+      document.getElementById('tab-manager').addEventListener('click', () => switchSurfaceTab('manager'));
+      document.getElementById('tab-ide').addEventListener('click', () => switchSurfaceTab('ide'));
+      document.getElementById('tab-code').addEventListener('click', () => switchSurfaceTab('code'));
+      document.getElementById('btn-back-to-stage').addEventListener('click', () => switchSurfaceTab('overlay'));
+
+      // Export Format Switcher Buttons
+      const btnFmtTsx = document.getElementById('export-fmt-tsx');
+      const btnFmtGlsl = document.getElementById('export-fmt-glsl');
+      btnFmtTsx.addEventListener('click', () => {
+        state.exportFormat = 'tsx';
+        btnFmtTsx.className = 'px-2.5 py-1 rounded-lg text-xs font-medium bg-sky-500/25 text-sky-200 border border-sky-400/40 transition';
+        btnFmtGlsl.className = 'px-2.5 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition';
+        refreshCodeExportView();
+      });
+      btnFmtGlsl.addEventListener('click', () => {
+        state.exportFormat = 'glsl';
+        btnFmtGlsl.className = 'px-2.5 py-1 rounded-lg text-xs font-medium bg-sky-500/25 text-sky-200 border border-sky-400/40 transition';
+        btnFmtTsx.className = 'px-2.5 py-1 rounded-lg text-xs font-medium text-slate-400 hover:text-white transition';
+        refreshCodeExportView();
+      });
+
+      // Copy Code Button
+      document.getElementById('btn-copy-code').addEventListener('click', () => {
+        const codeText = buildExportableCode();
+        const copyLabel = document.getElementById('copy-btn-text');
+        const onCopied = () => {
+          copyLabel.textContent = '✅ 已复制完整源码！';
+          setTimeout(() => { copyLabel.textContent = '一键复制完整 TSX 组件'; }, 2200);
+        };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(codeText).then(onCopied).catch(() => {
+            const ta = document.createElement('textarea');
+            ta.value = codeText;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+            onCopied();
+          });
+        } else {
+          const ta = document.createElement('textarea');
+          ta.value = codeText;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          onCopied();
+        }
+      });
+
+      // Audio Toggle
+      document.getElementById('btn-audio-toggle').addEventListener('click', () => {
+        state.audioEnabled = !state.audioEnabled;
+        document.getElementById('audio-icon').textContent = state.audioEnabled ? '🔊' : '🔇';
+        document.getElementById('audio-label').textContent = state.audioEnabled ? '音效已开启' : '音效已静音';
+        if (state.audioEnabled) playRippleSynth(560, false);
+      });
+
+      // Drawer Toggle
+      const drawer = document.getElementById('shader-inspector-drawer');
+      document.getElementById('btn-toggle-drawer').addEventListener('click', () => {
+        drawer.classList.toggle('hidden');
+      });
+
+      // Inspector Sliders Binding
+      const bindSlider = (id, valId, key, formatFn) => {
+        const input = document.getElementById(id);
+        const valSpan = document.getElementById(valId);
+        input.addEventListener('input', (e) => {
+          const v = parseFloat(e.target.value);
+          state.params[key] = v;
+          valSpan.textContent = formatFn(v);
+          refreshCodeExportView();
+        });
+      };
+
+      bindSlider('param-color-spread', 'val-color-spread', 'colorSpread', (v) => v.toFixed(2));
+      bindSlider('param-density', 'val-density', 'gridDensity', (v) => v.toFixed(1));
+      bindSlider('param-sharpness', 'val-sharpness', 'starSharpness', (v) => v.toFixed(2));
+      bindSlider('param-rotation', 'val-rotation', 'gridAngleDeg', (v) => `${Math.round(v)}°`);
+      bindSlider('param-speed', 'val-speed', 'swellSpeed', (v) => v.toFixed(2));
+      bindSlider('param-ripple', 'val-ripple', 'rippleForce', (v) => v.toFixed(2));
+      bindSlider('param-parallax', 'val-parallax', 'parallax', (v) => v.toFixed(3));
+      bindSlider('param-halo', 'val-halo', 'haloFalloff', (v) => v.toFixed(1));
+
+      // Reset Parameters
+      document.getElementById('btn-reset-params').addEventListener('click', () => {
+        state.params = {
+          emblemEnabled: true,
+          emblemStyle: 'gemini',
+          emblemColorMode: 'classic',
+          emblemScale: 1.0,
+          shapeType: 0,
+          morphEnabled: true,
+          colorsHex: [...PALETTE_PRESETS['0']],
+          colorSpread: 1.0,
+          gridDensity: 48.0,
+          starSharpness: 0.54,
+          gridAngleDeg: 45.0,
+          swellSpeed: 0.62,
+          rippleForce: 0.95,
+          parallax: 0.024,
+          haloFalloff: 8.5,
+          paletteKey: '0',
+          maskMode: 0
+        };
+        document.getElementById('emblem-color-mode').value = 'classic';
+        document.getElementById('param-emblem-scale').value = 1.0;
+        document.getElementById('val-emblem-scale').textContent = '1.00x';
+        syncEmblemUI();
+        syncShapeUI(0);
+        syncColorsUI(PALETTE_PRESETS['0'], '0');
+        morphBtn.setAttribute('aria-checked', 'true');
+        morphBtn.className = 'w-10 h-5 rounded-full bg-sky-500 p-0.5 transition-colors relative flex items-center';
+        morphKnob.className = 'w-4 h-4 rounded-full bg-white shadow transform translate-x-5 transition-transform';
+        document.getElementById('param-color-spread').value = 1.0;
+        document.getElementById('val-color-spread').textContent = '1.00';
+        document.getElementById('param-density').value = 48;
+        document.getElementById('val-density').textContent = '48.0';
+        document.getElementById('param-sharpness').value = 0.54;
+        document.getElementById('val-sharpness').textContent = '0.54';
+        document.getElementById('param-rotation').value = 45;
+        document.getElementById('val-rotation').textContent = '45°';
+        document.getElementById('param-speed').value = 0.62;
+        document.getElementById('val-speed').textContent = '0.62';
+        document.getElementById('param-ripple').value = 0.95;
+        document.getElementById('val-ripple').textContent = '0.95';
+        document.getElementById('param-parallax').value = 0.024;
+        document.getElementById('val-parallax').textContent = '0.024';
+        document.getElementById('param-halo').value = 8.5;
+        document.getElementById('val-halo').textContent = '8.5';
+        document.getElementById('mask-mode-selector').value = '0';
+        spawnRipple(0.5, 0.58, 1.35);
+        refreshCodeExportView();
+      });
+    });
+  </script>
+</body>
+</html>

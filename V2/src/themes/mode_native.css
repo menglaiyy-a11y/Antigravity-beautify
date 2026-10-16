@@ -1,0 +1,34 @@
+/**
+ * Antigravity V2 - Native Mode Tokens (原生纯黑模式)
+ * 职责：还原官方纯黑底色，彻底禁用毛玻璃与半透明，二三级菜单完全统一
+ */
+
+body[data-theme-mode="native"] {
+  --background: 0 0 0 !important;
+  --card: 0 0 0 !important;
+  --sidebar: 0 0 0 !important;
+  --popover: 10 10 10 !important;
+  --border: 38 38 38 !important;
+  --muted: 20 20 20 !important;
+}
+
+body[data-theme-mode="native"] #ag-center-ocean-canvas,
+body[data-theme-mode="native"] #ag-center-emblem-wrapper,
+body[data-theme-mode="native"] #ag-stage-canvas {
+  display: none !important;
+}
+
+body[data-theme-mode="native"] div[class*="scroll-mt-4"] {
+  background-color: #000000 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body[data-theme-mode="native"] aside,
+body[data-theme-mode="native"] [data-testid="sidebar"],
+body[data-theme-mode="native"] div.bg-sidebar {
+  background-color: #000000 !important;
+  backdrop-filter: none !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
