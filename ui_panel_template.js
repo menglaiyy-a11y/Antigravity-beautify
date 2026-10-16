@@ -2342,6 +2342,13 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
             固化配置
           </button>
         </div>
+
+        <!-- 全局桌面伴侣快捷入口 -->
+        <div style="margin-top: 8px;">
+          <button id="ag-btn-launch-pet" style="width: 100%; padding: 7px 10px; background: rgba(10, 132, 255, 0.20); border: 1px solid rgba(10, 132, 255, 0.40); border-radius: 8px; color: #ffffff; font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <span>🐱 全局桌面伴侣已就绪 (双击 start_pet.bat 运行)</span>
+          </button>
+        </div>
         <div id="ag-toast" style="font-size: 11px; text-align: center; color: #ffffff; margin-top: 6px; height: 14px; opacity: 0; transition: opacity 0.2s;"></div>
       </div>
 
@@ -2851,6 +2858,46 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
         showToast('配置已固化保存！');
       } catch (e) {
         showToast('保存失败: ' + e.message);
+      }
+    };
+
+    // 全局桌面伴侣启动提示
+    const btnLaunchPet = document.getElementById('ag-btn-launch-pet');
+    if (btnLaunchPet) {
+      btnLaunchPet.onclick = () => {
+        showToast('桌宠已就绪！可运行 start_pet.bat 启动全局桌面伴侣');
+      };
+    }
+
+    // 暴露全局实例与对外桥接 API (供全局桌宠与外部控制调用)
+    window.agVisualPanel = {
+      toggle: togglePanel,
+      open: () => {
+        modal.style.display = 'block';
+        showMainView();
+      },
+      close: () => {
+        modal.style.display = 'none';
+      },
+      isOpen: () => modal.style.display === 'block',
+      getConfig: () => Object.assign({}, config),
+      applyMode: applyMode,
+      fetchQuota: async () => {
+        try {
+          const csrf = window.__APP_CONFIG__?.csrfToken || '';
+          const resp = await fetch('/exa.language_server_pb.LanguageServerService/GetUserStatus', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-codeium-csrf-token': csrf
+            },
+            body: '{}'
+          });
+          const json = await resp.json();
+          return json.userStatus || null;
+        } catch (e) {
+          return null;
+        }
       }
     };
 
