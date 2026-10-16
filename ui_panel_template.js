@@ -456,9 +456,9 @@
       root.style.setProperty('--ag-chat-box-bg', `rgba(18, 22, 32, ${effectiveCenter})`);
       root.style.setProperty('--ag-chat-box-blur', `${centerBlur}px`);
 
-      // 弹窗与二级菜单：支持跟随中栏/全局透明度，支持 0% 全透明与 100% 全遮挡，常态下提供通透雅致毛玻璃
-      const dialogAlpha = effectiveCenter === 0 ? 0 : (effectiveCenter >= 0.99 ? 1 : Number((effectiveCenter * 0.72).toFixed(3)));
-      const popoverAlpha = effectiveCenter === 0 ? 0 : (effectiveCenter >= 0.99 ? 1 : Number((effectiveCenter * 0.70).toFixed(3)));
+      // 弹窗与二级/三级菜单：支持跟随中栏/全局透明度，支持 0% 全透明与 100% 全遮挡；常态提供 86% 坚实遮光毛玻璃，彻底杜绝底层文字透视重叠
+      const dialogAlpha = effectiveCenter === 0 ? 0 : (effectiveCenter >= 0.99 ? 1 : Number((0.70 + effectiveCenter * 0.28).toFixed(3)));
+      const popoverAlpha = effectiveCenter === 0 ? 0 : (effectiveCenter >= 0.99 ? 1 : Number((0.74 + effectiveCenter * 0.24).toFixed(3)));
       root.style.setProperty('--ag-dialog-bg', `rgba(20, 24, 34, ${dialogAlpha})`);
       root.style.setProperty('--ag-popover-bg', `rgba(20, 24, 34, ${popoverAlpha})`);
 
@@ -544,29 +544,27 @@ div[data-aux-pane-open] div.relative.outline-none {
 
 /* ---------------------------------------------------- */
 /* 1. 左栏 (Sidebar) 区域全面重构为 Apple 极简通透风格 */
-aside,
+/* 1.0 精准对齐真实左侧栏垂直主容器，挂载 --ag-left-bg 与毛玻璃 */
+div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar,
+div.h-full.w-full.flex.flex-col.bg-sidebar,
+div.flex:has(> div.h-full.w-full > div.bg-sidebar),
 div[data-testid="sidebar-wrapper"],
-div.shrink-0:has(> div [data-testid="conversation-row-sidebar"]),
-div.shrink-0:has(> div.bg-sidebar) {
+aside {
   background-color: var(--ag-left-bg) !important;
   backdrop-filter: blur(var(--ag-left-blur)) saturate(160%) !important;
   -webkit-backdrop-filter: blur(var(--ag-left-blur)) saturate(160%) !important;
   border-right: 1px solid var(--ag-left-border, rgba(255, 255, 255, 0.08)) !important;
 }
 
-/* 彻底清除左栏内部所有子容器、项目条目、折叠条目的重复背景与死黑色块，消除斑驳感 */
-aside div.bg-sidebar,
-aside [class*="bg-sidebar"],
-aside .bg-muted,
+/* 彻底清除左栏内部所有子容器、项目条目、折叠条目的重复背景与死黑色块，消除斑驳感与重复叠色 */
+div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar div.bg-sidebar,
+div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar [class*="bg-sidebar"],
+div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar div.pt-1,
+div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar div[class*="pt-1"],
+div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar div[class*="group/section-header"],
+div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar div[class*="group/header"],
 div[data-testid="sidebar-wrapper"] div.bg-sidebar,
-div[data-testid="sidebar-wrapper"] [class*="bg-sidebar"],
-div[data-testid="sidebar-wrapper"] .bg-muted,
-div.shrink-0 div.bg-sidebar,
-div.shrink-0 [class*="bg-sidebar"],
-div.bg-sidebar div.bg-sidebar,
-div.bg-sidebar [class*="bg-sidebar"],
-div.bg-sidebar div.pt-1,
-div.bg-sidebar div[class*="pt-1"],
+aside div.bg-sidebar,
 div[class*="group/section-header"],
 div[class*="group/header"] {
   background-color: transparent !important;
@@ -1044,17 +1042,15 @@ div[data-radix-popper-content-wrapper] {
   -webkit-backdrop-filter: none !important;
 }
 
-/* 仅对多级菜单、三级子菜单、左上角标题栏菜单及额度展示页面的真实内容卡片添加毛玻璃与边框 */
+/* 仅对多级菜单、三级子菜单、左上角标题栏菜单及额度展示页面的真实内容卡片添加毛玻璃与坚实底衬 */
 div[role="menu"],
 div[role="listbox"]:not(#typeahead-menu):not(.bottom-full),
 div[class*="border-menu-border"],
 div.absolute[class*="border-menu-border"],
-div[data-radix-popper-content-wrapper] > div.bg-popover,
-div[data-radix-popper-content-wrapper] > div[class*="bg-popover"],
-div[data-radix-popper-content-wrapper] > div.bg-card,
-div[data-radix-popper-content-wrapper] > div[class*="bg-card"],
+div[class*="min-w-64"][class*="bg-card"],
+div[class*="z-[6000]"] > div.bg-card,
+div[data-radix-popper-content-wrapper] > div,
 div[data-radix-popper-content-wrapper] [data-radix-menu-content],
-div[data-radix-popper-content-wrapper] [data-radix-popper-content-wrapper] > div,
 div.absolute.top-full.left-0.mt-1,
 div[class*="quota"],
 div[class*="usage"],
@@ -1064,16 +1060,16 @@ div[data-testid*="quota"],
 div[data-testid*="credit"],
 div[data-testid*="usage"] {
   z-index: 100000 !important;
-  background-color: var(--ag-popover-bg, rgba(20, 24, 34, 0.72)) !important;
+  background-color: var(--ag-popover-bg, rgba(20, 24, 34, 0.88)) !important;
   backdrop-filter: blur(32px) saturate(190%) !important;
   -webkit-backdrop-filter: blur(32px) saturate(190%) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   border-radius: 12px !important;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
   overflow: visible !important;
 }
 
-/* 彻底消除三级菜单、模型选择项与额度页面内部所有深色死黑底衬 */
+/* 彻底消除额度卡片与弹出层内部纯展示容器的深色死黑底衬，但绝不误杀主卡片自身 */
 div[class*="quota"] div.bg-background,
 div[class*="quota"] div.bg-secondary,
 div[class*="quota"] div.bg-card,
@@ -1084,16 +1080,28 @@ div[data-testid*="quota"] div.bg-card,
 div[data-testid*="quota"] div.bg-muted,
 div[role="menu"] div.bg-secondary,
 div[role="menu"] div.bg-muted,
-div[role="menu"] div.bg-card,
-div.bg-popover div.bg-secondary,
-div.bg-popover div.bg-muted,
-div.bg-popover div.bg-card,
-div[data-radix-popper-content-wrapper] div.bg-secondary,
-div[data-radix-popper-content-wrapper] div.bg-muted,
-div[data-radix-popper-content-wrapper] div.bg-card,
-div[data-radix-popper-content-wrapper] div.bg-background,
-div[data-radix-popper-content-wrapper] button.bg-secondary:not(:hover) {
+div[class*="min-w-64"] div.bg-secondary,
+div[class*="min-w-64"] div.bg-muted {
   background-color: transparent !important;
+}
+
+/* 弹出菜单条目与按钮通透卡片化与 hover 优雅高光 */
+div[role="menu"] [role="menuitem"],
+div[data-radix-popper-content-wrapper] [role="menuitem"],
+div[class*="min-w-64"] div.cursor-pointer {
+  background-color: transparent !important;
+  transition: all 0.15s ease !important;
+}
+
+div[role="menu"] [role="menuitem"]:hover,
+div[role="menu"] [role="menuitem"][data-highlighted],
+div[data-radix-popper-content-wrapper] [role="menuitem"]:hover,
+div[data-radix-popper-content-wrapper] [data-highlighted],
+div[class*="min-w-64"] div.cursor-pointer:hover,
+div[class*="min-w-64"] div[data-highlighted] {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  border-radius: 6px !important;
 }
 
 /* 额度进度条与滑轨通透高光美化 */
