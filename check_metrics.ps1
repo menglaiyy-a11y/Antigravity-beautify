@@ -1,3 +1,0 @@
-$c1 = [IO.File]::ReadAllText('preload_head_snippet.js'); $c2 = [IO.File]::ReadAllText('ui_panel_template.js'); Write-Host (" preload_head_snippet: lines=\ + ($c1 -split \
-\).Count + " !important=\ + ([regex]::Matches($c1, '!important')).Count); Write-Host (\ui_panel_template: lines=\ + ($c2 -split \
-\).Count + " !important=\ + ([regex]::Matches($c2, '!important')).Count); Remove-Item 'check_metrics.ps1';

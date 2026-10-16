@@ -1,3 +1,3 @@
 @echo off
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File "D:\Antigravity\6\stop_pet.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0stop_pet.ps1"
 exit

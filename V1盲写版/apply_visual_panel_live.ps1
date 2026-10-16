@@ -3,13 +3,15 @@ Add-Type -AssemblyName System.Web.Extensions
 $ser = New-Object System.Web.Script.Serialization.JavaScriptSerializer
 $ser.MaxJsonLength = 67108864
 
+$scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Definition }
+
 Write-Output "[Theme] Injecting visual panel to active targets..."
 
 # 1. 确保先执行构建
-powershell -ExecutionPolicy Bypass -File "D:\Antigravity\6\build_ui_panel.ps1"
+powershell -ExecutionPolicy Bypass -File (Join-Path $scriptDir "build_ui_panel.ps1")
 
 # 2. 读取冰川背景素材作为默认底图
-$imgPath = "D:\Antigravity\6\antarctica_glacier_ui_4k.jpg"
+$imgPath = Join-Path $scriptDir "antarctica_glacier_ui_4k.jpg"
 $base64 = ""
 if (Test-Path -LiteralPath $imgPath) {
     $imgBytes = [System.IO.File]::ReadAllBytes($imgPath)
@@ -17,19 +19,18 @@ if (Test-Path -LiteralPath $imgPath) {
 }
 
 # 3. 读取控制台核心脚本 (轻量化热更新，避免 13MB WebSocket 缓冲区溢出)
-$templatePath = "D:\Antigravity\6\ui_panel_template.js"
-$base64Path = "D:\Antigravity\6\suoming_base64.txt"
+$templatePath = Join-Path $scriptDir "ui_panel_template.js"
+$base64Path = Join-Path $scriptDir "suoming_base64.txt"
 $gifBase64 = [System.IO.File]::ReadAllText($base64Path, [System.Text.Encoding]::UTF8).Trim()
 $template = [System.IO.File]::ReadAllText($templatePath, [System.Text.Encoding]::UTF8)
 $coreJs = $template.Replace("___SUOMING_GIF_PLACEHOLDER___", $gifBase64)
 
-$snippetPath = "D:\Antigravity\6\preload_head_snippet.js"
+$snippetPath = Join-Path $scriptDir "preload_head_snippet.js"
 $headSnippetRaw = [System.IO.File]::ReadAllText($snippetPath, [System.Text.Encoding]::UTF8)
 $headSnippet = $headSnippetRaw.Replace("___BASE64_PLACEHOLDER___", "")
 
 # 4. 组合初始化注入代码 (包含宿主桥接与控制台核心逻辑)
 $combinedJs = [string]::Concat($headSnippet, "`r`n`r`n", $coreJs)
-
 
 # 5. 获取 DevTools CDP 端口
 $DevToolsPortFile = "C:\Users\31411\AppData\Roaming\Antigravity\DevToolsActivePort"

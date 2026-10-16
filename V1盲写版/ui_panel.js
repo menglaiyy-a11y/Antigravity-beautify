@@ -4599,6 +4599,12 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
       if (!started && res === null) {
         document.dispatchEvent(new CustomEvent('ag-pet-cmd', { detail: { action: 'start' } }));
       }
+      try {
+        if (typeof window !== 'undefined' && window.electronNative && typeof window.electronNative.openExternal === 'function') {
+          window.electronNative.openExternal('file:///D:/Antigravity/6/start_pet.bat');
+          started = true;
+        }
+      } catch (e) {}
       showToast('🐾 桌面伴侣已启动并在右下角常驻！');
       updatePetStatusUI(true);
       setTimeout(checkPetStatus, 1500);

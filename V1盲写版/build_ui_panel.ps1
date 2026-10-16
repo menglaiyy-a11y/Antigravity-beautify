@@ -1,11 +1,13 @@
-﻿$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Stop"
+
+$scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Definition }
 
 Write-Output "正在构建自包含的 ui_panel.js (包含全量 117 个锁暝动态表情包)..."
 
-$base64Path = "D:\Antigravity\6\suoming_base64.txt"
-$emojisPath = "D:\Antigravity\6\emojis_data.js"
-$templatePath = "D:\Antigravity\6\ui_panel_template.js"
-$outputPath = "D:\Antigravity\6\ui_panel.js"
+$base64Path = Join-Path $scriptDir "suoming_base64.txt"
+$emojisPath = Join-Path $scriptDir "emojis_data.js"
+$templatePath = Join-Path $scriptDir "ui_panel_template.js"
+$outputPath = Join-Path $scriptDir "ui_panel.js"
 
 if (-not (Test-Path -LiteralPath $base64Path)) {
     throw "未找到锁暝表情包 Base64 文件: $base64Path"

@@ -1,18 +1,20 @@
 $ErrorActionPreference = "Stop"
 
+$scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Definition }
+
 Write-Output "[Theme] Building and persisting self-contained theme bundle..."
 
 # Step 0: 重新构建包含完整表情包和最新模版的 ui_panel.js
-powershell -ExecutionPolicy Bypass -File "D:\Antigravity\6\build_ui_panel.ps1"
+powershell -ExecutionPolicy Bypass -File (Join-Path $scriptDir "build_ui_panel.ps1")
 
 # Step 1: 默认回归纯净原生 UI，不再嵌入巨型冰川图片
 $base64 = ""
 
 # Step 2: 组装自包含独立完整 bundle
-$snippetPath = "D:\Antigravity\6\preload_head_snippet.js"
+$snippetPath = Join-Path $scriptDir "preload_head_snippet.js"
 $headSnippetRaw = [System.IO.File]::ReadAllText($snippetPath, [System.Text.Encoding]::UTF8)
 $headSnippet = $headSnippetRaw.Replace("___BASE64_PLACEHOLDER___", $base64)
-$uiPanelJs = [System.IO.File]::ReadAllText("D:\Antigravity\6\ui_panel.js", [System.Text.Encoding]::UTF8)
+$uiPanelJs = [System.IO.File]::ReadAllText((Join-Path $scriptDir "ui_panel.js"), [System.Text.Encoding]::UTF8)
 
 # 保存备份至 Roaming 保护目录
 $safeDir = "C:\Users\31411\AppData\Roaming\Antigravity\beautify"
@@ -58,7 +60,7 @@ Write-Output "[Theme] Persistence completed. Injected into $injectedTargets prel
 
 # Step 4: 若活动客户端正在运行，同时执行热注入同步
 try {
-    powershell -ExecutionPolicy Bypass -File "D:\Antigravity\6\apply_visual_panel_live.ps1"
+    powershell -ExecutionPolicy Bypass -File (Join-Path $scriptDir "apply_visual_panel_live.ps1")
 } catch {
     Write-Warning "Live injection notice: $_"
 }

@@ -476,10 +476,15 @@
     startPet: async function () {
       try {
         const res = await callPetIpc('pet:start');
-        return !!(res && (res.ok !== false));
-      } catch (e) {
-        return false;
-      }
+        if (res && res.ok !== false) return true;
+      } catch (e) {}
+      try {
+        if (typeof window !== 'undefined' && window.electronNative && typeof window.electronNative.openExternal === 'function') {
+          window.electronNative.openExternal('file:///D:/Antigravity/6/start_pet.bat');
+          return true;
+        }
+      } catch (e) {}
+      return false;
     },
     stopPet: async function () {
       try {
