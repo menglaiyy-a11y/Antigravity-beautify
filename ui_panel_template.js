@@ -17,6 +17,14 @@
       return;
     }
 
+    // 清理可能遗留的旧版样式与首帧早期样式，杜绝幽灵选择器残留
+    try {
+      const oldEarly = document.getElementById('ag-early-theme-style');
+      if (oldEarly) oldEarly.remove();
+      const oldTheme = document.getElementById('antarctica-glacier-theme');
+      if (oldTheme) oldTheme.remove();
+    } catch (e) {}
+
     // Preload 在 Electron 隔离世界运行；Antigravity 的 nativeStorage 只暴露在页面主世界。
     // 通过 DOM 脚本建立窄接口桥接，避免错误地退回按 localhost 端口隔离的 IndexedDB。
     function installNativeStorageBridge() {
@@ -285,11 +293,20 @@
         width: 100vw;
         height: 100vh;
         object-fit: cover;
-        z-index: -9998;
+        z-index: 0;
         pointer-events: none;
         display: none;
       `;
       document.body.appendChild(videoBg);
+    } else {
+      videoBg.style.position = 'fixed';
+      videoBg.style.top = '0';
+      videoBg.style.left = '0';
+      videoBg.style.width = '100vw';
+      videoBg.style.height = '100vh';
+      videoBg.style.objectFit = 'cover';
+      videoBg.style.zIndex = '0';
+      videoBg.style.pointerEvents = 'none';
     }
 
     let activeVideoBlobUrl = null;
@@ -519,8 +536,19 @@
 
     // 构建核心深度穿透规则
     const baseThemeCss = `
-:root {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) {
   --background: transparent !important;
+}
+body[data-ag-mode="ocean"] {
+  --background: #000000 !important;
+  --sidebar: #000000 !important;
+}
+body[data-ag-mode="native"] {
+  --background: #000000 !important;
+  --card: #000000 !important;
+  --popover: #000000 !important;
+  --sidebar: #000000 !important;
+  --muted: #0a0a0a !important;
 }
 
 html,
@@ -541,71 +569,90 @@ body {
   background-attachment: fixed !important;
 }
 
-/* 消除 4 层根容器重复叠加底色，全部设为 transparent */
-div.h-screen.w-screen.flex.flex-col.bg-background,
-div.relative.w-screen.h-\[100dvh\],
-#root > div.relative.w-screen,
-#root {
+/* 消除 4 层根容器重复叠加底色 (仅极光与自定义模态全透，原生与海洋保持自洽) */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.h-screen.w-screen.flex.flex-col.bg-background,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.relative.w-screen[class*="100dvh"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.relative.w-screen,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) #root > div.relative.w-screen,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) #root {
   background-color: transparent !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+#root {
+  position: relative !important;
+  z-index: 1 !important;
 }
 
-/* 消除所有中间嵌套层的背景阻断 (根本病因根除，保留中栏主视窗) */
-div.border-border:not([data-pane-id="pane-1"]),
-div.h-full.w-full.overflow-hidden:not([data-pane-id="pane-1"]):not([data-aux-pane-open]),
-div.flex-1.min-h-0:not([data-pane-id="pane-1"]),
-div.relative.self-stretch.flex-grow.min-h-0,
-div.relative.h-full.w-full.min-h-0,
-div.relative.h-full.w-full.overflow-hidden,
-div.w-full.flex.h-full.min-h-0.flex-col.items-center.relative.outline-none.overflow-y-auto,
-div.h-full.overflow-y-auto.min-h-0.w-full.isolate,
-div.isolate,
-div.flex-1.min-h-0 > div.w-full.h-full,
-div.flex.flex-col.gap-6.py-3,
-div[data-aux-pane-open] div.relative.h-full.w-full,
-div[data-aux-pane-open] div.flex-grow.overflow-hidden,
-div[data-aux-pane-open] div[class*="overflow-y-auto"],
-div[data-aux-pane-open] div[role="region"],
-div[data-aux-pane-open] div.relative.outline-none {
+/* 消除所有中间嵌套层的背景阻断 (严格限定于极光与自定义模态，绝不泄漏至原生与海洋模式，排除所有弹窗与二三级菜单) */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.border-border:not([data-pane-id="pane-1"]):not([role="dialog"] *):not(.settings-modal-container *),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.h-full.w-full.overflow-hidden:not([data-pane-id="pane-1"]):not([data-aux-pane-open]):not([role="dialog"]):not([role="dialog"] *):not(.settings-modal-container):not(.settings-modal-container *),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.flex-1.min-h-0:not([data-pane-id="pane-1"]):not([role="dialog"] *):not(.settings-modal-container *),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.relative.self-stretch.flex-grow.min-h-0:not([role="dialog"] *):not(.settings-modal-container *),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.relative.h-full.w-full.min-h-0:not([role="dialog"] *):not(.settings-modal-container *),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.relative.h-full.w-full.overflow-hidden:not([role="dialog"] *):not(.settings-modal-container *),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.w-full.flex.h-full.min-h-0.flex-col.items-center.relative.outline-none.overflow-y-auto:not([role="dialog"] *):not(.settings-modal-container *),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.h-full.overflow-y-auto.min-h-0.w-full.isolate:not([role="dialog"] *):not(.settings-modal-container *),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.isolate:not([role="dialog"] *):not(.settings-modal-container *),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.flex-1.min-h-0 > div.w-full.h-full:not([role="dialog"] *):not(.settings-modal-container *),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.flex.flex-col.gap-6.py-3:not([role="dialog"] *):not(.settings-modal-container *),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] div.relative.h-full.w-full,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] div.flex-grow.overflow-hidden,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] div[class*="overflow-y-auto"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] div[role="region"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] div.relative.outline-none {
   background-color: transparent !important;
 }
 
 /* ---------------------------------------------------- */
-/* 1. 左栏 (Sidebar) 区域全面重构为 Apple 极简通透风格 */
+/* 1. 左栏 (Sidebar) 区域全面重构为 Apple 极简通透风格 (仅极光与自定义模态) */
 /* 1.0 精准对齐真实左侧栏垂直主容器，挂载 --ag-left-bg 与毛玻璃 */
-div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar,
-div.h-full.w-full.flex.flex-col.bg-sidebar,
-div.flex:has(> div.h-full.w-full > div.bg-sidebar),
-div[data-testid="sidebar-wrapper"],
-aside {
+body[data-ag-mode="custom"] div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar,
+body[data-ag-mode="custom"] div.h-full.w-full.flex.flex-col.bg-sidebar,
+body[data-ag-mode="custom"] div.flex:has(> div.h-full.w-full > div.bg-sidebar),
+body[data-ag-mode="custom"] div[data-testid="sidebar-wrapper"],
+body[data-ag-mode="custom"] aside {
   background-color: var(--ag-left-bg) !important;
   backdrop-filter: blur(var(--ag-left-blur)) saturate(160%) !important;
   -webkit-backdrop-filter: blur(var(--ag-left-blur)) saturate(160%) !important;
   border-right: 1px solid var(--ag-left-border, rgba(255, 255, 255, 0.08)) !important;
 }
 
+/* 流光极光模式侧边栏：给予高遮光坚实黑衬 (0.94 不透明度)，消除底层全宽流光着色器导致的左栏异常泛青 */
+body[data-ag-mode="aurora"] div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar,
+body[data-ag-mode="aurora"] div.h-full.w-full.flex.flex-col.bg-sidebar,
+body[data-ag-mode="aurora"] div.flex:has(> div.h-full.w-full > div.bg-sidebar),
+body[data-ag-mode="aurora"] div[data-testid="sidebar-wrapper"],
+body[data-ag-mode="aurora"] aside {
+  background-color: rgba(8, 10, 14, 0.94) !important;
+  backdrop-filter: blur(20px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
 /* 彻底清除左栏内部所有子容器、项目条目、折叠条目的重复背景与死黑色块，消除斑驳感与重复叠色 */
-div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar div.bg-sidebar,
-div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar [class*="bg-sidebar"],
-div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar div.pt-1,
-div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar div[class*="pt-1"],
-div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar div[class*="group/section-header"],
-div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar div[class*="group/header"],
-div[data-testid="sidebar-wrapper"] div.bg-sidebar,
-aside div.bg-sidebar,
-div[class*="group/section-header"],
-div[class*="group/header"] {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar div.bg-sidebar,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar [class*="bg-sidebar"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar div.pt-1,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar div[class*="pt-1"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar div[class*="group/section-header"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar div[class*="group/header"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="sidebar-wrapper"] div.bg-sidebar,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) aside div.bg-sidebar,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="group/section-header"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="group/header"] {
   background-color: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   border-color: transparent !important;
 }
 
-/* 1.1 "新建对话"按钮：Apple 典雅高亮纯白微透毛玻璃胶囊 */
-[data-testid="new-conversation-button"],
-div.bg-sidebar a[class*="bg-sidebar-muted"],
-div.bg-sidebar a.bg-sidebar-muted,
-div[data-testid="sidebar-wrapper"] a[class*="bg-sidebar-muted"],
-aside a[class*="bg-sidebar-muted"] {
+/* 1.1 "新建对话"按钮：Apple 典雅高亮纯白微透毛玻璃胶囊 (仅极光与自定义模态) */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) [data-testid="new-conversation-button"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.bg-sidebar a[class*="bg-sidebar-muted"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.bg-sidebar a.bg-sidebar-muted,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="sidebar-wrapper"] a[class*="bg-sidebar-muted"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) aside a[class*="bg-sidebar-muted"] {
   background: rgba(255, 255, 255, 0.09) !important;
   border: 1px solid rgba(255, 255, 255, 0.18) !important;
   border-radius: 9px !important;
@@ -617,11 +664,11 @@ aside a[class*="bg-sidebar-muted"] {
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-[data-testid="new-conversation-button"]:hover,
-div.bg-sidebar a[class*="bg-sidebar-muted"]:hover,
-div.bg-sidebar a.bg-sidebar-muted:hover,
-div[data-testid="sidebar-wrapper"] a[class*="bg-sidebar-muted"]:hover,
-aside a[class*="bg-sidebar-muted"]:hover {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) [data-testid="new-conversation-button"]:hover,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.bg-sidebar a[class*="bg-sidebar-muted"]:hover,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.bg-sidebar a.bg-sidebar-muted:hover,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="sidebar-wrapper"] a[class*="bg-sidebar-muted"]:hover,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) aside a[class*="bg-sidebar-muted"]:hover {
   background: rgba(255, 255, 255, 0.18) !important;
   border-color: rgba(255, 255, 255, 0.30) !important;
   color: #ffffff !important;
@@ -700,12 +747,12 @@ div.bg-sidebar div.w-full.h-full.group:hover {
   border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
-/* 当前激活选中的会话项 (Apple 风格典雅微透高光毛玻璃卡片) */
-div[data-testid="conversation-row-sidebar"]:has(a.bg-sidebar-secondary),
-div[data-testid="conversation-row-sidebar"].bg-sidebar-secondary,
-div.bg-sidebar div.bg-sidebar-secondary,
-div[data-testid="sidebar-wrapper"] div.bg-sidebar-secondary,
-aside div.bg-sidebar-secondary {
+/* 当前激活选中的会话项 (Apple 风格典雅微透高光毛玻璃卡片，仅极光与自定义模态) */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="conversation-row-sidebar"]:has(a.bg-sidebar-secondary),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="conversation-row-sidebar"].bg-sidebar-secondary,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.bg-sidebar div.bg-sidebar-secondary,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="sidebar-wrapper"] div.bg-sidebar-secondary,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) aside div.bg-sidebar-secondary {
   background: rgba(255, 255, 255, 0.12) !important;
   border: 1px solid rgba(255, 255, 255, 0.20) !important;
   border-radius: 8px !important;
@@ -726,12 +773,12 @@ aside svg {
 }
 
 /* ---------------------------------------------------- */
-/* 2. 顶栏 (Top Bar) 通透磨砂与右上角控制按钮平滑过度     */
+/* 2. 顶栏 (Top Bar) 通透磨砂与右上角控制按钮平滑过度 (仅极光与自定义模态) */
 /* ---------------------------------------------------- */
-header,
-div[data-testid="top-nav-bar"],
-div[data-testid="header-bar"],
-div[data-testid="title-menu-bar"] {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) header,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="top-nav-bar"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="header-bar"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="title-menu-bar"] {
   position: relative !important;
   z-index: 99990 !important;
   background-color: var(--ag-topbar-bg) !important;
@@ -760,16 +807,19 @@ div[style*="-webkit-app-region: drag"] {
 /* ---------------------------------------------------- */
 /* 3. 中栏 (Main Chat Viewport) 主视窗整体磨砂底衬与 UI 风格纯净统一 */
 /* ---------------------------------------------------- */
-/* 3.0 中栏最外层主视窗容器挂载 --ag-center-bg 与磨砂模糊，彻底解决中栏调控失效 */
-div[data-pane-id="pane-1"] {
+/* 3.0 中栏最外层主视窗容器挂载 --ag-center-bg 与磨砂模糊 (仅极光与自定义模态) */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-pane-id="pane-1"] {
   background-color: var(--ag-center-bg) !important;
   backdrop-filter: blur(var(--ag-center-blur)) saturate(160%) !important;
   -webkit-backdrop-filter: blur(var(--ag-center-blur)) saturate(160%) !important;
   border-right: 1px solid var(--ag-left-border, rgba(255, 255, 255, 0.08)) !important;
 }
 
-div.flex-1.flex.flex-col.min-w-0.h-full:has(> div[data-pane-id="pane-1"]),
-div[data-pane-id="pane-1"] [data-testid="conversation-view"] {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.flex-1.flex.flex-col,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="overview-panel-host"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.flex-1.min-w-0.h-full,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.flex-1.flex.flex-col.min-w-0.h-full:has(> div[data-pane-id="pane-1"]),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-pane-id="pane-1"] [data-testid="conversation-view"] {
   background-color: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -821,21 +871,21 @@ body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-pane-id="pane
   transition: background-color 0.18s ease, border-color 0.18s ease !important;
 }
 
-/* 3.2 彻底清除 Turn 内部一切无意义的死黑死灰堆叠层 (中栏风格统一核心) */
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div.relative.bg-background,
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div.md-sticky-message-bleed,
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div.bg-card,
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div.bg-card-border,
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div.bg-muted,
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div.leading-relaxed,
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div[data-testid="user-input-step"],
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] article {
+/* 3.2 彻底清除 Turn 内部一切无意义的死黑死灰堆叠层 (极光/自定义/海洋模态核心通透) */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[class*="scroll-mt-4"] div.relative.bg-background,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[class*="scroll-mt-4"] div.md-sticky-message-bleed,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[class*="scroll-mt-4"] .bg-card,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[class*="scroll-mt-4"] .bg-card-border,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[class*="scroll-mt-4"] .bg-muted,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[class*="scroll-mt-4"] div.leading-relaxed,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[class*="scroll-mt-4"] div[data-testid="user-input-step"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[class*="scroll-mt-4"] article {
   background-color: transparent !important;
   box-shadow: none !important;
 }
 
 /* 消除顶部渐变雾化遮挡罩伪元素 */
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div.md-sticky-message-bleed::after {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[class*="scroll-mt-4"] div.md-sticky-message-bleed::after {
   display: none !important;
 }
 
@@ -913,8 +963,8 @@ body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) button[class*="review-
 }
 
 /* 3.7 代码块 pre 与行内代码 code 统一高质感半透纯净风格 */
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] pre,
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) pre {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[class*="scroll-mt-4"] pre,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) pre {
   background-color: rgba(10, 12, 18, 0.50) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 10px !important;
@@ -922,8 +972,8 @@ body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) pre {
   -webkit-backdrop-filter: blur(12px) !important;
 }
 
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] code:not(pre code),
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) code:not(pre code) {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[class*="scroll-mt-4"] code:not(pre code),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) code:not(pre code) {
   background-color: rgba(255, 255, 255, 0.08) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -1415,7 +1465,7 @@ div[data-aux-pane-open] button {
 /* 4 模态系统样式与中栏区域控制规则                     */
 /* ==================================================== */
 
-/* [模态 1: Native 原生 UI] 完全还原官方纯黑原生，彻底消除全部毛玻璃滤镜与半透明底色，零渲染开销 */
+/* [模态 1: Native 原生 UI] 全局色彩彻底统一为纯黑 (#000000)，彻底消除全部毛玻璃滤镜与半透明底色，零渲染开销 */
 body[data-ag-mode="native"] *:not(#ag-theme-modal):not(#ag-theme-modal *):not(#ag-theme-pill):not(#ag-theme-pill *) {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -1425,34 +1475,57 @@ body[data-ag-mode="native"],
 body[data-ag-mode="native"] #root,
 body[data-ag-mode="native"] #root > div,
 body[data-ag-mode="native"] div.h-screen.w-screen {
-  background-color: #0e1117 !important;
+  background-color: #000000 !important;
   background-image: none !important;
+}
+
+body[data-ag-mode="native"] header,
+body[data-ag-mode="native"] div[data-testid="top-nav-bar"],
+body[data-ag-mode="native"] div[data-testid="header-bar"],
+body[data-ag-mode="native"] div[data-testid="title-menu-bar"] {
+  background-color: #000000 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 body[data-ag-mode="native"] aside,
 body[data-ag-mode="native"] div[data-testid="sidebar-wrapper"],
 body[data-ag-mode="native"] div.bg-sidebar,
 body[data-ag-mode="native"] div.shrink-0:has(> div.bg-sidebar) {
-  background-color: var(--sidebar, #0e1117) !important;
+  background-color: #000000 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 body[data-ag-mode="native"] div[data-pane-id="pane-1"],
-body[data-ag-mode="native"] div.flex-1.min-w-0.h-full {
-  background-color: #0e1117 !important;
+body[data-ag-mode="native"] div.flex-1.min-w-0.h-full,
+body[data-ag-mode="native"] div.flex-1.flex.flex-col,
+body[data-ag-mode="native"] div[data-testid="overview-panel-host"],
+body[data-ag-mode="native"] div[class*="group/pane"] {
+  background-color: #000000 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 body[data-ag-mode="native"] [data-aux-pane-open],
 body[data-ag-mode="native"] div[data-aux-pane-open="true"],
 body[data-ag-mode="native"] div.flex-1.min-w-0.h-full > div.flex {
-  background-color: #0e1117 !important;
+  background-color: #000000 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-/* 审阅面板与终端完全回归原生深黑 */
+/* 审阅面板与终端完全回归原生纯黑 */
 body[data-ag-mode="native"] [data-testid="review-pane"],
 body[data-ag-mode="native"] [data-testid="terminal-container"],
 body[data-ag-mode="native"] div[data-aux-pane-open] .bg-background,
 body[data-ag-mode="native"] div[data-aux-pane-open] div.flex-grow.overflow-hidden {
-  background-color: #0e1117 !important;
+  background-color: #000000 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* Monaco 编辑器完全还原纯黑背景，不透明，无滤镜 */
@@ -1463,7 +1536,9 @@ body[data-ag-mode="native"] .monaco-editor .margin,
 body[data-ag-mode="native"] .monaco-editor .view-lines,
 body[data-ag-mode="native"] .monaco-workbench .part.editor,
 body[data-ag-mode="native"] .monaco-workbench .part.editor > .content {
-  background-color: #0e1117 !important;
+  background-color: #000000 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 body[data-ag-mode="native"] div[data-testid="conversation-view"] {
@@ -1529,7 +1604,20 @@ body[data-ag-mode="native"] #antigravity\.agentSidePanelInputBox {
   -webkit-backdrop-filter: none !important;
 }
 
-/* 二三级菜单、Radix 浮层、下拉列表、Typeahead 与设置弹窗完全还原原生纯黑实体底衬 */
+/* 二三级菜单、Radix 浮层、下拉列表、Typeahead 与设置弹窗完全统一纯黑 (#000000) 实体底衬，杜绝青色与杂色残留 */
+body[data-ag-mode="native"] div.settings-modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.75) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body[data-ag-mode="native"] div.settings-modal-container,
+body[data-ag-mode="native"] div.settings-modal-container.bg-background,
+body[data-ag-mode="native"] div[role="dialog"].settings-modal-container,
+body[data-ag-mode="native"] div[data-testid="settings-modal"],
+body[data-ag-mode="native"] div[data-testid="modal-container"],
+body[data-ag-mode="native"] div.fixed.z-50.grid.w-full.max-w-lg,
+body[data-ag-mode="native"] div[role="dialog"],
 body[data-ag-mode="native"] div[role="menu"],
 body[data-ag-mode="native"] div[role="listbox"]:not(#typeahead-menu),
 body[data-ag-mode="native"] div[class*="border-menu-border"],
@@ -1539,27 +1627,29 @@ body[data-ag-mode="native"] div[class*="z-[6000]"] > div.bg-card,
 body[data-ag-mode="native"] div[data-radix-popper-content-wrapper] > div,
 body[data-ag-mode="native"] div[data-radix-popper-content-wrapper] [data-radix-menu-content],
 body[data-ag-mode="native"] #typeahead-menu,
-body[data-ag-mode="native"] div[role="dialog"],
-body[data-ag-mode="native"] div.settings-modal-container,
-body[data-ag-mode="native"] div.fixed.z-50.grid.w-full.max-w-lg,
-body[data-ag-mode="native"] div[data-testid="settings-modal"],
-body[data-ag-mode="native"] div[data-testid="modal-container"],
 body[data-ag-mode="native"] div[class*="quota"],
 body[data-ag-mode="native"] div[class*="usage"],
 body[data-ag-mode="native"] div[class*="credit"] {
-  background-color: #181b22 !important;
+  background-color: #000000 !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65) !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.85) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  color: #cccccc !important;
 }
 
-/* 弹窗与菜单内部子元素还原原生背景 */
+/* 弹窗与设置界面内部全部层级彻底统一纯黑底衬，杜绝透明穿透与杂色 */
+body[data-ag-mode="native"] div.settings-modal-container div,
+body[data-ag-mode="native"] div.settings-modal-container div.h-full.w-full,
+body[data-ag-mode="native"] div.settings-modal-container div.flex-1,
+body[data-ag-mode="native"] div.settings-modal-container div.bg-sidebar,
+body[data-ag-mode="native"] div.settings-modal-container .bg-background,
+body[data-ag-mode="native"] div.settings-modal-container .bg-card,
+body[data-ag-mode="native"] div.settings-modal-container .bg-muted,
+body[data-ag-mode="native"] div.settings-modal-container div[class*="overflow"],
 body[data-ag-mode="native"] div[role="dialog"] div.bg-muted,
 body[data-ag-mode="native"] div[role="dialog"] div.bg-card,
 body[data-ag-mode="native"] div[role="dialog"] div.bg-background,
-body[data-ag-mode="native"] div.settings-modal-container div.bg-muted,
-body[data-ag-mode="native"] div.settings-modal-container div.bg-card,
-body[data-ag-mode="native"] div.settings-modal-container div.bg-background,
-body[data-ag-mode="native"] div.settings-modal-container > div,
 body[data-ag-mode="native"] div[role="dialog"] > div,
 body[data-ag-mode="native"] div[role="menu"] div.bg-secondary,
 body[data-ag-mode="native"] div[role="menu"] div.bg-muted,
@@ -1567,7 +1657,18 @@ body[data-ag-mode="native"] div[class*="quota"] div.bg-background,
 body[data-ag-mode="native"] div[class*="quota"] div.bg-secondary,
 body[data-ag-mode="native"] div[class*="quota"] div.bg-card,
 body[data-ag-mode="native"] div[class*="quota"] div.bg-muted {
-  background-color: #161922 !important;
+  background-color: #000000 !important;
+}
+
+/* 保持设置内按钮、徽章、输入框等具有微弱可见边界与原生质感 */
+body[data-ag-mode="native"] div.settings-modal-container button.bg-secondary,
+body[data-ag-mode="native"] div.settings-modal-container div.bg-sidebar-secondary {
+  background-color: #141414 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+body[data-ag-mode="native"] div.settings-modal-container input.bg-muted {
+  background-color: #0a0a0a !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
 }
 
 /* [模态 2: Ocean 晶格海洋] 严格执行中栏区域控制与零遮盖 */
@@ -1576,16 +1677,26 @@ body[data-ag-mode="ocean"] aside,
 body[data-ag-mode="ocean"] div[data-testid="sidebar-wrapper"],
 body[data-ag-mode="ocean"] div.bg-sidebar,
 body[data-ag-mode="ocean"] div.shrink-0:has(> div.bg-sidebar) {
-  background-color: #0b0e14 !important;
+  background-color: #000000 !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
+body[data-ag-mode="ocean"] header,
+body[data-ag-mode="ocean"] div[data-testid="top-nav-bar"],
+body[data-ag-mode="ocean"] div[data-testid="header-bar"],
+body[data-ag-mode="ocean"] div[data-testid="title-menu-bar"] {
+  background-color: #000000 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
 body[data-ag-mode="ocean"] [data-aux-pane-open],
 body[data-ag-mode="ocean"] div[data-aux-pane-open="true"],
 body[data-ag-mode="ocean"] div.flex-1.min-w-0.h-full > div.flex:not(:has(div[data-pane-id="pane-1"])) {
-  background-color: #0b0e14 !important;
+  background-color: #000000 !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -1595,7 +1706,7 @@ body[data-ag-mode="ocean"] [data-testid="review-pane"],
 body[data-ag-mode="ocean"] [data-testid="terminal-container"],
 body[data-ag-mode="ocean"] div[data-aux-pane-open] .bg-background,
 body[data-ag-mode="ocean"] div[data-aux-pane-open] div.flex-grow.overflow-hidden {
-  background-color: #0b0e14 !important;
+  background-color: #000000 !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
@@ -1607,7 +1718,7 @@ body[data-ag-mode="ocean"] .monaco-editor .margin,
 body[data-ag-mode="ocean"] .monaco-editor .view-lines,
 body[data-ag-mode="ocean"] .monaco-workbench .part.editor,
 body[data-ag-mode="ocean"] .monaco-workbench .part.editor > .content {
-  background-color: #12151c !important;
+  background-color: #000000 !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
@@ -1620,19 +1731,32 @@ body[data-ag-mode="ocean"] div[data-radix-popper-content-wrapper] > div,
 body[data-ag-mode="ocean"] #typeahead-menu,
 body[data-ag-mode="ocean"] div[role="dialog"],
 body[data-ag-mode="ocean"] div.settings-modal-container {
-  background-color: #181b22 !important;
+  background-color: #000000 !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   border: 1px solid rgba(255, 255, 255, 0.12) !important;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65) !important;
 }
 
-/* 中栏 pane-1 容器透出底部的 WebGL 画布，限制溢出 */
-body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] {
+/* 中栏 pane-1 及其所有父级、嵌套子级容器彻底透空，绝不遮挡底层 WebGL 画布 */
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"],
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div[class*="group/pane"],
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div.h-full.w-full,
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div[data-testid="overview-panel-host"],
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div.flex-1.min-w-0.h-full,
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div.flex-1.flex.flex-col,
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] [data-testid="conversation-view"],
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] [data-testid="autoscroll-viewport"],
+body[data-ag-mode="ocean"] div.flex-1.flex.flex-col,
+body[data-ag-mode="ocean"] div[data-testid="overview-panel-host"],
+body[data-ag-mode="ocean"] div.flex-1.min-w-0.h-full {
   background-color: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  position: absolute !important;
+}
+
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] {
+  position: relative !important;
   overflow: hidden !important;
 }
 
@@ -1784,17 +1908,33 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
         left: 0;
         width: 100vw;
         height: 100vh;
-        z-index: -9999;
+        z-index: 0;
         pointer-events: none;
         display: none;
         opacity: 0.95;
       `;
       document.body.appendChild(stageCanvas);
+    } else {
+      stageCanvas.style.position = 'fixed';
+      stageCanvas.style.top = '0';
+      stageCanvas.style.left = '0';
+      stageCanvas.style.width = '100vw';
+      stageCanvas.style.height = '100vh';
+      stageCanvas.style.zIndex = '0';
+      stageCanvas.style.opacity = '0.95';
+      stageCanvas.style.pointerEvents = 'none';
     }
 
     let shaderGl = null;
     let shaderProgram = null;
     let shaderAnimFrame = null;
+
+    function stopAuroraShader() {
+      if (shaderAnimFrame) {
+        cancelAnimationFrame(shaderAnimFrame);
+        shaderAnimFrame = null;
+      }
+    }
 
     function initAuroraShader() {
       if (shaderAnimFrame) return;
@@ -1853,7 +1993,10 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
         }
 
         function render(time) {
-          if (stageCanvas.style.display === 'none') return;
+          if (stageCanvas.style.display === 'none') {
+            shaderAnimFrame = null;
+            return;
+          }
           stageCanvas.width = window.innerWidth * 0.75;
           stageCanvas.height = window.innerHeight * 0.75;
           shaderGl.viewport(0, 0, stageCanvas.width, stageCanvas.height);
@@ -2610,6 +2753,10 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
     function applyMode(modeKey, customUrl = '') {
       config.mode = modeKey;
       document.body.setAttribute('data-ag-mode', modeKey);
+      if (document.documentElement) {
+        document.documentElement.setAttribute('data-ag-mode', modeKey);
+        document.documentElement.setAttribute('data-ag-early-mode', modeKey);
+      }
 
       // 彻底停止并回收所有活跃动画循环与视频，杜绝后台空转卡顿
       if (shaderAnimFrame) {
@@ -2633,9 +2780,11 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
       document.body.style.backgroundImage = 'none';
 
       if (modeKey === 'native') {
-        // [模态 1: 纯净原生 UI] 左右中全原生黑白，不运行任何 Canvas/WebGL，零渲染负担
+        // [模态 1: 纯净原生 UI] 左右中全原生纯黑 (#000000)，不运行任何 Canvas/WebGL，零渲染负担
+        document.body.style.backgroundColor = '#000000';
       } else if (modeKey === 'ocean') {
-        // [模态 2: Gemini 晶格海洋] 严格中栏区域控制：左右两边原生深黑遮光，中栏独占通透
+        // [模态 2: Gemini 晶格海洋] 严格中栏区域控制：左右两边原生纯黑遮光，中栏独占通透
+        document.body.style.backgroundColor = '#000000';
         if (oceanCanvas) oceanCanvas.style.display = 'block';
         if (oceanEngine) oceanEngine.start();
         ensureEmblemMount();
@@ -2644,17 +2793,29 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
         }
       } else if (modeKey === 'aurora') {
         // [模态 3: 全景流体极光] 全屏通透极光
-        if (stageCanvas) stageCanvas.style.display = 'block';
-        initAuroraShader();
-      } else if (modeKey === 'custom' && config.customAssetType === 'video') {
-        // [模态 4: 自定义素材 - 动态视频]
-        if (videoBg) {
-          videoBg.style.display = 'block';
-          videoBg.play().catch(() => {});
+        document.body.style.backgroundColor = 'transparent';
+        if (stageCanvas) {
+          stageCanvas.style.zIndex = '0';
+          stageCanvas.style.opacity = '0.95';
+          stageCanvas.style.display = 'block';
         }
-      } else if (modeKey === 'custom' && customUrl) {
-        // [模态 4: 自定义素材 - 自定义图片]
-        document.body.style.backgroundImage = `url('${customUrl}')`;
+        initAuroraShader();
+      } else if (modeKey === 'custom') {
+        // [模态 4: 自定义素材]
+        document.body.style.backgroundColor = 'transparent';
+        if (config.customAssetType === 'video') {
+          if (videoBg) {
+            videoBg.style.zIndex = '0';
+            videoBg.style.display = 'block';
+            videoBg.play().catch(() => {});
+          }
+        } else {
+          if (videoBg) videoBg.style.display = 'none';
+          const imgUrl = customUrl || activeImageBlobUrl || config.customAssetUrl;
+          if (imgUrl) {
+            document.body.style.backgroundImage = `url('${imgUrl}')`;
+          }
+        }
       }
 
       applyCssVariables();
@@ -2664,11 +2825,12 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
     if (config.mode === 'custom') {
       loadAssetFromIndexedDB().then((savedBlob) => {
         if (config.mode !== 'custom') return;
-        if (savedBlob && config.customAssetType === 'video') playVideoBlob(savedBlob);
-        else if (savedBlob) {
+        if (savedBlob && config.customAssetType === 'video') {
+          playVideoBlob(savedBlob);
+        } else if (savedBlob) {
           activeImageBlobUrl = URL.createObjectURL(savedBlob);
           applyMode('custom', activeImageBlobUrl);
-        } else if (config.customAssetType === 'image' && config.customAssetUrl.startsWith('data:image/')) {
+        } else if (config.customAssetType === 'image' && config.customAssetUrl && config.customAssetUrl.startsWith('data:image/')) {
           // 兼容旧版保存在 localStorage 的图片，并迁移到 IndexedDB。
           const legacyUrl = config.customAssetUrl;
           fetch(legacyUrl).then(r => r.blob()).then(blob => saveAssetToIndexedDB(blob).then(() => {
@@ -2677,13 +2839,10 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
           })).catch(() => {});
           applyMode('custom', legacyUrl);
         } else {
-          throw new Error('数据库中没有找到已保存的素材');
+          console.log('[Theme] 自定义素材库暂无已存素材，等待用户导入');
         }
       }).catch((err) => {
-        console.warn('[Theme] 恢复本地素材失败', err);
-        config.mode = 'native';
-        config.customAssetUrl = '';
-        persistConfig();
+        console.warn('[Theme] 读取本地素材提示', err);
       });
     }
 
@@ -3099,7 +3258,7 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
 
         <!-- 模态 4：自定义素材拖拽与导入面板 -->
         <div id="ag-panel-custom" class="ag-apple-card" style="display: ${config.mode === 'custom' ? 'block' : 'none'}; cursor: pointer;">
-          <input type="file" id="ag-file-input" accept="image/*,video/mp4,video/*" style="display: none;" />
+          <input type="file" id="ag-file-input" accept="image/*,video/mp4,video/*" style="opacity: 0; position: absolute; width: 0.1px; height: 0.1px; z-index: -1; pointer-events: none;" />
           <div id="ag-dropzone" style="text-align: center; padding: 6px 0;">
             <div style="font-size: 12px; color: #ffffff; font-weight: 500;">
               点击选择素材 或拖拽图片/视频至此
@@ -3504,7 +3663,19 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
         frostedControls.style.display = (modeKey === 'aurora' || modeKey === 'custom') ? 'block' : 'none';
       }
 
-      applyMode(modeKey, config.customAssetUrl);
+      applyMode(modeKey, modeKey === 'custom' ? (activeImageBlobUrl || config.customAssetUrl) : '');
+      if (modeKey === 'custom' && !activeImageBlobUrl && config.customAssetType === 'image') {
+        loadAssetFromIndexedDB().then(savedBlob => {
+          if (savedBlob && config.mode === 'custom') {
+            activeImageBlobUrl = URL.createObjectURL(savedBlob);
+            applyMode('custom', activeImageBlobUrl);
+          }
+        }).catch(() => {});
+      } else if (modeKey === 'custom' && config.customAssetType === 'video' && (!videoBg || !videoBg.src)) {
+        loadAssetFromIndexedDB().then(savedBlob => {
+          if (savedBlob && config.mode === 'custom') playVideoBlob(savedBlob);
+        }).catch(() => {});
+      }
       if (modeKey === 'ocean' && typeof syncOceanPanelControls === 'function') {
         syncOceanPanelControls();
       }
@@ -3981,26 +4152,41 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
     const dropzone = document.getElementById('ag-dropzone');
     const fileInput = document.getElementById('ag-file-input');
 
-    dropzone.onclick = () => fileInput.click();
-    dropzone.ondragover = (e) => {
-      e.preventDefault();
-      dropzone.style.background = 'rgba(255, 255, 255, 0.08)';
-    };
-    dropzone.ondragleave = () => {
-      dropzone.style.background = 'transparent';
-    };
-    dropzone.ondrop = (e) => {
-      e.preventDefault();
-      dropzone.style.background = 'transparent';
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        handleFile(e.dataTransfer.files[0]);
-      }
-    };
-    fileInput.onchange = () => {
-      if (fileInput.files && fileInput.files[0]) {
-        handleFile(fileInput.files[0]);
-      }
-    };
+    if (panelCustom && fileInput) {
+      panelCustom.onclick = (e) => {
+        if (e.target.id === 'ag-clear-asset' || (e.target.closest && e.target.closest('#ag-clear-asset'))) return;
+        fileInput.click();
+      };
+
+      const setHover = (active) => {
+        if (dropzone) dropzone.style.background = active ? 'rgba(255, 255, 255, 0.08)' : 'transparent';
+      };
+
+      panelCustom.ondragover = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setHover(true);
+      };
+      panelCustom.ondragleave = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setHover(false);
+      };
+      panelCustom.ondrop = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setHover(false);
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+          handleFile(e.dataTransfer.files[0]);
+        }
+      };
+
+      fileInput.onchange = () => {
+        if (fileInput.files && fileInput.files[0]) {
+          handleFile(fileInput.files[0]);
+        }
+      };
+    }
 
     document.getElementById('ag-clear-asset').onclick = async (e) => {
       e.stopPropagation();

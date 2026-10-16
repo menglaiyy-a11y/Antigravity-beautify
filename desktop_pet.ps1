@@ -1,39 +1,47 @@
-﻿# =====================================================================
+# =====================================================================
 # Antigravity 电脑全局桌面伴侣 (Desktop Pet)
 # 特性：纯原生 WPF、完全无边框透明渲染、点击与拖拽精准分离、实时额度同步、一键唤出总控
+# 稳定性加固版：ExplicitShutdown 工业级常驻保活、全局线程池异常隔离、安全字典解包
 # =====================================================================
 
 param(
     [switch]$HiddenConsole = $false
 )
 
-$ErrorActionPreference = "Stop"
+# 杜绝全局非受控终止，关键节点精准局部捕获
+$ErrorActionPreference = "Continue"
 
-# 加载必要程序集
+# 1. 加载必要程序集
 Add-Type -AssemblyName PresentationFramework, PresentationCore, WindowsBase, System.Drawing, System.Windows.Forms, System.Web.Extensions
 
 $ser = New-Object System.Web.Script.Serialization.JavaScriptSerializer
 $ser.MaxJsonLength = 67108864
 
-# 项目根目录与皮肤目录
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+# 2. 项目根目录与皮肤目录智能解析
+$scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Definition }
 $skinsMetaPath = Join-Path $scriptDir "assets\pet_skins\skins.json"
 $DevToolsPortFile = "C:\Users\31411\AppData\Roaming\Antigravity\DevToolsActivePort"
 $quotaCachePath = Join-Path $env:TEMP "antigravity_quota_cache.json"
 
 if (-not (Test-Path $skinsMetaPath)) {
-    throw "未找到桌宠皮肤元数据: $skinsMetaPath"
+    [System.Windows.Forms.MessageBox]::Show("未找到桌宠皮肤元数据: $skinsMetaPath", "Antigravity 桌宠启动错误", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+    exit 1
 }
 
-# 1. 读取皮肤列表
-$skinsMetaJson = [System.IO.File]::ReadAllText($skinsMetaPath, [System.Text.Encoding]::UTF8)
-$skinsList = $ser.DeserializeObject($skinsMetaJson)
+# 3. 读取皮肤列表并预加载帧图片
+try {
+    $skinsMetaJson = [System.IO.File]::ReadAllText($skinsMetaPath, [System.Text.Encoding]::UTF8)
+    $skinsList = $ser.DeserializeObject($skinsMetaJson)
+} catch {
+    [System.Windows.Forms.MessageBox]::Show("解析皮肤元数据失败: $($_.Exception.Message)", "Antigravity 桌宠启动错误", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+    exit 1
+}
 
 if ($skinsList.Count -eq 0) {
-    throw "皮肤列表为空！"
+    [System.Windows.Forms.MessageBox]::Show("皮肤列表为空！", "Antigravity 桌宠启动错误", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+    exit 1
 }
 
-# 预加载所有皮肤的帧图片进入显存/内存 (BitmapImage)
 $loadedSkins = @()
 foreach ($s in $skinsList) {
     $skinDir = $s["dir"]
@@ -42,13 +50,15 @@ foreach ($s in $skinsList) {
         $frameFileName = "frame_" + $i.ToString("D2") + ".png"
         $framePath = Join-Path $skinDir $frameFileName
         if (Test-Path $framePath) {
-            $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
-            $bmp.BeginInit()
-            $bmp.UriSource = [Uri](Resolve-Path $framePath).Path
-            $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
-            $bmp.EndInit()
-            $bmp.Freeze()
-            $frames += $bmp
+            try {
+                $bmp = New-Object System.Windows.Media.Imaging.BitmapImage
+                $bmp.BeginInit()
+                $bmp.UriSource = [Uri](Resolve-Path $framePath).Path
+                $bmp.CacheOption = [System.Windows.Media.Imaging.BitmapCacheOption]::OnLoad
+                $bmp.EndInit()
+                $bmp.Freeze()
+                $frames += $bmp
+            } catch {}
         }
     }
     if ($frames.Count -gt 0) {
@@ -62,13 +72,14 @@ foreach ($s in $skinsList) {
 }
 
 if ($loadedSkins.Count -eq 0) {
-    throw "未能成功加载任何皮肤帧！"
+    [System.Windows.Forms.MessageBox]::Show("未能成功加载任何皮肤帧图片！", "Antigravity 桌宠启动错误", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+    exit 1
 }
 
 $currentSkinIndex = 0
 $currentFrameIndex = 0
 
-# 2. CDP 通信模块 (调出总控、读取额度、窗口置顶激活)
+# 4. CDP 通信模块 (调出总控、读取额度、窗口置顶激活)
 function Send-CdpCommand($method, $params = @{}) {
     if (-not (Test-Path -LiteralPath $DevToolsPortFile)) {
         return $null
@@ -120,16 +131,16 @@ function Send-CdpCommand($method, $params = @{}) {
 }
 
 function Invoke-OpenVisualPanel {
-    # 1. 唤出总控抽屉
-    $evalJs = "window.agVisualPanel ? window.agVisualPanel.open() : (document.getElementById('ag-theme-pill') && document.getElementById('ag-theme-pill').click());"
-    Send-CdpCommand "Runtime.evaluate" @{ expression = $evalJs; returnByValue = $true } | Out-Null
-    
-    # 2. 将 Antigravity 窗口带到最前并激活
-    Send-CdpCommand "Page.bringToFront" @{} | Out-Null
+    try {
+        $evalJs = "window.agVisualPanel ? window.agVisualPanel.open() : (document.getElementById('ag-theme-pill') && document.getElementById('ag-theme-pill').click());"
+        Send-CdpCommand "Runtime.evaluate" @{ expression = $evalJs; returnByValue = $true } | Out-Null
+        Send-CdpCommand "Page.bringToFront" @{} | Out-Null
+    } catch {}
 }
 
 function Get-LiveQuota {
-    $evalJs = @'
+    try {
+        $evalJs = @'
 (async () => {
     try {
         if (window.agVisualPanel && typeof window.agVisualPanel.fetchQuota === 'function') {
@@ -151,19 +162,18 @@ function Get-LiveQuota {
     }
 })()
 '@
-    $res = Send-CdpCommand "Runtime.evaluate" @{ expression = $evalJs; awaitPromise = $true; returnByValue = $true }
-    if ($res -and $res.ContainsKey("result") -and $res["result"].ContainsKey("result") -and $res["result"]["result"].ContainsKey("value")) {
-        $quotaData = $res["result"]["result"]["value"]
-        if ($quotaData) {
-            # 缓存到本地
-            try {
-                [System.IO.File]::WriteAllText($quotaCachePath, $ser.Serialize($quotaData), [System.Text.Encoding]::UTF8)
-            } catch {}
-            return $quotaData
+        $res = Send-CdpCommand "Runtime.evaluate" @{ expression = $evalJs; awaitPromise = $true; returnByValue = $true }
+        if ($res -and $res.ContainsKey("result") -and $res["result"].ContainsKey("result") -and $res["result"]["result"].ContainsKey("value")) {
+            $quotaData = $res["result"]["result"]["value"]
+            if ($quotaData) {
+                try {
+                    [System.IO.File]::WriteAllText($quotaCachePath, $ser.Serialize($quotaData), [System.Text.Encoding]::UTF8)
+                } catch {}
+                return $quotaData
+            }
         }
-    }
+    } catch {}
 
-    # 尝试从本地缓存读取兜底
     if (Test-Path $quotaCachePath) {
         try {
             $cached = [System.IO.File]::ReadAllText($quotaCachePath, [System.Text.Encoding]::UTF8)
@@ -173,7 +183,7 @@ function Get-LiveQuota {
     return $null
 }
 
-# 3. 创建桌宠主视窗 (无边框、纯透明、置顶)
+# 5. 创建桌宠主视窗 (无边框、纯透明、置顶)
 $petXaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -198,12 +208,11 @@ $petXaml = @'
 $petWindow = [System.Windows.Markup.XamlReader]::Parse($petXaml)
 $petImage = $petWindow.FindName("PetImage")
 
-# 初始放置在屏幕右下角任务栏上方
 $workArea = [System.Windows.SystemParameters]::WorkArea
 $petWindow.Left = $workArea.Right - 160
 $petWindow.Top = $workArea.Bottom - 160
 
-# 4. 创建交互弹层视窗 (Flyout: 展示额度 + 调出总控 + 切换表情)
+# 6. 创建交互弹层视窗 (Flyout: 展示额度 + 调出总控 + 切换表情)
 $flyoutXaml = @'
 <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -349,15 +358,13 @@ $txtGeminiReset = $flyoutWindow.FindName("TxtGeminiReset")
 $txtClaudeStatus = $flyoutWindow.FindName("TxtClaudeStatus")
 $txtClaudeReset = $flyoutWindow.FindName("TxtClaudeReset")
 
-# 5. 弹层定位引擎 (紧贴桌宠上方或侧方，边界智能吸附)
+# 7. 弹层定位引擎 (紧贴桌宠上方或侧方，边界智能吸附)
 function Update-FlyoutPosition {
     $targetLeft = $petWindow.Left - 96
     $targetTop = $petWindow.Top - 250
 
-    # 边界检测
     $screen = [System.Windows.SystemParameters]::WorkArea
     if ($targetTop -lt $screen.Top + 10) {
-        # 上方空间不足，翻转到下方
         $targetTop = $petWindow.Top + $petWindow.Height + 10
     }
     if ($targetLeft -lt $screen.Left + 10) {
@@ -381,81 +388,88 @@ function Toggle-Flyout {
     }
 }
 
-# 6. 更新额度信息到卡片 UI
+# 8. 更新额度信息到卡片 UI (隔离线程池，防崩溃加固)
 function Update-QuotaUI {
-    $txtGeminiPercent.Text = "读取中..."
-    $txtClaudeStatus.Text = "同步中..."
+    try {
+        $txtGeminiPercent.Text = "读取中..."
+        $txtClaudeStatus.Text = "同步中..."
+    } catch {}
 
     [System.Threading.ThreadPool]::QueueUserWorkItem({
-        $quota = Get-LiveQuota
-        $flyoutWindow.Dispatcher.Invoke([Action]{
-            if ($quota) {
-                # 1. 查找 Gemini 配额
-                $configs = $quota["cascadeModelConfigData"]["clientModelConfigs"]
-                $geminiCfg = $null
-                $claudeCfg = $null
+        try {
+            $quota = Get-LiveQuota
+            if ($flyoutWindow -and $flyoutWindow.Dispatcher) {
+                $flyoutWindow.Dispatcher.Invoke([Action]{
+                    try {
+                        if ($quota) {
+                            $configs = @()
+                            if ($quota.ContainsKey("cascadeModelConfigData") -and $quota["cascadeModelConfigData"] -and $quota["cascadeModelConfigData"].ContainsKey("clientModelConfigs")) {
+                                $configs = $quota["cascadeModelConfigData"]["clientModelConfigs"]
+                            }
 
-                foreach ($c in $configs) {
-                    if ($c["label"] -match "Gemini.*Flash.*Medium" -or $c["label"] -match "Gemini") {
-                        if (-not $geminiCfg) { $geminiCfg = $c }
-                    }
-                    if ($c["label"] -match "Claude.*Sonnet" -or $c["label"] -match "Claude") {
-                        if (-not $claudeCfg) { $claudeCfg = $c }
-                    }
-                }
+                            $geminiCfg = $null
+                            $claudeCfg = $null
 
-                if ($geminiCfg -and $geminiCfg.ContainsKey("quotaInfo") -and $geminiCfg["quotaInfo"].ContainsKey("remainingFraction")) {
-                    $fraction = [double]$geminiCfg["quotaInfo"]["remainingFraction"]
-                    $percent = [Math]::Round($fraction * 100, 1)
-                    $txtGeminiPercent.Text = "$percent% 剩余"
-                    $barGemini.Width = [Math]::Max(4, 250 * $fraction)
-                    
-                    if ($percent -gt 50) {
-                        $barGemini.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#30D158")
-                        $txtGeminiPercent.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#30D158")
-                    } elseif ($percent -gt 20) {
-                        $barGemini.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FF9F0A")
-                        $txtGeminiPercent.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FF9F0A")
-                    } else {
-                        $barGemini.Background = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FF453A")
-                        $txtGeminiPercent.Foreground = [System.Windows.Media.BrushConverter]::new().ConvertFromString("#FF453A")
-                    }
+                            foreach ($c in $configs) {
+                                if ($c.ContainsKey("label")) {
+                                    if ($c["label"] -match "Gemini.*Flash.*Medium" -or $c["label"] -match "Gemini.*Flash" -or $c["label"] -match "Gemini") {
+                                        if (-not $geminiCfg) { $geminiCfg = $c }
+                                    }
+                                    if ($c["label"] -match "Claude.*Sonnet" -or $c["label"] -match "Claude") {
+                                        if (-not $claudeCfg) { $claudeCfg = $c }
+                                    }
+                                }
+                            }
 
-                    if ($geminiCfg["quotaInfo"].ContainsKey("resetTime")) {
-                        $resetStr = $geminiCfg["quotaInfo"]["resetTime"]
-                        try {
-                            $dt = [DateTime]::Parse($resetStr).ToLocalTime()
-                            $txtGeminiReset.Text = "重置时间: " + $dt.ToString("HH:mm") + " (周期刷新)"
-                        } catch {
-                            $txtGeminiReset.Text = "重置时间: " + $resetStr
+                            if ($geminiCfg -and $geminiCfg.ContainsKey("quotaInfo") -and $geminiCfg["quotaInfo"].ContainsKey("remainingFraction")) {
+                                $fraction = [double]$geminiCfg["quotaInfo"]["remainingFraction"]
+                                $percent = [Math]::Round($fraction * 100, 1)
+                                $txtGeminiPercent.Text = "$percent% 剩余"
+                                $barGemini.Width = [Math]::Max(4, 250 * $fraction)
+                                
+                                $colorHex = if ($percent -gt 50) { "#30D158" } elseif ($percent -gt 20) { "#FF9F0A" } else { "#FF453A" }
+                                $brush = [System.Windows.Media.BrushConverter]::new().ConvertFromString($colorHex)
+                                $barGemini.Background = $brush
+                                $txtGeminiPercent.Foreground = $brush
+
+                                if ($geminiCfg["quotaInfo"].ContainsKey("resetTime")) {
+                                    $resetStr = $geminiCfg["quotaInfo"]["resetTime"]
+                                    try {
+                                        $dt = [DateTime]::Parse($resetStr).ToLocalTime()
+                                        $txtGeminiReset.Text = "重置时间: " + $dt.ToString("HH:mm") + " (周期刷新)"
+                                    } catch {
+                                        $txtGeminiReset.Text = "重置时间: " + $resetStr
+                                    }
+                                }
+                            } else {
+                                $txtGeminiPercent.Text = "100% 充裕"
+                                $barGemini.Width = 250
+                                $txtGeminiReset.Text = "服务连接正常"
+                            }
+
+                            if ($claudeCfg) {
+                                $txtClaudeStatus.Text = "就绪活跃"
+                                if ($claudeCfg.ContainsKey("quotaInfo") -and $claudeCfg["quotaInfo"].ContainsKey("resetTime")) {
+                                    try {
+                                        $dt2 = [DateTime]::Parse($claudeCfg["quotaInfo"]["resetTime"]).ToLocalTime()
+                                        $txtClaudeReset.Text = "周期重置: " + $dt2.ToString("HH:mm")
+                                    } catch {
+                                        $txtClaudeReset.Text = "高级模型状态正常"
+                                    }
+                                }
+                            } else {
+                                $txtClaudeStatus.Text = "正常调用"
+                            }
+                        } else {
+                            $txtGeminiPercent.Text = "离线/待命"
+                            $txtGeminiReset.Text = "客户端连接中..."
+                            $txtClaudeStatus.Text = "等待启动"
+                            $txtClaudeReset.Text = "请打开 Antigravity 客户端"
                         }
-                    }
-                } else {
-                    $txtGeminiPercent.Text = "100% 充裕"
-                    $barGemini.Width = 250
-                    $txtGeminiReset.Text = "服务连接正常"
-                }
-
-                if ($claudeCfg) {
-                    $txtClaudeStatus.Text = "就绪活跃"
-                    if ($claudeCfg.ContainsKey("quotaInfo") -and $claudeCfg["quotaInfo"].ContainsKey("resetTime")) {
-                        try {
-                            $dt2 = [DateTime]::Parse($claudeCfg["quotaInfo"]["resetTime"]).ToLocalTime()
-                            $txtClaudeReset.Text = "周期重置: " + $dt2.ToString("HH:mm")
-                        } catch {
-                            $txtClaudeReset.Text = "高级模型状态正常"
-                        }
-                    }
-                } else {
-                    $txtClaudeStatus.Text = "正常调用"
-                }
-            } else {
-                $txtGeminiPercent.Text = "离线/待命"
-                $txtGeminiReset.Text = "客户端连接中..."
-                $txtClaudeStatus.Text = "等待启动"
-                $txtClaudeReset.Text = "请打开 Antigravity 客户端"
+                    } catch {}
+                })
             }
-        })
+        } catch {}
     }) | Out-Null
 }
 
@@ -478,23 +492,26 @@ $btnSwitchSkin.Add_Click({
     $script:currentFrameIndex = 0
     $skin = $loadedSkins[$script:currentSkinIndex]
     $btnSwitchSkin.Content = "🎨 " + $skin["name"]
-    # 更新托盘提示
-    $notifyIcon.Text = "Antigravity 桌宠: " + $skin["name"]
-})
-
-# 7. 动画帧循环驱动引擎 (DispatcherTimer)
-$animTimer = New-Object System.Windows.Threading.DispatcherTimer
-$animTimer.Interval = [TimeSpan]::FromMilliseconds(65)
-$animTimer.Add_Tick({
-    $skin = $loadedSkins[$script:currentSkinIndex]
-    $frames = $skin["frames"]
-    if ($frames.Count -gt 0) {
-        $script:currentFrameIndex = ($script:currentFrameIndex + 1) % $frames.Count
-        $petImage.Source = $frames[$script:currentFrameIndex]
+    if ($notifyIcon) {
+        $notifyIcon.Text = "Antigravity 桌宠: " + $skin["name"]
     }
 })
 
-# 8. 点击 vs 拖拽精准分离引擎 (核心判定逻辑)
+# 9. 动画帧循环驱动引擎 (DispatcherTimer)
+$animTimer = New-Object System.Windows.Threading.DispatcherTimer
+$animTimer.Interval = [TimeSpan]::FromMilliseconds(65)
+$animTimer.Add_Tick({
+    try {
+        $skin = $loadedSkins[$script:currentSkinIndex]
+        $frames = $skin["frames"]
+        if ($frames.Count -gt 0) {
+            $script:currentFrameIndex = ($script:currentFrameIndex + 1) % $frames.Count
+            $petImage.Source = $frames[$script:currentFrameIndex]
+        }
+    } catch {}
+})
+
+# 10. 点击 vs 拖拽精准分离引擎
 $script:isMouseDown = $false
 $script:dragOccurred = $false
 $script:mouseDownPos = [System.Drawing.Point]::Empty
@@ -512,14 +529,12 @@ $petWindow.Add_MouseMove({
         $curr = [System.Windows.Forms.Cursor]::Position
         $dx = [Math]::Abs($curr.X - $script:mouseDownPos.X)
         $dy = [Math]::Abs($curr.Y - $script:mouseDownPos.Y)
-        # 位移超过 4 像素立即转入拖拽移动模式
         if ($dx -gt 4 -or $dy -gt 4) {
             $script:dragOccurred = $true
-            # 拖拽时收起弹层，保证跟手动效丝滑
             if ($flyoutWindow.IsVisible) {
                 $flyoutWindow.Hide()
             }
-            $petWindow.DragMove()
+            try { $petWindow.DragMove() } catch {}
         }
     }
 })
@@ -527,13 +542,26 @@ $petWindow.Add_MouseMove({
 $petWindow.Add_MouseLeftButtonUp({
     param($sender, $e)
     $script:isMouseDown = $false
-    # 单击判定：鼠标松开时若未发生拖动位移，判定为单击事件！
     if (-not $script:dragOccurred) {
         Toggle-Flyout
     }
 })
 
-# 右键菜单 (快速唤出、切换表情、退出)
+# 11. 右键菜单与托盘退出统一逻辑
+$safeExitAction = {
+    try {
+        if ($notifyIcon) {
+            $notifyIcon.Visible = $false
+            $notifyIcon.Dispose()
+        }
+        if ($animTimer) { $animTimer.Stop() }
+        if ($flyoutWindow) { $flyoutWindow.Close() }
+        if ($petWindow) { $petWindow.Close() }
+        [System.Windows.Application]::Current.Shutdown()
+    } catch {}
+}
+
+# 右键菜单
 $contextMenu = New-Object System.Windows.Controls.ContextMenu
 
 $miPanel = New-Object System.Windows.Controls.MenuItem
@@ -574,19 +602,12 @@ $contextMenu.Items.Add((New-Object System.Windows.Controls.Separator)) | Out-Nul
 
 $miExit = New-Object System.Windows.Controls.MenuItem
 $miExit.Header = "❌ 退出桌宠"
-$miExit.Add_Click({
-    $notifyIcon.Visible = $false
-    $notifyIcon.Dispose()
-    $animTimer.Stop()
-    $flyoutWindow.Close()
-    $petWindow.Close()
-    [System.Windows.Application]::Current.Shutdown()
-})
+$miExit.Add_Click($safeExitAction)
 $contextMenu.Items.Add($miExit) | Out-Null
 
 $petWindow.ContextMenu = $contextMenu
 
-# 9. 任务栏系统托盘图标 (NotifyIcon)
+# 12. 任务栏系统托盘图标 (NotifyIcon)
 $notifyIcon = New-Object System.Windows.Forms.NotifyIcon
 $notifyIcon.Text = "Antigravity 桌面伴侣 (运行中)"
 $notifyIcon.Icon = [System.Drawing.SystemIcons]::Application
@@ -605,14 +626,7 @@ $trayMenu.Items.Add("-") | Out-Null
 
 $tmiExit = $trayMenu.Items.Add("退出桌宠")
 $tmiExit.Add_Click({
-    $petWindow.Dispatcher.Invoke([Action]{
-        $notifyIcon.Visible = $false
-        $notifyIcon.Dispose()
-        $animTimer.Stop()
-        $flyoutWindow.Close()
-        $petWindow.Close()
-        [System.Windows.Application]::Current.Shutdown()
-    })
+    $petWindow.Dispatcher.Invoke([Action]$safeExitAction)
 })
 
 $notifyIcon.ContextMenuStrip = $trayMenu
@@ -620,26 +634,34 @@ $notifyIcon.Add_DoubleClick({
     $petWindow.Dispatcher.Invoke([Action]{ Toggle-Flyout })
 })
 
-# 10. 启动与生命周期管理
-$petWindow.Add_Closed({
-    $notifyIcon.Visible = $false
-    $notifyIcon.Dispose()
-    $animTimer.Stop()
-    $flyoutWindow.Close()
+# 13. WPF 应用生命周期管理 (工业级保活与常驻)
+$app = New-Object System.Windows.Application
+
+# 设置为 ExplicitShutdown：绝不因失去焦点或子弹层关闭而意外退出！
+$app.ShutdownMode = [System.Windows.ShutdownMode]::OnExplicitShutdown
+
+# 捕获调度器未处理异常，保持进程常驻
+$app.add_DispatcherUnhandledException({
+    param($s, $e)
+    $e.Handled = $true
 })
 
+$petWindow.Add_Closed({
+    & $safeExitAction
+})
+
+# 显示主视窗并开启帧动画
 $petWindow.Show()
 $animTimer.Start()
 
-# 首次在后台加载一次额度缓存
+# 首次在后台预加载一次额度缓存
 Update-QuotaUI
 
-Write-Host "Antigravity 桌面伴侣已启动！"
+Write-Host "Antigravity 桌面伴侣已成功启动并常驻！"
 Write-Host "操作指南："
 Write-Host "  - 单击桌宠：展开/收起剩余额度卡片与总控入口"
 Write-Host "  - 拖拽桌宠：按住鼠标左键随意移动屏幕位置"
 Write-Host "  - 右键桌宠：调出总控、切换表情、调整大小、退出"
 
-# 运行 WPF 应用主消息循环
-$app = New-Object System.Windows.Application
-$app.Run($petWindow) | Out-Null
+# 启动 WPF 事件主循环
+$app.Run() | Out-Null
