@@ -143,18 +143,22 @@
     const NATIVE_ASSET_KEY = 'ag_theme_asset_v1';
     const MAX_PERSISTENT_ASSET_BYTES = 50 * 1024 * 1024;
     const DEFAULT_CONFIG = {
-      mode: 'glacier', // 'aurora' | 'custom' | 'glacier'
+      mode: 'native', // 4 模态：'native' (还原原生UI) | 'ocean' (中栏晶格海洋) | 'aurora' (流体极光) | 'custom' (自定义素材)
       textureStyle: 'glass', // 'glass' (晶莹磨砂) | 'paper' (柔雾类纸膜)
       customAssetType: 'image', // 'image' | 'video'
       accentHex: '#0a84ff', // Apple 标志性系统蓝
       accentRgb: [10, 132, 255],
       tuneMode: 'global', // 'global' (全局共享，联动调节) | 'split' (独立分栏微调)
-      globalOpacity: 0.50, // 全局统一透明度 (0.10 ~ 0.95)，50% 兼具通透美感与文字可读性
+      globalOpacity: 0.50, // 全局统一透明度 (0.00 ~ 1.00)
       globalBlur: 24,      // 全局统一高斯模糊 (0 ~ 45px)
       leftOpacity: 0.50,   // 左栏独立透明度
       centerOpacity: 0.50, // 中栏独立透明度 (主对话卡片/设置弹窗)
       rightOpacity: 0.50,  // 右栏独立透明度 (Aux Pane / Review / 终端)
       auroraSpeed: 1.0,
+      oceanShape: 0,       // 0=四芒星, 1=正菱形, 2=圆点, 3=六边形
+      oceanSpeed: 0.62,
+      oceanDensity: 42.0,
+      oceanPalette: 'gemini', // 'gemini' | 'argon' | 'nebula' | 'emerald'
       customAssetUrl: '',
       customAssetName: ''
     };
@@ -164,6 +168,10 @@
       const saved = window.__ag_native_theme_config || localStorage.getItem(STORAGE_KEY);
       if (saved) {
         config = Object.assign(config, typeof saved === 'string' ? JSON.parse(saved) : saved);
+        // 废弃旧版试验阶段的 glacier 冰川图，自动平滑回归纯净原生 UI
+        if (config.mode === 'glacier') {
+          config.mode = 'native';
+        }
       }
     } catch (e) {
       console.warn('[Apple Theme] 读取缓存配置失败，使用预设值', e);
@@ -1383,12 +1391,62 @@ div[data-aux-pane-open] button {
 #ag-theme-modal p {
   color: #ffffff !important;
 }
+
+/* ==================================================== */
+/* 4 模态系统样式与中栏区域控制规则                     */
+/* ==================================================== */
+
+/* [模态 1: Native 原生 UI] 完全还原原生，关闭全部毛玻璃与自定义透底，零渲染开销 */
+body[data-ag-mode="native"] div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar,
+body[data-ag-mode="native"] div.flex:has(> div.h-full.w-full > div.bg-sidebar),
+body[data-ag-mode="native"] aside {
+  background-color: var(--sidebar, #0e1117) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body[data-ag-mode="native"] div.flex-1.min-w-0.h-full,
+body[data-ag-mode="native"] div.flex-grow.overflow-hidden,
+body[data-ag-mode="native"] [data-aux-pane-open],
+body[data-ag-mode="native"] div.shrink-0:has(> div.bg-sidebar) {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* [模态 2: Ocean 晶格海洋] 严格执行中栏区域控制 */
+/* 左右两边原生深黑背景完全遮光，不透出极光或图片；中栏通透独占晶格海洋动效 */
+body[data-ag-mode="ocean"] div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar,
+body[data-ag-mode="ocean"] div.flex:has(> div.h-full.w-full > div.bg-sidebar),
+body[data-ag-mode="ocean"] aside {
+  background-color: #0b0e14 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body[data-ag-mode="ocean"] div.shrink-0:has(> div.bg-sidebar) {
+  background-color: #0b0e14 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body[data-ag-mode="ocean"] div[data-aux-pane-open],
+body[data-ag-mode="ocean"] div.flex-1.min-w-0.h-full > div.flex {
+  background-color: #0b0e14 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+body[data-ag-mode="ocean"] div.flex-1.min-w-0.h-full,
+body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.relative.outline-none.overflow-y-auto {
+  background-color: transparent !important;
+}
 `;
 
     styleEl.textContent = baseThemeCss;
     applyCssVariables();
 
-    // 3. 构建 WebGL 动态极光流体画布 (仅在极光模式运行)
+    // 3. 构建 WebGL 动态极光流体画布 (全景极光模式)
     let stageCanvas = document.getElementById('ag-dynamic-stage-canvas');
     if (!stageCanvas) {
       stageCanvas = document.createElement('canvas');
@@ -1412,56 +1470,60 @@ div[data-aux-pane-open] button {
     let shaderAnimFrame = null;
 
     function initAuroraShader() {
-      if (shaderProgram) return;
+      if (shaderAnimFrame) return;
       try {
-        shaderGl = stageCanvas.getContext('webgl');
+        if (!shaderGl) {
+          shaderGl = stageCanvas.getContext('webgl');
+        }
         if (!shaderGl) return;
 
-        const vsSrc = `
-          attribute vec2 a_pos;
-          void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
-        `;
-        const fsSrc = `
-          precision mediump float;
-          uniform vec2 u_res;
-          uniform float u_time;
-          uniform vec3 u_accent;
-          void main() {
-            vec2 p = gl_FragCoord.xy / u_res.xy;
-            float t = u_time * 0.35;
-            float f = sin(p.x * 3.5 + t) * cos(p.y * 2.8 - t * 0.9);
-            f += sin(p.x * 6.0 - t * 1.4 + p.y * 4.2) * 0.45;
-            vec3 baseDark = vec3(0.04, 0.06, 0.12);
-            vec3 midTone = mix(baseDark, u_accent * 0.65, 0.6);
-            vec3 highTone = u_accent;
-            vec3 col = mix(baseDark, midTone, smoothstep(-0.9, 0.4, f));
-            col = mix(col, highTone, smoothstep(0.1, 1.3, f));
-            gl_FragColor = vec4(col, 1.0);
-          }
-        `;
-        const vs = shaderGl.createShader(shaderGl.VERTEX_SHADER);
-        shaderGl.shaderSource(vs, vsSrc);
-        shaderGl.compileShader(vs);
+        if (!shaderProgram) {
+          const vsSrc = `
+            attribute vec2 a_pos;
+            void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
+          `;
+          const fsSrc = `
+            precision mediump float;
+            uniform vec2 u_res;
+            uniform float u_time;
+            uniform vec3 u_accent;
+            void main() {
+              vec2 p = gl_FragCoord.xy / u_res.xy;
+              float t = u_time * 0.35;
+              float f = sin(p.x * 3.5 + t) * cos(p.y * 2.8 - t * 0.9);
+              f += sin(p.x * 6.0 - t * 1.4 + p.y * 4.2) * 0.45;
+              vec3 baseDark = vec3(0.04, 0.06, 0.12);
+              vec3 midTone = mix(baseDark, u_accent * 0.65, 0.6);
+              vec3 highTone = u_accent;
+              vec3 col = mix(baseDark, midTone, smoothstep(-0.9, 0.4, f));
+              col = mix(col, highTone, smoothstep(0.1, 1.3, f));
+              gl_FragColor = vec4(col, 1.0);
+            }
+          `;
+          const vs = shaderGl.createShader(shaderGl.VERTEX_SHADER);
+          shaderGl.shaderSource(vs, vsSrc);
+          shaderGl.compileShader(vs);
 
-        const fs = shaderGl.createShader(shaderGl.FRAGMENT_SHADER);
-        shaderGl.shaderSource(fs, fsSrc);
-        shaderGl.compileShader(fs);
+          const fs = shaderGl.createShader(shaderGl.FRAGMENT_SHADER);
+          shaderGl.shaderSource(fs, fsSrc);
+          shaderGl.compileShader(fs);
 
-        shaderProgram = shaderGl.createProgram();
-        shaderGl.attachShader(shaderProgram, vs);
-        shaderGl.attachShader(shaderProgram, fs);
-        shaderGl.linkProgram(shaderProgram);
+          shaderProgram = shaderGl.createProgram();
+          shaderGl.attachShader(shaderProgram, vs);
+          shaderGl.attachShader(shaderProgram, fs);
+          shaderGl.linkProgram(shaderProgram);
 
-        const quadBuf = shaderGl.createBuffer();
-        shaderGl.bindBuffer(shaderGl.ARRAY_BUFFER, quadBuf);
-        shaderGl.bufferData(shaderGl.ARRAY_BUFFER, new Float32Array([
-          -1, -1, 1, -1, -1, 1,
-          -1, 1, 1, -1, 1, 1
-        ]), shaderGl.STATIC_DRAW);
+          const quadBuf = shaderGl.createBuffer();
+          shaderGl.bindBuffer(shaderGl.ARRAY_BUFFER, quadBuf);
+          shaderGl.bufferData(shaderGl.ARRAY_BUFFER, new Float32Array([
+            -1, -1, 1, -1, -1, 1,
+            -1, 1, 1, -1, 1, 1
+          ]), shaderGl.STATIC_DRAW);
 
-        const aPos = shaderGl.getAttribLocation(shaderProgram, 'a_pos');
-        shaderGl.enableVertexAttribArray(aPos);
-        shaderGl.vertexAttribPointer(aPos, 2, shaderGl.FLOAT, false, 0, 0);
+          const aPos = shaderGl.getAttribLocation(shaderProgram, 'a_pos');
+          shaderGl.enableVertexAttribArray(aPos);
+          shaderGl.vertexAttribPointer(aPos, 2, shaderGl.FLOAT, false, 0, 0);
+        }
 
         function render(time) {
           if (stageCanvas.style.display === 'none') return;
@@ -1470,43 +1532,395 @@ div[data-aux-pane-open] button {
           shaderGl.viewport(0, 0, stageCanvas.width, stageCanvas.height);
           shaderGl.useProgram(shaderProgram);
           shaderGl.uniform2f(shaderGl.getUniformLocation(shaderProgram, 'u_res'), stageCanvas.width, stageCanvas.height);
-          shaderGl.uniform1f(shaderGl.getUniformLocation(shaderProgram, 'u_time'), time * 0.001 * config.auroraSpeed);
-          const [r, g, b] = config.accentRgb;
+          shaderGl.uniform1f(shaderGl.getUniformLocation(shaderProgram, 'u_time'), time * 0.001 * (config.auroraSpeed || 1.0));
+          const [r, g, b] = config.accentRgb || [10, 132, 255];
           shaderGl.uniform3f(shaderGl.getUniformLocation(shaderProgram, 'u_accent'), r / 255, g / 255, b / 255);
           shaderGl.drawArrays(shaderGl.TRIANGLES, 0, 6);
           shaderAnimFrame = requestAnimationFrame(render);
         }
         shaderAnimFrame = requestAnimationFrame(render);
       } catch (err) {
-        console.warn('[Apple Theme] WebGL 启动失败', err);
+        console.warn('[Apple Theme] 极光 WebGL 启动失败', err);
       }
     }
 
+    // 3.1 Gemini 晶格海洋 WebGL 引擎 (仅在中栏主视口区域独占运行，左右两边原生深黑遮光)
+    let oceanCanvas = document.getElementById('ag-center-ocean-canvas');
+    if (!oceanCanvas) {
+      oceanCanvas = document.createElement('canvas');
+      oceanCanvas.id = 'ag-center-ocean-canvas';
+      oceanCanvas.style.cssText = `
+        position: fixed;
+        pointer-events: none;
+        z-index: 0;
+        display: none;
+        border-radius: 12px;
+      `;
+      document.body.appendChild(oceanCanvas);
+    }
+
+    class AgOceanEngine {
+      constructor(canvas) {
+        this.canvas = canvas;
+        this.gl = null;
+        this.program = null;
+        this.animId = null;
+        this.running = false;
+        this.startTime = performance.now();
+        this.ripples = Array.from({ length: 8 }, () => [0.5, 0.5, -10.0, 0.0]);
+        this.rippleCursor = 0;
+        this.mouse = { x: 0.5, y: 0.5 };
+        this.targetMouse = { x: 0.5, y: 0.5 };
+        this.uniformLocs = {};
+        this.init();
+      }
+
+      init() {
+        if (!this.canvas) return;
+        try {
+          this.gl = this.canvas.getContext('webgl', { antialias: true, alpha: true });
+          if (!this.gl) return;
+
+          const vsSrc = `
+            attribute vec2 a_pos;
+            varying vec2 v_uv;
+            void main() {
+              v_uv = a_pos * 0.5 + 0.5;
+              gl_Position = vec4(a_pos, 0.0, 1.0);
+            }
+          `;
+
+          const fsSrc = `
+            precision highp float;
+            varying vec2 v_uv;
+            uniform vec2 u_res;
+            uniform float u_time;
+            uniform vec2 u_mouse;
+            uniform float u_intensity;
+            uniform float u_density;
+            uniform float u_speed;
+            uniform float u_sharpness;
+            uniform int u_shape;
+            uniform vec3 u_col1;
+            uniform vec3 u_col2;
+            uniform vec3 u_col3;
+            uniform vec3 u_col4;
+            uniform vec4 u_ripples[8];
+
+            vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+            vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+            vec3 permute(vec3 x) { return mod289(((x * 34.0) + 1.0) * x); }
+
+            float snoise(vec2 v) {
+              const vec4 C = vec4(0.2113248654, 0.3660254037, -0.5773502691, 0.0243902439);
+              vec2 i = floor(v + dot(v, C.yy));
+              vec2 x0 = v - i + dot(i, C.xx);
+              vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+              vec4 x12 = x0.xyxy + C.xxzz;
+              x12.xy -= i1;
+              i = mod289(i);
+              vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
+              vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy), dot(x12.zw, x12.zw)), 0.0);
+              m = m * m; m = m * m;
+              vec3 x = 2.0 * fract(p * C.www) - 1.0;
+              vec3 h = abs(x) - 0.5;
+              vec3 ox = floor(x + 0.5);
+              vec3 a0 = x - ox;
+              m *= 1.792842914 - 0.85373472 * (a0 * a0 + h * h);
+              vec3 g;
+              g.x = a0.x * x0.x + h.x * x0.y;
+              g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+              return 130.0 * dot(m, g);
+            }
+
+            float sdDiamondStar(vec2 p, float k) {
+              vec2 ap = abs(p) + 1e-4;
+              return pow(pow(ap.x, k) + pow(ap.y, k), 1.0 / k);
+            }
+
+            vec3 getGradient(float t) {
+              float c = fract(t);
+              if (c < 0.25) return mix(u_col1, u_col2, smoothstep(0.0, 0.25, c));
+              if (c < 0.50) return mix(u_col2, u_col3, smoothstep(0.25, 0.50, c));
+              if (c < 0.75) return mix(u_col3, u_col4, smoothstep(0.50, 0.75, c));
+              return mix(u_col4, u_col1, smoothstep(0.75, 1.0, c));
+            }
+
+            void main() {
+              vec2 aspect = vec2(u_res.x / max(1.0, u_res.y), 1.0);
+              vec2 uv = (v_uv - 0.5) * aspect;
+              vec2 mouseW = (u_mouse - 0.5) * aspect;
+
+              float t = u_time * u_speed;
+              float bWave1 = snoise(uv * 2.4 + vec2(t * 0.55, t * 0.24));
+              float bWave2 = snoise(uv * 4.8 - vec2(t * 0.38, -t * 0.46));
+              vec2 waveGrad = vec2(bWave1, bWave2) * 0.024;
+              vec2 warpedUV = uv + waveGrad * u_intensity;
+
+              mat2 rotMat = mat2(0.70710678, -0.70710678, 0.70710678, 0.70710678);
+              mat2 invRotMat = mat2(0.70710678, 0.70710678, -0.70710678, 0.70710678);
+
+              vec2 gridSpace = rotMat * warpedUV * u_density;
+              vec2 cellId = floor(gridSpace);
+              vec2 localP = fract(gridSpace) - 0.5;
+              vec2 cellCenterWorld = invRotMat * ((cellId + 0.5) / u_density);
+
+              float swellA = snoise(cellCenterWorld * 2.2 + vec2(t * 0.52, t * 0.22));
+              float swellB = snoise(cellCenterWorld * 4.6 - vec2(t * 0.35, -t * 0.42));
+              float oceanH = (swellA * 0.62 + swellB * 0.38) * 0.5 + 0.5;
+
+              float dMouse = length(cellCenterWorld - mouseW);
+              float cursorWave = sin(dMouse * 22.0 - u_time * 5.8) * exp(-dMouse * 3.2) * 0.35;
+              float cursorGlow = exp(-dMouse * 4.0) * 0.26;
+
+              float ripAcc = 0.0;
+              for (int i = 0; i < 8; i++) {
+                vec4 rp = u_ripples[i];
+                if (rp.z >= 0.0) {
+                  float age = u_time - rp.z;
+                  if (age >= 0.0 && age < 2.6) {
+                    vec2 rpPos = (rp.xy - 0.5) * aspect;
+                    float d = length(cellCenterWorld - rpPos);
+                    float rad = age * 0.72;
+                    float ring = cos((d - rad) * 28.0) * exp(-abs(d - rad) * 6.0);
+                    ripAcc += ring * exp(-age * 1.3) * rp.w;
+                  }
+                }
+              }
+
+              float rawEnergy = (oceanH * 0.62 + cursorWave + cursorGlow + ripAcc * 0.85);
+              float energy = clamp(rawEnergy * u_intensity, 0.0, 1.0);
+
+              vec2 motifP = invRotMat * localP;
+              float kParam = mix(1.35, u_sharpness, smoothstep(0.12, 0.85, energy));
+              float sdf = sdDiamondStar(motifP, kParam);
+
+              float radius = 0.48 * pow(energy, 1.15);
+              float aa = 0.045;
+              float shapeMask = 1.0 - smoothstep(radius - aa, radius + aa, sdf);
+              float coreGlow = (1.0 - smoothstep(0.0, radius * 0.45, sdf)) * smoothstep(0.38, 0.95, energy);
+
+              float colPhase = (cellCenterWorld.x * 0.44 + cellCenterWorld.y * 0.32) - u_time * 0.14 + oceanH * 0.38;
+              vec3 specCol = getGradient(colPhase);
+              vec3 motifCol = mix(specCol, vec3(0.98, 0.99, 1.0), coreGlow * 0.85);
+
+              vec3 bgCol = vec3(0.02, 0.032, 0.058);
+              float underGlow = (0.10 + 0.32 * oceanH + max(0.0, ripAcc) * 0.28) * u_intensity;
+              vec3 finCol = bgCol + specCol * underGlow * 0.42;
+              finCol = mix(finCol, motifCol, shapeMask * smoothstep(0.03, 0.22, energy));
+
+              gl_FragColor = vec4(finCol, 1.0);
+            }
+          `;
+
+          const compile = (type, src) => {
+            const s = this.gl.createShader(type);
+            this.gl.shaderSource(s, src);
+            this.gl.compileShader(s);
+            return s;
+          };
+
+          const vs = compile(this.gl.VERTEX_SHADER, vsSrc);
+          const fs = compile(this.gl.FRAGMENT_SHADER, fsSrc);
+          this.program = this.gl.createProgram();
+          this.gl.attachShader(this.program, vs);
+          this.gl.attachShader(this.program, fs);
+          this.gl.linkProgram(this.program);
+          this.gl.useProgram(this.program);
+
+          const buf = this.gl.createBuffer();
+          this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buf);
+          this.gl.bufferData(this.gl.ARRAY_BUFFER, new Float32Array([
+            -1, -1, 1, -1, -1, 1,
+            -1, 1, 1, -1, 1, 1
+          ]), this.gl.STATIC_DRAW);
+
+          const aPos = this.gl.getAttribLocation(this.program, 'a_pos');
+          this.gl.enableVertexAttribArray(aPos);
+          this.gl.vertexAttribPointer(aPos, 2, this.gl.FLOAT, false, 0, 0);
+
+          this.uniformLocs = {
+            u_res: this.gl.getUniformLocation(this.program, 'u_res'),
+            u_time: this.gl.getUniformLocation(this.program, 'u_time'),
+            u_mouse: this.gl.getUniformLocation(this.program, 'u_mouse'),
+            u_intensity: this.gl.getUniformLocation(this.program, 'u_intensity'),
+            u_density: this.gl.getUniformLocation(this.program, 'u_density'),
+            u_speed: this.gl.getUniformLocation(this.program, 'u_speed'),
+            u_sharpness: this.gl.getUniformLocation(this.program, 'u_sharpness'),
+            u_shape: this.gl.getUniformLocation(this.program, 'u_shape'),
+            u_col1: this.gl.getUniformLocation(this.program, 'u_col1'),
+            u_col2: this.gl.getUniformLocation(this.program, 'u_col2'),
+            u_col3: this.gl.getUniformLocation(this.program, 'u_col3'),
+            u_col4: this.gl.getUniformLocation(this.program, 'u_col4'),
+            u_ripples: []
+          };
+          for (let i = 0; i < 8; i++) {
+            this.uniformLocs.u_ripples.push(this.gl.getUniformLocation(this.program, `u_ripples[${i}]`));
+          }
+
+          // 鼠标在中栏交互时发射波纹
+          window.addEventListener('mousemove', (e) => {
+            if (!this.running || !this.canvas) return;
+            const r = this.canvas.getBoundingClientRect();
+            if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+              this.targetMouse.x = (e.clientX - r.left) / Math.max(1, r.width);
+              this.targetMouse.y = 1.0 - (e.clientY - r.top) / Math.max(1, r.height);
+            }
+          });
+
+          window.addEventListener('click', (e) => {
+            if (!this.running || !this.canvas) return;
+            const r = this.canvas.getBoundingClientRect();
+            if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+              const nx = (e.clientX - r.left) / Math.max(1, r.width);
+              const ny = 1.0 - (e.clientY - r.top) / Math.max(1, r.height);
+              this.spawnRipple(nx, ny, 1.25);
+            }
+          });
+        } catch (e) {
+          console.warn('[AgOceanEngine] WebGL 初始化异常', e);
+        }
+      }
+
+      spawnRipple(nx, ny, weight = 1.0) {
+        const elapsed = (performance.now() - this.startTime) * 0.001;
+        this.ripples[this.rippleCursor] = [nx, ny, elapsed, weight];
+        this.rippleCursor = (this.rippleCursor + 1) % 8;
+      }
+
+      updateRect() {
+        if (!this.canvas) return;
+        const getCenterEl = () => {
+          const chat = document.querySelector('div.w-full.flex.h-full.min-h-0.flex-col.items-center.relative.outline-none.overflow-y-auto');
+          if (chat && chat.offsetWidth >= 400 && chat.offsetHeight >= 400) return chat;
+
+          const main = document.querySelector('main');
+          if (main && main.offsetWidth >= 400) return main;
+
+          const candidates = Array.from(document.querySelectorAll('div')).filter(el => {
+            const r = el.getBoundingClientRect();
+            return r.left >= 180 && r.width >= 400 && r.height >= 400;
+          });
+          return candidates[0] || document.querySelector('div[data-pane-id="pane-1"]') || document.querySelector('div.flex-1.min-w-0.h-full');
+        };
+
+        const centerEl = getCenterEl();
+        if (centerEl) {
+          const r = centerEl.getBoundingClientRect();
+          this.canvas.style.left = `${Math.round(r.left)}px`;
+          this.canvas.style.top = `${Math.round(r.top)}px`;
+          this.canvas.style.width = `${Math.round(r.width)}px`;
+          this.canvas.style.height = `${Math.round(r.height)}px`;
+        }
+      }
+
+      start() {
+        if (this.running) return;
+        this.running = true;
+        this.updateRect();
+        const render = (time) => {
+          if (!this.running || !this.gl || !this.program) return;
+          this.updateRect();
+
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          const w = Math.max(1, Math.floor(this.canvas.clientWidth * dpr));
+          const h = Math.max(1, Math.floor(this.canvas.clientHeight * dpr));
+          if (this.canvas.width !== w || this.canvas.height !== h) {
+            this.canvas.width = w;
+            this.canvas.height = h;
+            this.gl.viewport(0, 0, w, h);
+          }
+
+          const elapsed = (time - this.startTime) * 0.001;
+          this.mouse.x += (this.targetMouse.x - this.mouse.x) * 0.08;
+          this.mouse.y += (this.targetMouse.y - this.mouse.y) * 0.08;
+
+          this.gl.useProgram(this.program);
+          this.gl.uniform2f(this.uniformLocs.u_res, w, h);
+          this.gl.uniform1f(this.uniformLocs.u_time, elapsed);
+          this.gl.uniform2f(this.uniformLocs.u_mouse, this.mouse.x, this.mouse.y);
+          this.gl.uniform1f(this.uniformLocs.u_intensity, 0.95);
+          this.gl.uniform1f(this.uniformLocs.u_density, config.oceanDensity || 42.0);
+          this.gl.uniform1f(this.uniformLocs.u_speed, config.oceanSpeed || 0.62);
+          this.gl.uniform1f(this.uniformLocs.u_sharpness, config.oceanShape === 1 ? 1.0 : (config.oceanShape === 2 ? 2.0 : 0.54));
+          this.gl.uniform1i(this.uniformLocs.u_shape, config.oceanShape || 0);
+
+          // 经典 Gemini 四配色光谱
+          this.gl.uniform3f(this.uniformLocs.u_col1, 0.16, 0.50, 1.0);  // #2980ff
+          this.gl.uniform3f(this.uniformLocs.u_col2, 0.04, 0.76, 1.0);  // #0ac2ff
+          this.gl.uniform3f(this.uniformLocs.u_col3, 0.68, 0.52, 0.95); // #ad85f2
+          this.gl.uniform3f(this.uniformLocs.u_col4, 0.96, 0.44, 0.70); // #f570b3
+
+          for (let i = 0; i < 8; i++) {
+            const rp = this.ripples[i];
+            this.gl.uniform4f(this.uniformLocs.u_ripples[i], rp[0], rp[1], rp[2], rp[3]);
+          }
+
+          this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+          this.animId = requestAnimationFrame(render);
+        };
+        this.animId = requestAnimationFrame(render);
+      }
+
+      stop() {
+        this.running = false;
+        if (this.animId) {
+          cancelAnimationFrame(this.animId);
+          this.animId = null;
+        }
+        if (this.gl) {
+          this.gl.clearColor(0, 0, 0, 0);
+          this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+        }
+      }
+    }
+
+    const oceanEngine = new AgOceanEngine(oceanCanvas);
+
+    // 4 模态系统状态调度器 (原生UI + 3美化模态：晶格海洋 / 流体极光 / 自定义素材)
     function applyMode(modeKey, customUrl = '') {
       config.mode = modeKey;
-      if (modeKey === 'aurora') {
-        if (videoBg) { videoBg.style.display = 'none'; videoBg.pause(); }
-        document.body.style.backgroundImage = 'none';
-        stageCanvas.style.display = 'block';
+      document.body.setAttribute('data-ag-mode', modeKey);
+
+      // 彻底停止并回收所有活跃动画循环与视频，杜绝后台空转卡顿
+      if (shaderAnimFrame) {
+        cancelAnimationFrame(shaderAnimFrame);
+        shaderAnimFrame = null;
+      }
+      if (stageCanvas) stageCanvas.style.display = 'none';
+
+      if (oceanEngine) {
+        oceanEngine.stop();
+      }
+      if (oceanCanvas) oceanCanvas.style.display = 'none';
+
+      if (videoBg) {
+        videoBg.pause();
+        videoBg.style.display = 'none';
+      }
+      document.body.style.backgroundImage = 'none';
+
+      if (modeKey === 'native') {
+        // [模态 1: 纯净原生 UI] 左右中全原生黑白，不运行任何 Canvas/WebGL，零渲染负担
+      } else if (modeKey === 'ocean') {
+        // [模态 2: Gemini 晶格海洋] 严格中栏区域控制：左右两边原生深黑遮光，中栏独占通透
+        if (oceanCanvas) oceanCanvas.style.display = 'block';
+        if (oceanEngine) oceanEngine.start();
+      } else if (modeKey === 'aurora') {
+        // [模态 3: 全景流体极光] 全屏通透极光
+        if (stageCanvas) stageCanvas.style.display = 'block';
         initAuroraShader();
       } else if (modeKey === 'custom' && config.customAssetType === 'video') {
-        stageCanvas.style.display = 'none';
-        document.body.style.backgroundImage = 'none';
+        // [模态 4: 自定义素材 - 动态视频]
         if (videoBg) {
           videoBg.style.display = 'block';
           videoBg.play().catch(() => {});
         }
       } else if (modeKey === 'custom' && customUrl) {
-        if (videoBg) { videoBg.style.display = 'none'; videoBg.pause(); }
-        stageCanvas.style.display = 'none';
+        // [模态 4: 自定义素材 - 自定义图片]
         document.body.style.backgroundImage = `url('${customUrl}')`;
-      } else {
-        // 默认冰川底图
-        if (videoBg) { videoBg.style.display = 'none'; videoBg.pause(); }
-        stageCanvas.style.display = 'none';
-        const defBg = (typeof window !== 'undefined' && window.__ag_default_wallpaper ? window.__ag_default_wallpaper : '');
-        document.body.style.backgroundImage = defBg ? `url('${defBg}')` : '';
       }
+
       applyCssVariables();
     }
 
@@ -1531,7 +1945,7 @@ div[data-aux-pane-open] button {
         }
       }).catch((err) => {
         console.warn('[Theme] 恢复本地素材失败', err);
-        config.mode = 'glacier';
+        config.mode = 'native';
         config.customAssetUrl = '';
         persistConfig();
       });
@@ -1765,17 +2179,50 @@ div[data-aux-pane-open] button {
           <button id="ag-btn-close" style="background: transparent; border: none; color: #ffffff; font-size: 14px; cursor: pointer; padding: 2px 6px; border-radius: 6px; transition: opacity 0.15s; opacity: 0.85;">✕</button>
         </div>
 
-        <!-- 核心底图模式分段切换 (纯白字极简风格) -->
-        <div class="ag-apple-segmented" style="margin-bottom: 14px;">
-          <button class="ag-apple-segment-item ${config.mode === 'aurora' ? 'active' : ''}" id="ag-tab-aurora">
-            <span>动态极光</span>
+        <!-- 核心视觉模态分段切换 (4 模态：原生UI + 3美化模态) -->
+        <div class="ag-apple-segmented" style="margin-bottom: 14px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 3px;">
+          <button class="ag-apple-segment-item ${config.mode === 'native' ? 'active' : ''}" id="ag-tab-native" style="padding: 4px 6px; font-size: 11px;">
+            <span>原生 UI</span>
           </button>
-          <button class="ag-apple-segment-item ${config.mode === 'glacier' || config.mode === 'custom' ? 'active' : ''}" id="ag-tab-custom">
-            <span>本地素材</span>
+          <button class="ag-apple-segment-item ${config.mode === 'ocean' ? 'active' : ''}" id="ag-tab-ocean" style="padding: 4px 6px; font-size: 11px;">
+            <span>晶格海洋</span>
+          </button>
+          <button class="ag-apple-segment-item ${config.mode === 'aurora' ? 'active' : ''}" id="ag-tab-aurora" style="padding: 4px 6px; font-size: 11px;">
+            <span>流体极光</span>
+          </button>
+          <button class="ag-apple-segment-item ${config.mode === 'custom' ? 'active' : ''}" id="ag-tab-custom" style="padding: 4px 6px; font-size: 11px;">
+            <span>自定义素材</span>
           </button>
         </div>
 
-        <!-- 极光控制模块 (统一白字) -->
+        <!-- 模态 1：原生 UI 面板 -->
+        <div id="ag-panel-native" class="ag-apple-card" style="display: ${config.mode === 'native' ? 'block' : 'none'};">
+          <div style="font-size: 11px; color: rgba(255, 255, 255, 0.85); line-height: 1.5;">
+            当前为纯净原生 UI 模式：完全保留客户端原生黑白界面，零背景动画，零系统 GPU/CPU 负载。
+          </div>
+        </div>
+
+        <!-- 模态 2：Gemini 晶格海洋控制面板 (中栏区域控制独占) -->
+        <div id="ag-panel-ocean" class="ag-apple-card" style="display: ${config.mode === 'ocean' ? 'block' : 'none'};">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-size: 11px; font-weight: 600; color: #ffffff;">晶格波纹形态</span>
+            <div class="ag-apple-segmented" style="padding: 2px;">
+              <button class="ag-apple-segment-item ${config.oceanShape === 0 ? 'active' : ''}" id="ag-shape-star" style="font-size: 10px; padding: 2px 7px;">✦ 四芒星</button>
+              <button class="ag-apple-segment-item ${config.oceanShape === 1 ? 'active' : ''}" id="ag-shape-diamond" style="font-size: 10px; padding: 2px 7px;">◆ 菱形</button>
+              <button class="ag-apple-segment-item ${config.oceanShape === 2 ? 'active' : ''}" id="ag-shape-dots" style="font-size: 10px; padding: 2px 7px;">● 圆点</button>
+            </div>
+          </div>
+          <div class="ag-apple-slider-header" style="margin-bottom: 4px;">
+            <span style="font-size: 11px; color: #ffffff;">海洋涌浪流速</span>
+            <span class="val" id="val-ocean-speed" style="color: #ffffff;">${((config.oceanSpeed || 0.62) * 10).toFixed(0)}</span>
+          </div>
+          <input type="range" class="ag-apple-slider" id="slide-ocean-speed" min="2" max="20" value="${Math.round((config.oceanSpeed || 0.62) * 10)}" />
+          <div style="font-size: 10px; color: rgba(255, 255, 255, 0.70); margin-top: 6px;">
+            ✦ 区域控制：晶格海洋仅在中栏主视口区域渲染，左右两侧保持原生纯色。
+          </div>
+        </div>
+
+        <!-- 模态 3：流体极光控制面板 -->
         <div id="ag-panel-aurora" class="ag-apple-card" style="display: ${config.mode === 'aurora' ? 'block' : 'none'};">
           <div class="ag-apple-slider-header" style="margin-bottom: 6px;">
             <span style="font-weight: 500; color: #ffffff;">极光流动速率</span>
@@ -1784,8 +2231,8 @@ div[data-aux-pane-open] button {
           <input type="range" class="ag-apple-slider" id="slide-aurora-speed" min="2" max="25" value="${Math.round(config.auroraSpeed * 10)}" />
         </div>
 
-        <!-- 本地素材拖拽与导入模块 (支持图片与 MP4 视频，统一白字) -->
-        <div id="ag-panel-custom" class="ag-apple-card" style="display: ${config.mode !== 'aurora' ? 'block' : 'none'}; cursor: pointer;">
+        <!-- 模态 4：自定义素材拖拽与导入面板 -->
+        <div id="ag-panel-custom" class="ag-apple-card" style="display: ${config.mode === 'custom' ? 'block' : 'none'}; cursor: pointer;">
           <input type="file" id="ag-file-input" accept="image/*,video/mp4,video/*" style="display: none;" />
           <div id="ag-dropzone" style="text-align: center; padding: 6px 0;">
             <div style="font-size: 12px; color: #ffffff; font-weight: 500;">
@@ -2140,29 +2587,82 @@ div[data-aux-pane-open] button {
     document.getElementById('slide-rgb-g').oninput = onRgbChange;
     document.getElementById('slide-rgb-b').oninput = onRgbChange;
 
-    // 8. 模式切换分段器
+    // 8. 模式切换分段器 (4 模态系统：原生UI + 3美化模态)
+    const tabNative = document.getElementById('ag-tab-native');
+    const tabOcean = document.getElementById('ag-tab-ocean');
     const tabAurora = document.getElementById('ag-tab-aurora');
     const tabCustom = document.getElementById('ag-tab-custom');
+
+    const panelNative = document.getElementById('ag-panel-native');
+    const panelOcean = document.getElementById('ag-panel-ocean');
     const panelAurora = document.getElementById('ag-panel-aurora');
     const panelCustom = document.getElementById('ag-panel-custom');
 
-    tabAurora.onclick = () => {
-      tabAurora.classList.add('active');
-      tabCustom.classList.remove('active');
-      panelAurora.style.display = 'block';
-      panelCustom.style.display = 'none';
-      applyMode('aurora');
-      showToast('已切换至极光流体模式');
-    };
+    function switchModeTabs(activeTab, activePanel, modeKey) {
+      [tabNative, tabOcean, tabAurora, tabCustom].forEach(t => t && t.classList.remove('active'));
+      [panelNative, panelOcean, panelAurora, panelCustom].forEach(p => p && (p.style.display = 'none'));
+      if (activeTab) activeTab.classList.add('active');
+      if (activePanel) activePanel.style.display = 'block';
+      applyMode(modeKey, config.customAssetUrl);
+      try { persistConfig(); } catch (e) {}
+    }
 
-    tabCustom.onclick = () => {
-      tabCustom.classList.add('active');
-      tabAurora.classList.remove('active');
-      panelCustom.style.display = 'block';
-      panelAurora.style.display = 'none';
-      applyMode('custom', config.customAssetUrl);
-      showToast('已切换至本地素材底图模式');
-    };
+    if (tabNative) {
+      tabNative.onclick = () => {
+        switchModeTabs(tabNative, panelNative, 'native');
+        showToast('已切换至纯净原生 UI 模式');
+      };
+    }
+
+    if (tabOcean) {
+      tabOcean.onclick = () => {
+        switchModeTabs(tabOcean, panelOcean, 'ocean');
+        showToast('已切换至 Gemini 晶格海洋 (中栏区域控制)');
+      };
+    }
+
+    if (tabAurora) {
+      tabAurora.onclick = () => {
+        switchModeTabs(tabAurora, panelAurora, 'aurora');
+        showToast('已切换至全景极光流体模式');
+      };
+    }
+
+    if (tabCustom) {
+      tabCustom.onclick = () => {
+        switchModeTabs(tabCustom, panelCustom, 'custom');
+        showToast('已切换至自定义素材底图模式');
+      };
+    }
+
+    // 8.1 晶格海洋专属形态切换 (✦ 四芒星 / ◆ 菱形 / ● 圆点)
+    const shapeStarBtn = document.getElementById('ag-shape-star');
+    const shapeDiamondBtn = document.getElementById('ag-shape-diamond');
+    const shapeDotsBtn = document.getElementById('ag-shape-dots');
+
+    function updateOceanShapeUI(shapeIdx) {
+      config.oceanShape = shapeIdx;
+      [shapeStarBtn, shapeDiamondBtn, shapeDotsBtn].forEach(b => b && b.classList.remove('active'));
+      if (shapeIdx === 0 && shapeStarBtn) shapeStarBtn.classList.add('active');
+      if (shapeIdx === 1 && shapeDiamondBtn) shapeDiamondBtn.classList.add('active');
+      if (shapeIdx === 2 && shapeDotsBtn) shapeDotsBtn.classList.add('active');
+      try { persistConfig(); } catch (e) {}
+    }
+
+    if (shapeStarBtn) shapeStarBtn.onclick = () => { updateOceanShapeUI(0); showToast('晶格形态：✦ 四芒星'); };
+    if (shapeDiamondBtn) shapeDiamondBtn.onclick = () => { updateOceanShapeUI(1); showToast('晶格形态：◆ 正菱形'); };
+    if (shapeDotsBtn) shapeDotsBtn.onclick = () => { updateOceanShapeUI(2); showToast('晶格形态：● 圆点阵'); };
+
+    // 8.2 海洋流速滑块
+    const slideOceanSpeed = document.getElementById('slide-ocean-speed');
+    if (slideOceanSpeed) {
+      slideOceanSpeed.oninput = (e) => {
+        config.oceanSpeed = parseInt(e.target.value) / 10;
+        const valEl = document.getElementById('val-ocean-speed');
+        if (valEl) valEl.textContent = (config.oceanSpeed * 10).toFixed(0);
+        try { persistConfig(); } catch (err) {}
+      };
+    }
 
     // 进阶特性 1 绑定：晶莹磨砂 vs 柔雾类纸膜切换
     const texGlassBtn = document.getElementById('ag-tex-glass');
@@ -2267,12 +2767,13 @@ div[data-aux-pane-open] button {
         if (activeVideoBlobUrl) { URL.revokeObjectURL(activeVideoBlobUrl); activeVideoBlobUrl = null; }
         if (activeImageBlobUrl) { URL.revokeObjectURL(activeImageBlobUrl); activeImageBlobUrl = null; }
         if (videoBg) { videoBg.pause(); videoBg.removeAttribute('src'); videoBg.load(); videoBg.style.display = 'none'; }
-        config.mode = 'glacier';
+        config.mode = 'native';
         config.customAssetUrl = '';
         config.customAssetName = '';
-        applyMode('glacier');
+        applyMode('native');
+        if (tabNative) switchModeTabs(tabNative, panelNative, 'native');
         await persistConfigNow();
-        showToast('已清除素材并恢复默认壁纸');
+        showToast('已清除素材并恢复纯净原生 UI');
       } catch (err) { showToast(`清除失败：${err.message || '存储不可用'}`); }
     };
 

@@ -1,4 +1,4 @@
-﻿$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.Web.Extensions
 $ser = New-Object System.Web.Script.Serialization.JavaScriptSerializer
 $ser.MaxJsonLength = 67108864
@@ -23,11 +23,8 @@ $gifBase64 = [System.IO.File]::ReadAllText($base64Path, [System.Text.Encoding]::
 $template = [System.IO.File]::ReadAllText($templatePath, [System.Text.Encoding]::UTF8)
 $coreJs = $template.Replace("___SUOMING_GIF_PLACEHOLDER___", $gifBase64)
 
-# 4. 组合初始化注入代码
+# 4. 组合初始化注入代码 (纯净核心逻辑，默认原生 UI，不再强行定向冰川底图)
 $combinedJs = $coreJs
-if ($base64.Length -gt 100) {
-    $combinedJs = "window.__ag_default_wallpaper = window.__ag_default_wallpaper || 'data:image/jpeg;base64," + $base64 + "';`r`n" + $coreJs
-}
 
 # 5. 获取 DevTools CDP 端口
 $DevToolsPortFile = "C:\Users\31411\AppData\Roaming\Antigravity\DevToolsActivePort"

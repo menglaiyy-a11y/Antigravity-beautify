@@ -35,7 +35,7 @@
   const STORAGE_KEY = 'ag_theme_apple_config_v3';
   const ASSET_CACHE_KEY = 'ag_theme_fast_asset_cache_v1';
   let earlyConfig = {
-    mode: 'glacier',
+    mode: 'native',
     accentHex: '#0a84ff',
     accentRgb: [10, 132, 255],
     tuneMode: 'global',
@@ -50,7 +50,12 @@
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) earlyConfig = Object.assign(earlyConfig, JSON.parse(raw));
+    if (raw) {
+      earlyConfig = Object.assign(earlyConfig, JSON.parse(raw));
+      if (earlyConfig.mode === 'glacier') {
+        earlyConfig.mode = 'native';
+      }
+    }
   } catch (e) {}
 
   /* 4. 立即注入第 0 毫秒基础穿透与透明度规则，扼杀 FOUC (无样式闪烁) */
@@ -164,11 +169,11 @@
     targetParent.appendChild(earlyStyle);
   }
 
-  /* 5. 核心壁纸首帧对齐函数：杜绝模式错配导致冰川壁纸误刷与硬切 */
+  /* 5. 核心壁纸首帧对齐函数：原生 UI 与海洋模式首帧绝不注入静态冰川图，杜绝重定向与闪烁 */
   function applyInitialWallpaper() {
     if (!document.body) return false;
 
-    const mode = earlyConfig.mode || 'glacier';
+    const mode = earlyConfig.mode || 'native';
     try {
       if (document.documentElement) {
         document.documentElement.setAttribute('data-ag-preload-ran', '1');
@@ -176,10 +181,8 @@
       }
     } catch (e) {}
 
-    if (mode === 'glacier') {
-      if (!document.body.style.backgroundImage || document.body.style.backgroundImage === 'none') {
-        document.body.style.backgroundImage = 'url("' + defaultWallpaper + '")';
-      }
+    if (mode === 'native' || mode === 'ocean') {
+      document.body.style.backgroundImage = 'none';
     } else if (mode === 'aurora') {
       document.body.style.backgroundImage = 'none';
       document.body.style.backgroundColor = '#06080f';

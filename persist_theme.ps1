@@ -1,17 +1,12 @@
-﻿$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Stop"
 
 Write-Output "[Theme] Building and persisting self-contained theme bundle..."
 
 # Step 0: 重新构建包含完整表情包和最新模版的 ui_panel.js
 powershell -ExecutionPolicy Bypass -File "D:\Antigravity\6\build_ui_panel.ps1"
 
-# Step 1: 读取 4K 极地冰川底图素材
-$imgPath = "D:\Antigravity\6\antarctica_glacier_ui_4k.jpg"
+# Step 1: 默认回归纯净原生 UI，不再嵌入巨型冰川图片
 $base64 = ""
-if (Test-Path -LiteralPath $imgPath) {
-    $imgBytes = [System.IO.File]::ReadAllBytes($imgPath)
-    $base64 = [Convert]::ToBase64String($imgBytes)
-}
 
 # Step 2: 组装自包含独立完整 bundle
 $snippetPath = "D:\Antigravity\6\preload_head_snippet.js"
