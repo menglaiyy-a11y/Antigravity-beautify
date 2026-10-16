@@ -1,87 +1,115 @@
-# D:/Antigravity/6/V2/build/build_bundle.ps1
+# D:\Antigravity\6\V2\build\build_bundle.ps1
 $ErrorActionPreference = "Stop"
-Add-Type -AssemblyName System.Web
 
-$v2Root = "D:/Antigravity/6/V2"
-$srcDir = "$v2Root/src"
-$distDir = "$v2Root/dist"
+$scriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyInvocation.MyCommand.Definition }
+$v2Root = Split-Path -Parent $scriptDir
+$srcDir = Join-Path $v2Root "src"
+$distDir = Join-Path $v2Root "dist"
+$baselineFile = "D:\Antigravity\6\preload_official_baseline.js"
 
 Write-Host "=========================================================="
-Write-Host "Antigravity V2 Bundler Pipeline"
+Write-Host "Antigravity V2 Bundler Pipeline (JSON Safe Engine)"
 Write-Host "=========================================================="
 
-$f_base = "$srcDir/themes/tokens_base.css"
-$f_native = "$srcDir/themes/mode_native.css"
-$f_ocean = "$srcDir/themes/mode_ocean.css"
-$f_aurora = "$srcDir/themes/mode_aurora.css"
-
-$combinedCss = [IO.File]::ReadAllText($f_base) + "`n" + [IO.File]::ReadAllText($f_native) + "`n" + [IO.File]::ReadAllText($f_ocean) + "`n" + [IO.File]::ReadAllText($f_aurora)
-Write-Host "[Bundler] Themes CSS merged successfully."
-
-$gifBase64 = ""
-$gifPath = "$srcDir/assets/suoming_base64.txt"
-if (Test-Path -LiteralPath $gifPath) {
-    $gifBase64 = ([IO.File]::ReadAllText($gifPath)).Trim()
+if (-not (Test-Path -LiteralPath $baselineFile)) {
+    throw "官方基线文件缺失: $baselineFile"
 }
+$officialBaseCode = [System.IO.File]::ReadAllText($baselineFile, [System.Text.Encoding]::UTF8)
 
-$mStorage = [IO.File]::ReadAllText("$srcDir/core/storage_bridge.js")
-$mState   = [IO.File]::ReadAllText("$srcDir/core/state_machine.js")
-$mOcean   = [IO.File]::ReadAllText("$srcDir/shaders/ocean_renderer.js")
-$mAurora  = [IO.File]::ReadAllText("$srcDir/shaders/aurora_renderer.js")
-$mPanel   = [IO.File]::ReadAllText("$srcDir/components/control_panel/panel.js")
-$mIndex   = [IO.File]::ReadAllText("$srcDir/index.js")
+# 1. 合并 CSS
+$cssSb = New-Object System.Text.StringBuilder
+$cssFiles = @(
+    (Join-Path $srcDir "themes\tokens_base.css"),
+    (Join-Path $srcDir "themes\mode_native.css"),
+    (Join-Path $srcDir "themes\mode_ocean.css"),
+    (Join-Path $srcDir "themes\mode_aurora.css")
+)
+foreach ($f in $cssFiles) {
+    if (Test-Path -LiteralPath $f) {
+        $c = [System.IO.File]::ReadAllText($f, [System.Text.Encoding]::UTF8)
+        [void]$cssSb.AppendLine($c)
+    }
+}
+$combinedCss = $cssSb.ToString()
+$jsonCss = $combinedCss | ConvertTo-Json -Compress
+Write-Host "[Bundler] Themes CSS merged & JSON encoded."
 
-function Clean-Module($code) {
+# 2. 读取资源
+$gifBase64 = ""
+$gifPath = Join-Path $srcDir "assets\suoming_base64.txt"
+if (Test-Path -LiteralPath $gifPath) {
+    $gifBase64 = ([System.IO.File]::ReadAllText($gifPath, [System.Text.Encoding]::UTF8)).Trim()
+}
+$jsonGif = $gifBase64 | ConvertTo-Json -Compress
+
+# 3. 模块解耦与清理
+function Clean-ModuleContent([string]$code) {
     $c = [regex]::Replace($code, 'import\s+[\s\S]*?from\s+[''"].*?[''"];', '')
     $c = [regex]::Replace($c, 'export\s+(class|const|function|let|var)\s+', '$1 ')
     $c = [regex]::Replace($c, 'export\s*\{[\s\S]*?\};', '')
     return $c
 }
 
-$cleanStorage = Clean-Module $mStorage
-$cleanState   = Clean-Module $mState
-$cleanOcean   = Clean-Module $mOcean
-$cleanAurora  = Clean-Module $mAurora
-$cleanPanel   = Clean-Module $mPanel
-$cleanIndex   = Clean-Module $mIndex
+$modules = @(
+    (Join-Path $srcDir "core\storage_bridge.js"),
+    (Join-Path $srcDir "core\asset_registry.js"),
+    (Join-Path $srcDir "core\state_machine.js"),
+    (Join-Path $srcDir "shaders\ocean_renderer.js"),
+    (Join-Path $srcDir "shaders\aurora_renderer.js"),
+    (Join-Path $srcDir "components\pet_widget\pet.js"),
+    (Join-Path $srcDir "components\control_panel\panel.js"),
+    (Join-Path $srcDir "index.js")
+)
 
-$escapedCss = [System.Web.HttpUtility]::JavaScriptStringEncode($combinedCss)
+# 4. 构建单一 JS 产物
+$bundleSb = New-Object System.Text.StringBuilder
+[void]$bundleSb.AppendLine("(function() {")
+[void]$bundleSb.AppendLine("  if (typeof window === 'undefined') return;")
+[void]$bundleSb.AppendLine("")
 
-$bundleCode = "(function() {`n"
-$bundleCode += "  if (typeof window === 'undefined') return;`n`n"
-$bundleCode += $cleanStorage + "`n`n"
-$bundleCode += $cleanState + "`n`n"
-$bundleCode += $cleanOcean + "`n`n"
-$bundleCode += $cleanAurora + "`n`n"
-$bundleCode += $cleanPanel + "`n`n"
-$bundleCode += $cleanIndex + "`n`n"
-$bundleCode += "  bootstrapAntigravityV2({`n"
-$bundleCode += "    combinedCss: `"$escapedCss`",`n"
-$bundleCode += "    sunglassesGifBase64: `"$gifBase64`"`n"
-$bundleCode += "  });`n"
-$bundleCode += "})();`n"
+foreach ($m in $modules) {
+    $raw = [System.IO.File]::ReadAllText($m, [System.Text.Encoding]::UTF8)
+    $clean = Clean-ModuleContent $raw
+    [void]$bundleSb.AppendLine($clean)
+    [void]$bundleSb.AppendLine("")
+}
 
-$bundleFile = "$distDir/ag_v2_bundle.js"
-[IO.File]::WriteAllText($bundleFile, $bundleCode, [System.Text.Encoding]::UTF8)
+[void]$bundleSb.AppendLine("  const V2_COMBINED_CSS = $jsonCss;")
+[void]$bundleSb.AppendLine("  const V2_SUOMING_GIF = $jsonGif;")
+[void]$bundleSb.AppendLine("  bootstrapAntigravityV2({")
+[void]$bundleSb.AppendLine("    combinedCss: V2_COMBINED_CSS,")
+[void]$bundleSb.AppendLine("    sunglassesGifBase64: V2_SUOMING_GIF")
+[void]$bundleSb.AppendLine("  });")
+[void]$bundleSb.AppendLine("})();")
 
-$sizeKB = [Math]::Round((Get-Item -LiteralPath $bundleFile).Length / 1KB, 2)
+$bundleCode = $bundleSb.ToString()
+
+if (-not (Test-Path -LiteralPath $distDir)) {
+    New-Item -ItemType Directory -Path $distDir -Force | Out-Null
+}
+$bundleFile = Join-Path $distDir "ag_v2_bundle.js"
+[System.IO.File]::WriteAllText($bundleFile, $bundleCode, [System.Text.Encoding]::UTF8)
+
+$sizeKB = [Math]::Round((Get-Item -LiteralPath $bundleFile).Length / 1024, 2)
 Write-Host "[Bundler] Bundle compiled: $bundleFile ($sizeKB KB)"
 
-# 写入 Preload 目标
-$t1 = "C:/Users/31411/AppData/Local/Programs/Antigravity/resources/app/dist/preload.js"
-$t2 = "D:/Antigravity/antigravity/resources/app/dist/preload.js"
+# 5. 组合官方基线与 V2 产物
+$finalSb = New-Object System.Text.StringBuilder
+[void]$finalSb.Append($officialBaseCode)
+[void]$finalSb.AppendLine("")
+[void]$finalSb.AppendLine("")
+[void]$finalSb.AppendLine("// [V2 INJECTION]")
+[void]$finalSb.Append($bundleCode)
+$finalContent = $finalSb.ToString()
+
+$t1 = "C:\Users\31411\AppData\Local\Programs\Antigravity\resources\app\dist\preload.js"
+$t2 = "D:\Antigravity\antigravity\resources\app\dist\preload.js"
 
 foreach ($target in @($t1, $t2)) {
     if (Test-Path -LiteralPath $target) {
-        $origContent = [IO.File]::ReadAllText($target)
-        # 清理旧注入并写入 V2
-        $cutIdx = $origContent.IndexOf("// ==============================================================================")
-        if ($cutIdx -gt 0) {
-            $origContent = $origContent.Substring(0, $cutIdx).Trim()
-        }
-        $finalContent = $origContent + "`r`n`r`n// V2 INJECTION`r`n" + $bundleCode
-        [IO.File]::WriteAllText($target, $finalContent, [System.Text.Encoding]::UTF8)
-        Write-Host "[Preload] Successfully updated: $target"
+        [System.IO.File]::WriteAllText($target, $finalContent, [System.Text.Encoding]::UTF8)
+        $kb = [Math]::Round((Get-Item -LiteralPath $target).Length / 1024, 2)
+        Write-Host "[Preload] Clean base + V2 bundle synced: $target ($kb KB)"
     }
 }
 

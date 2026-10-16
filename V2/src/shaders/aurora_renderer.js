@@ -1,14 +1,15 @@
 /**
  * Antigravity V2 - AuroraRenderer (全景流体极光 WebGL 渲染管线)
  * 职责：负责 aurora 模式下的多波长极光动态渲染与时间干涉模拟
+ * 优化：预缓存 Uniforms、可见性自动休眠、DPR 视口降阶保护
  */
 
-const VS_SRC = `
+const AURORA_VS_SRC = `
   attribute vec2 a_pos;
   void main() { gl_Position = vec4(a_pos, 0.0, 1.0); }
 `;
 
-const FS_SRC = `
+const AURORA_FS_SRC = `
   precision mediump float;
   uniform vec2 u_res;
   uniform float u_time;
@@ -34,23 +35,44 @@ export class AuroraRenderer {
     this.program = null;
     this.animId = null;
     this.running = false;
+    this.isVisible = true;
     this.speed = 1.0;
     this.accentRgb = [10, 132, 255];
+    this.uniformLocs = {};
+
+    this.handleVisibilityChange = () => {
+      this.isVisible = !document.hidden;
+      if (!this.isVisible && this.running && this.animId) {
+        cancelAnimationFrame(this.animId);
+        this.animId = null;
+      } else if (this.isVisible && this.running && !this.animId) {
+        this.render(performance.now());
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', this.handleVisibilityChange);
+    }
   }
 
   init() {
     if (!this.canvas) return false;
     try {
-      this.gl = this.canvas.getContext('webgl');
+      this.gl = this.canvas.getContext('webgl', {
+        alpha: false,
+        antialias: false,
+        depth: false,
+        stencil: false,
+        powerPreference: 'high-performance'
+      });
       if (!this.gl) return false;
 
       const gl = this.gl;
       const vs = gl.createShader(gl.VERTEX_SHADER);
-      gl.shaderSource(vs, VS_SRC);
+      gl.shaderSource(vs, AURORA_VS_SRC);
       gl.compileShader(vs);
 
       const fs = gl.createShader(gl.FRAGMENT_SHADER);
-      gl.shaderSource(fs, FS_SRC);
+      gl.shaderSource(fs, AURORA_FS_SRC);
       gl.compileShader(fs);
 
       const prog = gl.createProgram();
@@ -69,6 +91,12 @@ export class AuroraRenderer {
       const aPos = gl.getAttribLocation(prog, 'a_pos');
       gl.enableVertexAttribArray(aPos);
       gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+      // 预缓存 Uniform Location
+      this.uniformLocs['u_res'] = gl.getUniformLocation(prog, 'u_res');
+      this.uniformLocs['u_time'] = gl.getUniformLocation(prog, 'u_time');
+      this.uniformLocs['u_accent'] = gl.getUniformLocation(prog, 'u_accent');
+
       return true;
     } catch (e) {
       console.warn('[AuroraRenderer] 初始化失败:', e);
@@ -96,10 +124,14 @@ export class AuroraRenderer {
   }
 
   render(time) {
-    if (!this.running || !this.gl) return;
+    if (!this.running || !this.gl || !this.isVisible) return;
     const gl = this.gl;
-    const w = window.innerWidth * 0.75;
-    const h = window.innerHeight * 0.75;
+
+    // 视口降阶保护：高分屏限制采样率
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.0);
+    const w = Math.floor(window.innerWidth * 0.75 * dpr);
+    const h = Math.floor(window.innerHeight * 0.75 * dpr);
+
     if (this.canvas.width !== w || this.canvas.height !== h) {
       this.canvas.width = w;
       this.canvas.height = h;
@@ -107,10 +139,10 @@ export class AuroraRenderer {
     }
 
     gl.useProgram(this.program);
-    gl.uniform2f(gl.getUniformLocation(this.program, 'u_res'), w, h);
-    gl.uniform1f(gl.getUniformLocation(this.program, 'u_time'), time * 0.001 * this.speed);
+    gl.uniform2f(this.uniformLocs['u_res'], w, h);
+    gl.uniform1f(this.uniformLocs['u_time'], time * 0.001 * this.speed);
     const [r, g, b] = this.accentRgb;
-    gl.uniform3f(gl.getUniformLocation(this.program, 'u_accent'), r / 255, g / 255, b / 255);
+    gl.uniform3f(this.uniformLocs['u_accent'], r / 255, g / 255, b / 255);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
     this.animId = requestAnimationFrame((t) => this.render(t));

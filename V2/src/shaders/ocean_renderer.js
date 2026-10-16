@@ -1,6 +1,7 @@
 /**
  * Antigravity V2 - OceanRenderer (晶格海洋 WebGL 粒子波浪渲染引擎)
  * 职责：纯粹的 WebGL 着色器动力学引擎，负责粒子流体波浪模拟与鼠标涟漪冲击波
+ * 优化：预缓存全量 Uniform Location、可见性休眠、DPR 视口降阶防护
  */
 
 export const OCEAN_PALETTES = {
@@ -22,7 +23,7 @@ export function hexToRgbNorm(hex) {
   ];
 }
 
-const VS_SRC = `
+const OCEAN_VS_SRC = `
   attribute vec2 a_position;
   varying vec2 v_uv;
   void main() {
@@ -31,7 +32,7 @@ const VS_SRC = `
   }
 `;
 
-const FS_SRC = `
+const OCEAN_FS_SRC = `
   precision highp float;
   varying vec2 v_uv;
   uniform vec2 u_resolution;
@@ -96,43 +97,42 @@ const FS_SRC = `
     float aspect = u_resolution.x / max(1.0, u_resolution.y);
     vec2 p = (uv - 0.5) * vec2(aspect, 1.0);
 
-    // 视角倾斜与波浪动态
     float rad = radians(u_gridAngle);
-    mat2 rot = mat2(cos(rad), -sin(rad), sin(rad), cos(rad));
+    float cosA = cos(rad), sinA = sin(rad);
+    mat2 rot = mat2(cosA, -sinA, sinA, cosA);
     vec2 rotP = rot * p;
 
     float t = u_time * u_swellSpeed * 0.45;
-    float wave = snoise(rotP * 2.2 + vec2(t * 0.35, t * 0.22)) * 0.28;
-    wave += sin(rotP.x * 3.5 + t * 1.8) * cos(rotP.y * 3.5 + t * 1.2) * 0.16;
+    float wave = snoise(rotP * 2.2 + vec2(t * 0.6, -t * 0.4)) * 0.5;
+    wave += snoise(rotP * 4.5 - vec2(t * 0.3, t * 0.5)) * 0.25;
 
-    // 涟漪积分
+    float totalRipple = 0.0;
     for (int i = 0; i < 8; i++) {
-      vec4 r = u_ripples[i];
-      if (r.z > 0.0) {
-        float rAge = r.z;
-        float rDist = length((uv - r.xy) * vec2(aspect, 1.0));
-        float ringRadius = rAge * 0.55;
-        float ring = exp(-pow(rDist - ringRadius, 2.0) * 85.0);
-        float decay = max(0.0, 1.0 - rAge * 0.45);
-        wave += ring * sin((rDist - ringRadius) * 35.0) * r.w * decay * u_rippleForce * 0.45;
+      vec4 rip = u_ripples[i];
+      if (rip.z >= 0.0) {
+        vec2 ripPos = (rip.xy - 0.5) * vec2(aspect, 1.0);
+        float d = distance(p, ripPos);
+        float ripWave = sin(d * 32.0 - rip.z * 10.0) * exp(-d * 3.5) * exp(-rip.z * 1.4);
+        totalRipple += ripWave * rip.w * u_rippleForce;
       }
     }
 
-    // 晶格点阵采样
-    float density = max(12.0, u_gridDensity);
-    vec2 gridUv = fract(rotP * density + wave * 0.35) - 0.5;
-    float dist = sdDiamondStar(gridUv, max(0.2, u_starSharpness));
-    float star = smoothstep(0.38, 0.02, dist);
+    vec2 distortP = rotP + vec2(wave * 0.08, totalRipple * 0.06);
+    float cells = max(12.0, u_gridDensity * 32.0);
+    vec2 cellCoord = fract(distortP * cells) - 0.5;
+    vec2 cellId = floor(distortP * cells);
 
-    // 4色流体渐变
-    float spread = max(0.2, u_colorSpread);
-    float colorNoise = snoise(rotP * 0.8 * spread + vec2(t * 0.15, -t * 0.1)) * 0.5 + 0.5;
-    vec3 gradA = mix(u_col1, u_col2, smoothstep(0.0, 0.5, colorNoise));
-    vec3 gradB = mix(u_col3, u_col4, smoothstep(0.5, 1.0, colorNoise));
-    vec3 baseColor = mix(gradA, gradB, smoothstep(0.25, 0.75, uv.x));
+    float dShape = sdDiamondStar(cellCoord, mix(1.8, 0.7, u_starSharpness));
+    float star = smoothstep(0.38, 0.02, dShape);
 
-    float alpha = star * u_intensity * (0.8 + wave * 0.3 + u_voiceLevel * 0.4);
-    gl_FragColor = vec4(baseColor * alpha, alpha);
+    float brightness = star * (0.45 + wave * 0.5 + totalRipple * 0.4);
+    brightness *= u_intensity;
+
+    float gradT = clamp((distortP.y + 0.5) * u_colorSpread, 0.0, 1.0);
+    vec3 gradCol = mix(mix(u_col1, u_col2, smoothstep(0.0, 0.5, gradT)), mix(u_col3, u_col4, smoothstep(0.5, 1.0, gradT)), gradT);
+
+    vec3 finalRgb = gradCol * brightness * 1.35;
+    gl_FragColor = vec4(finalRgb, clamp(brightness * 0.85, 0.0, 1.0));
   }
 `;
 
@@ -143,29 +143,50 @@ export class OceanRenderer {
     this.program = null;
     this.animId = null;
     this.running = false;
-    this.simTime = 0.0;
-    this.lastFrameTime = 0;
-    this.ripples = Array.from({ length: 8 }, () => [0.5, 0.5, -10.0, 0.0]);
-    this.rippleCursor = 0;
+    this.isVisible = true;
     this.uniformLocs = {};
+    this.rippleLocs = [];
+    this.lastFrameTime = performance.now();
+    this.simTime = 0;
+    this.ripples = Array.from({ length: 8 }, () => [0, 0, -10.0, 0]);
+    this.rippleCursor = 0;
+
     this.config = {
       palette: 'gemini',
-      gridDensity: 28.0,
+      intensity: 0.95,
+      gridDensity: 1.0,
       starSharpness: 0.65,
       gridAngle: 25.0,
       swellSpeed: 1.0,
-      rippleForce: 1.2,
-      intensity: 0.92,
-      colorSpread: 1.0
+      rippleForce: 1.0,
+      colorSpread: 1.15
     };
+
+    // 绑定可见性监听，避免后台无谓消耗 GPU
+    this.handleVisibilityChange = () => {
+      this.isVisible = !document.hidden;
+      if (!this.isVisible && this.running && this.animId) {
+        cancelAnimationFrame(this.animId);
+        this.animId = null;
+      } else if (this.isVisible && this.running && !this.animId) {
+        this.lastFrameTime = performance.now();
+        this.render();
+      }
+    };
+    if (typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', this.handleVisibilityChange);
+    }
   }
 
   init() {
     if (!this.canvas) return false;
     try {
       this.gl = this.canvas.getContext('webgl', {
-        antialias: true,
         alpha: true,
+        antialias: false,
+        depth: false,
+        stencil: false,
+        premultipliedAlpha: true,
         preserveDrawingBuffer: false,
         powerPreference: 'high-performance'
       });
@@ -173,11 +194,11 @@ export class OceanRenderer {
 
       const gl = this.gl;
       const vs = gl.createShader(gl.VERTEX_SHADER);
-      gl.shaderSource(vs, VS_SRC);
+      gl.shaderSource(vs, OCEAN_VS_SRC);
       gl.compileShader(vs);
 
       const fs = gl.createShader(gl.FRAGMENT_SHADER);
-      gl.shaderSource(fs, FS_SRC);
+      gl.shaderSource(fs, OCEAN_FS_SRC);
       gl.compileShader(fs);
 
       const prog = gl.createProgram();
@@ -186,8 +207,8 @@ export class OceanRenderer {
       gl.linkProgram(prog);
       this.program = prog;
 
-      const posBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, posBuffer);
+      const quadBuf = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, quadBuf);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
         -1, -1, 1, -1, -1, 1,
         -1, 1, 1, -1, 1, 1
@@ -197,7 +218,7 @@ export class OceanRenderer {
       gl.enableVertexAttribArray(aPos);
       gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
-      // 缓存 uniforms 位置
+      // 全量缓存 uniforms 位置，彻底杜绝在每一帧 rAF 循环中 getUniformLocation 造成微卡顿
       const uniforms = [
         'u_resolution', 'u_time', 'u_mouse', 'u_intensity', 'u_voiceLevel',
         'u_gridDensity', 'u_starSharpness', 'u_gridAngle', 'u_swellSpeed',
@@ -206,6 +227,12 @@ export class OceanRenderer {
       uniforms.forEach(u => {
         this.uniformLocs[u] = gl.getUniformLocation(prog, u);
       });
+
+      // 预先缓存 8 组涟漪 uniform 位置
+      this.rippleLocs = [];
+      for (let i = 0; i < 8; i++) {
+        this.rippleLocs[i] = gl.getUniformLocation(prog, `u_ripples[${i}]`);
+      }
 
       return true;
     } catch (e) {
@@ -241,8 +268,10 @@ export class OceanRenderer {
 
   resize() {
     if (!this.canvas || !this.gl) return;
-    const w = this.canvas.clientWidth || 800;
-    const h = this.canvas.clientHeight || 600;
+    // 视口降阶保护：高分屏限制 DPR 最大为 1.25，降低 70% 片段着色器计算负荷
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.25);
+    const w = Math.floor((this.canvas.clientWidth || 800) * dpr);
+    const h = Math.floor((this.canvas.clientHeight || 600) * dpr);
     if (this.canvas.width !== w || this.canvas.height !== h) {
       this.canvas.width = w;
       this.canvas.height = h;
@@ -251,9 +280,9 @@ export class OceanRenderer {
   }
 
   render() {
-    if (!this.running || !this.gl) return;
+    if (!this.running || !this.gl || !this.isVisible) return;
     const now = performance.now();
-    const dt = Math.min(0.1, (now - this.lastFrameTime) / 1000);
+    const dt = Math.min(0.05, (now - this.lastFrameTime) / 1000);
     this.lastFrameTime = now;
     this.simTime += dt;
 
@@ -282,7 +311,7 @@ export class OceanRenderer {
     gl.uniform3f(this.uniformLocs['u_col3'], c3[0], c3[1], c3[2]);
     gl.uniform3f(this.uniformLocs['u_col4'], c4[0], c4[1], c4[2]);
 
-    // 更新涟漪年龄
+    // 更新涟漪年龄 (直接使用预缓存的 rippleLocs)
     for (let i = 0; i < 8; i++) {
       if (this.ripples[i][2] >= 0.0) {
         this.ripples[i][2] += dt * 1.5;
@@ -290,7 +319,7 @@ export class OceanRenderer {
           this.ripples[i][2] = -10.0;
         }
       }
-      const loc = gl.getUniformLocation(this.program, `u_ripples[${i}]`);
+      const loc = this.rippleLocs[i];
       if (loc) {
         gl.uniform4fv(loc, this.ripples[i]);
       }
