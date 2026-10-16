@@ -1,9 +1,13 @@
-# Temporary and cache files
-*.tmp
+# Logs
 *.log
-.system_generated/
-.agents/
+scratch_*.json
+temp_*.ps1
+test_*.png
+live_test_*.png
 
-# Release archives (distributed via Releases)
-*.zip
-ag_theme_bundle.js
+# Node
+node_modules/
+
+# OS
+Thumbs.db
+.DS_Store

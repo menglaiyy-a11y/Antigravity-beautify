@@ -435,73 +435,96 @@
   }
 
   /* 8. 桌面伴侣 (Desktop Pet) 宿主级启停桥接与开机自启动引擎 */
-  const petScriptPath = 'D:\\Antigravity\\6\\desktop_pet.ps1';
-  let childProcessRef = null;
-  try {
-    childProcessRef = (typeof require === 'function') ? require('child_process') : null;
-  } catch (e) {}
+  const callPetIpc = async (channel, ...args) => {
+    // 优先 1：Preload 作用域直出 electron_1.ipcRenderer
+    try {
+      if (typeof electron_1 !== 'undefined' && electron_1 && electron_1.ipcRenderer) {
+        return await electron_1.ipcRenderer.invoke(channel, ...args);
+      }
+    } catch (e) {}
+
+    // 优先 2：Main World 暴露的 window.electronNative
+    try {
+      if (typeof window !== 'undefined' && window.electronNative) {
+        if (channel === 'pet:start' && typeof window.electronNative.startPet === 'function') {
+          return await window.electronNative.startPet();
+        }
+        if (channel === 'pet:stop' && typeof window.electronNative.stopPet === 'function') {
+          return await window.electronNative.stopPet();
+        }
+        if (channel === 'pet:status' && typeof window.electronNative.getPetStatus === 'function') {
+          return await window.electronNative.getPetStatus();
+        }
+      }
+    } catch (e) {}
+
+    // 优先 3：通用 require('electron')（如果环境允许）
+    try {
+      if (typeof require === 'function') {
+        const electron = require('electron');
+        if (electron && electron.ipcRenderer) {
+          return await electron.ipcRenderer.invoke(channel, ...args);
+        }
+      }
+    } catch (e) {}
+
+    return null;
+  };
 
   const petBridge = {
-    isSupported: !!childProcessRef,
-    startPet: function () {
-      if (!childProcessRef) return false;
+    isSupported: true,
+    startPet: async function () {
       try {
-        const p = childProcessRef.spawn('powershell.exe', [
-          '-ExecutionPolicy', 'Bypass',
-          '-WindowStyle', 'Hidden',
-          '-File', petScriptPath
-        ], {
-          detached: true,
-          stdio: 'ignore'
-        });
-        p.unref();
-        return true;
+        const res = await callPetIpc('pet:start');
+        return !!(res && (res.ok !== false));
       } catch (e) {
         return false;
       }
     },
-    stopPet: function () {
-      if (!childProcessRef) return false;
+    stopPet: async function () {
       try {
-        childProcessRef.exec('powershell.exe -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like \'*desktop_pet.ps1*\' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"');
-        return true;
+        const res = await callPetIpc('pet:stop');
+        return !!(res && (res.ok !== false));
       } catch (e) {
         return false;
       }
     },
-    checkRunning: function (cb) {
-      if (!childProcessRef) {
-        if (typeof cb === 'function') cb(false);
-        return;
-      }
+    checkRunning: async function (cb) {
       try {
-        childProcessRef.exec('powershell.exe -NoProfile -Command "(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like \'*desktop_pet.ps1*\' }).Count"', (err, stdout) => {
-          const count = parseInt(String(stdout || '').trim(), 10) || 0;
-          if (typeof cb === 'function') cb(count > 0);
-        });
+        const res = await callPetIpc('pet:status');
+        const isRunning = !!(res && (
+          res.realChecked ? (res.running === true || res.count > 0) : (res.count > 2)
+        ));
+        if (typeof cb === 'function') cb(isRunning);
+        return isRunning;
       } catch (e) {
         if (typeof cb === 'function') cb(false);
+        return false;
       }
     }
   };
 
   window.__ag_pet_bridge = petBridge;
+  try {
+    if (typeof electron_1 !== 'undefined' && electron_1 && electron_1.contextBridge && typeof electron_1.contextBridge.exposeInMainWorld === 'function') {
+      electron_1.contextBridge.exposeInMainWorld('__ag_pet_bridge', petBridge);
+    }
+  } catch (e) {}
 
   // 建立跨世界 CustomEvent 窄接口通信，保障任何上下文均能无缝调用
   try {
-    document.addEventListener('ag-pet-cmd', (ev) => {
+    document.addEventListener('ag-pet-cmd', async (ev) => {
       const detail = ev.detail || {};
       const action = detail.action;
       if (action === 'start') {
-        const ok = petBridge.startPet();
+        const ok = await petBridge.startPet();
         document.dispatchEvent(new CustomEvent('ag-pet-status-change', { detail: { action: 'start', ok } }));
       } else if (action === 'stop') {
-        const ok = petBridge.stopPet();
+        const ok = await petBridge.stopPet();
         document.dispatchEvent(new CustomEvent('ag-pet-status-change', { detail: { action: 'stop', ok } }));
       } else if (action === 'check') {
-        petBridge.checkRunning((running) => {
-          document.dispatchEvent(new CustomEvent('ag-pet-status-change', { detail: { action: 'check', running } }));
-        });
+        const running = await petBridge.checkRunning();
+        document.dispatchEvent(new CustomEvent('ag-pet-status-change', { detail: { action: 'check', running } }));
       }
     });
   } catch (e) {}
@@ -510,12 +533,13 @@
   try {
     const PET_AUTO_KEY = 'ag_pet_auto_launch_v1';
     const isAuto = localStorage.getItem(PET_AUTO_KEY) === 'true';
-    if (isAuto && petBridge.isSupported) {
-      petBridge.checkRunning((running) => {
+    if (isAuto) {
+      setTimeout(async () => {
+        const running = await petBridge.checkRunning();
         if (!running) {
-          petBridge.startPet();
+          await petBridge.startPet();
         }
-      });
+      }, 1500);
     }
   } catch (e) {}
 })();

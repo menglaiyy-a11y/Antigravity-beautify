@@ -4465,11 +4465,73 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
       }
     }
 
-    function checkPetStatus() {
-      if (window.__ag_pet_bridge && typeof window.__ag_pet_bridge.checkRunning === 'function') {
-        window.__ag_pet_bridge.checkRunning((running) => {
-          updatePetStatusUI(running);
-        });
+    const callPetIpcLocal = async (channel, ...args) => {
+      // 1. window.__ag_pet_bridge
+      if (typeof window !== 'undefined' && window.__ag_pet_bridge) {
+        if (channel === 'pet:start' && typeof window.__ag_pet_bridge.startPet === 'function') {
+          return await window.__ag_pet_bridge.startPet();
+        }
+        if (channel === 'pet:stop' && typeof window.__ag_pet_bridge.stopPet === 'function') {
+          return await window.__ag_pet_bridge.stopPet();
+        }
+        if (channel === 'pet:status' && typeof window.__ag_pet_bridge.checkRunning === 'function') {
+          return await window.__ag_pet_bridge.checkRunning();
+        }
+      }
+      // 2. Preload 作用域内的 electron_1.ipcRenderer
+      try {
+        if (typeof electron_1 !== 'undefined' && electron_1 && electron_1.ipcRenderer) {
+          const res = await electron_1.ipcRenderer.invoke(channel, ...args);
+          if (channel === 'pet:status') {
+            return !!(res && (res.realChecked ? (res.running === true || res.count > 0) : (res.count > 2)));
+          }
+          return res ? (res.ok !== false) : false;
+        }
+      } catch (e) {}
+      // 3. Main World 内的 window.electronNative
+      try {
+        if (typeof window !== 'undefined' && window.electronNative) {
+          if (channel === 'pet:start' && typeof window.electronNative.startPet === 'function') {
+            const res = await window.electronNative.startPet();
+            return res ? (res.ok !== false) : false;
+          }
+          if (channel === 'pet:stop' && typeof window.electronNative.stopPet === 'function') {
+            const res = await window.electronNative.stopPet();
+            return res ? (res.ok !== false) : false;
+          }
+          if (channel === 'pet:status' && typeof window.electronNative.getPetStatus === 'function') {
+            const res = await window.electronNative.getPetStatus();
+            return !!(res && (res.realChecked ? (res.running === true || res.count > 0) : (res.count > 2)));
+          }
+        }
+      } catch (e) {}
+      return null;
+    };
+
+    const syncAutoLaunchToNative = (val) => {
+      const strVal = val ? 'true' : 'false';
+      const changes = { 'ag_pet_auto_launch_v1': strVal };
+      try {
+        if (typeof electron_1 !== 'undefined' && electron_1 && electron_1.ipcRenderer) {
+          electron_1.ipcRenderer.invoke('storage:update-items', changes);
+        }
+      } catch (e) {}
+      try {
+        if (window.__ag_native_storage && typeof window.__ag_native_storage.updateItems === 'function') {
+          window.__ag_native_storage.updateItems(changes);
+        }
+      } catch (e) {}
+      try {
+        if (window.nativeStorage && typeof window.nativeStorage.updateItems === 'function') {
+          window.nativeStorage.updateItems(changes);
+        }
+      } catch (e) {}
+    };
+
+    async function checkPetStatus() {
+      const res = await callPetIpcLocal('pet:status');
+      if (typeof res === 'boolean') {
+        updatePetStatusUI(res);
       } else {
         document.dispatchEvent(new CustomEvent('ag-pet-cmd', { detail: { action: 'check' } }));
       }
@@ -4487,11 +4549,37 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
     });
 
     if (petToggleAuto) {
-      const isAuto = localStorage.getItem(PET_AUTO_KEY) === 'true';
+      let isAuto = localStorage.getItem(PET_AUTO_KEY) === 'true';
       petToggleAuto.checked = isAuto;
+
+      const alignStorage = async () => {
+        try {
+          let items = null;
+          if (typeof electron_1 !== 'undefined' && electron_1 && electron_1.ipcRenderer) {
+            items = await electron_1.ipcRenderer.invoke('storage:get-items');
+          } else if (window.__ag_native_storage && typeof window.__ag_native_storage.getItems === 'function') {
+            items = await window.__ag_native_storage.getItems();
+          } else if (window.nativeStorage && typeof window.nativeStorage.getItems === 'function') {
+            items = await window.nativeStorage.getItems();
+          }
+          if (items && typeof items['ag_pet_auto_launch_v1'] !== 'undefined') {
+            const nativeAuto = items['ag_pet_auto_launch_v1'] === 'true';
+            if (nativeAuto !== isAuto) {
+              isAuto = nativeAuto;
+              localStorage.setItem(PET_AUTO_KEY, isAuto ? 'true' : 'false');
+              petToggleAuto.checked = isAuto;
+            }
+          } else if (isAuto) {
+            syncAutoLaunchToNative(true);
+          }
+        } catch (e) {}
+      };
+      alignStorage();
+
       petToggleAuto.onchange = () => {
         const checked = petToggleAuto.checked;
         localStorage.setItem(PET_AUTO_KEY, checked ? 'true' : 'false');
+        syncAutoLaunchToNative(checked);
         if (checked) {
           showToast('已设为常驻开启：随 Antigravity 打开自动唤醒桌宠');
           checkPetStatus();
@@ -4501,16 +4589,14 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
       };
     }
 
-    function triggerStartPet() {
+    async function triggerStartPet() {
+      showToast('🐾 正在唤醒桌面伴侣...');
       let started = false;
-      if (window.__ag_pet_bridge && typeof window.__ag_pet_bridge.startPet === 'function') {
-        started = window.__ag_pet_bridge.startPet();
+      const res = await callPetIpcLocal('pet:start');
+      if (res === true || res === false) {
+        started = res;
       }
-      if (!started && window.electronNative && typeof window.electronNative.openExternal === 'function') {
-        window.electronNative.openExternal('file:///D:/Antigravity/6/start_pet.bat');
-        started = true;
-      }
-      if (!started) {
+      if (!started && res === null) {
         document.dispatchEvent(new CustomEvent('ag-pet-cmd', { detail: { action: 'start' } }));
       }
       showToast('🐾 桌面伴侣已启动并在右下角常驻！');
@@ -4518,16 +4604,13 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
       setTimeout(checkPetStatus, 1500);
     }
 
-    function triggerStopPet() {
+    async function triggerStopPet() {
       let stopped = false;
-      if (window.__ag_pet_bridge && typeof window.__ag_pet_bridge.stopPet === 'function') {
-        stopped = window.__ag_pet_bridge.stopPet();
+      const res = await callPetIpcLocal('pet:stop');
+      if (res === true || res === false) {
+        stopped = res;
       }
-      if (!stopped && window.electronNative && typeof window.electronNative.openExternal === 'function') {
-        window.electronNative.openExternal('file:///D:/Antigravity/6/stop_pet.bat');
-        stopped = true;
-      }
-      if (!stopped) {
+      if (!stopped && res === null) {
         document.dispatchEvent(new CustomEvent('ag-pet-cmd', { detail: { action: 'stop' } }));
       }
       showToast('桌面伴侣已退出。');
