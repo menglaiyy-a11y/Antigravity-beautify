@@ -807,11 +807,11 @@ div[style*="-webkit-mask-image"] {
   -webkit-mask-image: none !important;
 }
 
-/* 3.1 主对话 Turn 容器：统一纯净磨砂玻璃微透卡片 */
-div[data-pane-id="pane-1"] div[class*="scroll-mt-4"],
-div[data-pane-id="pane-1"] [data-testid="chat-turn-container"],
-div[data-pane-id="pane-1"] div[class*="group/turn"],
-div[data-pane-id="pane-1"] div[data-turn-id] {
+/* 3.1 主对话 Turn 容器：极光/自定义模式下统一纯净磨砂玻璃微透卡片 */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-pane-id="pane-1"] div[class*="scroll-mt-4"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-pane-id="pane-1"] [data-testid="chat-turn-container"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-pane-id="pane-1"] div[class*="group/turn"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-pane-id="pane-1"] div[data-turn-id] {
   background-color: var(--ag-center-card-bg) !important;
   border: 1px solid var(--ag-center-card-border, rgba(255, 255, 255, 0.08)) !important;
   border-radius: 14px !important;
@@ -822,26 +822,26 @@ div[data-pane-id="pane-1"] div[data-turn-id] {
 }
 
 /* 3.2 彻底清除 Turn 内部一切无意义的死黑死灰堆叠层 (中栏风格统一核心) */
-div[class*="scroll-mt-4"] div.relative.bg-background,
-div[class*="scroll-mt-4"] div.md-sticky-message-bleed,
-div[class*="scroll-mt-4"] div.bg-card,
-div[class*="scroll-mt-4"] div.bg-card-border,
-div[class*="scroll-mt-4"] div.bg-muted,
-div[class*="scroll-mt-4"] div.leading-relaxed,
-div[class*="scroll-mt-4"] div[data-testid="user-input-step"],
-div[class*="scroll-mt-4"] article {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div.relative.bg-background,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div.md-sticky-message-bleed,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div.bg-card,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div.bg-card-border,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div.bg-muted,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div.leading-relaxed,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div[data-testid="user-input-step"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] article {
   background-color: transparent !important;
   box-shadow: none !important;
 }
 
 /* 消除顶部渐变雾化遮挡罩伪元素 */
-div[class*="scroll-mt-4"] div.md-sticky-message-bleed::after {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div.md-sticky-message-bleed::after {
   display: none !important;
 }
 
 /* 3.3 用户提问卡片统一：高雅纯净半透微光胶囊 */
-div[class*="scroll-mt-4"] div[data-testid="user-input-step"] div[data-testid="lifted-context-menu-trigger"],
-div[class*="scroll-mt-4"] div[data-testid="user-input-step"] div[class*="bg-card-border"] {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div[data-testid="user-input-step"] div[data-testid="lifted-context-menu-trigger"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div[data-testid="user-input-step"] div[class*="bg-card-border"] {
   background: var(--ag-center-subitem-bg) !important;
   border: 1px solid rgba(255, 255, 255, 0.09) !important;
   border-radius: 12px !important;
@@ -852,16 +852,16 @@ div[class*="scroll-mt-4"] div[data-testid="user-input-step"] div[class*="bg-card
 }
 
 /* 消除用户提问悬浮按键区域黑色光晕阴影 */
-div.user-input-buttons-shadow,
-div.user-input-buttons-container {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.user-input-buttons-shadow,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.user-input-buttons-container {
   box-shadow: none !important;
   background: transparent !important;
 }
 
 /* 3.4 思考过程与工具调用折叠框统一风格 (纯净磨砂胶囊) */
-div[class*="scroll-mt-4"] button.group.tabular-nums,
-div[class*="scroll-mt-4"] button[class*="tabular-nums"],
-div[class*="scroll-mt-4"] div.relative:has(> button.tabular-nums) {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] button.group.tabular-nums,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] button[class*="tabular-nums"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div.relative:has(> button.tabular-nums) {
   background: var(--ag-center-subitem-bg) !important;
   border: 1px solid rgba(255, 255, 255, 0.07) !important;
   border-radius: 8px !important;
@@ -872,14 +872,14 @@ div[class*="scroll-mt-4"] div.relative:has(> button.tabular-nums) {
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-div[class*="scroll-mt-4"] button.group.tabular-nums:hover {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] button.group.tabular-nums:hover {
   background: rgba(255, 255, 255, 0.09) !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
   color: #ffffff !important;
 }
 
 /* 3.5 子智能体任务卡片 (Agent Subtask Card) 统一风格 */
-div[class*="scroll-mt-4"] div[class*="group/agent-card"] {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div[class*="group/agent-card"] {
   background: var(--ag-center-subitem-bg) !important;
   border: 1px solid rgba(255, 255, 255, 0.07) !important;
   border-radius: 10px !important;
@@ -889,14 +889,14 @@ div[class*="scroll-mt-4"] div[class*="group/agent-card"] {
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-div[class*="scroll-mt-4"] div[class*="group/agent-card"]:hover {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div[class*="group/agent-card"]:hover {
   background: rgba(255, 255, 255, 0.09) !important;
   border-color: rgba(255, 255, 255, 0.15) !important;
 }
 
 /* 3.6 更改文件统计条与审阅按钮统一风格 */
-div[class*="scroll-mt-4"] div.files-changed-header,
-div.files-changed-header {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div.files-changed-header,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.files-changed-header {
   background: var(--ag-center-subitem-bg) !important;
   border: 1px solid rgba(255, 255, 255, 0.07) !important;
   border-radius: 10px !important;
@@ -904,8 +904,8 @@ div.files-changed-header {
   -webkit-backdrop-filter: blur(10px) !important;
 }
 
-button.review-button,
-button[class*="review-button"] {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) button.review-button,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) button[class*="review-button"] {
   background: rgba(255, 255, 255, 0.10) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   border-radius: 7px !important;
@@ -913,8 +913,8 @@ button[class*="review-button"] {
 }
 
 /* 3.7 代码块 pre 与行内代码 code 统一高质感半透纯净风格 */
-div[class*="scroll-mt-4"] pre,
-pre {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] pre,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) pre {
   background-color: rgba(10, 12, 18, 0.50) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 10px !important;
@@ -922,8 +922,8 @@ pre {
   -webkit-backdrop-filter: blur(12px) !important;
 }
 
-div[class*="scroll-mt-4"] code:not(pre code),
-code:not(pre code) {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] code:not(pre code),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) code:not(pre code) {
   background-color: rgba(255, 255, 255, 0.08) !important;
   color: #ffffff !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
@@ -932,7 +932,7 @@ code:not(pre code) {
 }
 
 /* 3.8 旁路提问与引用框统一风格 */
-div[data-testid="side-question-panel"] {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="side-question-panel"] {
   background-color: rgba(255, 255, 255, 0.04) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 12px !important;
@@ -941,13 +941,13 @@ div[data-testid="side-question-panel"] {
   box-shadow: none !important;
 }
 
-div[data-testid="side-question-panel"] div.border-b {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="side-question-panel"] div.border-b {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
   background: transparent !important;
 }
 
-blockquote,
-div[class*="markdown-alert"] {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) blockquote,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="markdown-alert"] {
   background-color: rgba(255, 255, 255, 0.04) !important;
   border-left: 3px solid var(--ag-accent) !important;
   border-top: none !important;
@@ -958,10 +958,10 @@ div[class*="markdown-alert"] {
   padding: 8px 12px !important;
 }
 
-/* 3.9 底部输入框整体磨砂与子智能体状态栏无缝整合 */
-div[data-testid="chat-input-container"],
-div[id="antigravity.agentSidePanelInputBox"],
-#antigravity\.agentSidePanelInputBox {
+/* 3.9 底部输入框整体磨砂与子智能体状态栏无缝整合 (仅限极光与自定义模态) */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="chat-input-container"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[id="antigravity.agentSidePanelInputBox"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) #antigravity\.agentSidePanelInputBox {
   position: relative !important;
   z-index: 60 !important;
   background-color: var(--ag-chat-box-bg) !important;
@@ -973,27 +973,27 @@ div[id="antigravity.agentSidePanelInputBox"],
   overflow: visible !important;
 }
 
-div[id="antigravity.agentSidePanelInputBox"] > div:not(.bottom-full):not([data-mention-menu]),
-div[id="antigravity.agentSidePanelInputBox"] div.bg-card:not(.bottom-full):not([data-mention-menu]),
-div[id="antigravity.agentSidePanelInputBox"] div.bg-card-border:not(.bottom-full):not([data-mention-menu]) {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[id="antigravity.agentSidePanelInputBox"] > div:not(.bottom-full):not([data-mention-menu]),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[id="antigravity.agentSidePanelInputBox"] div.bg-card:not(.bottom-full):not([data-mention-menu]),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[id="antigravity.agentSidePanelInputBox"] div.bg-card-border:not(.bottom-full):not([data-mention-menu]) {
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
 }
 
 /* 输入框内部子智能体状态行 */
-div[id="antigravity.agentSidePanelInputBox"] div:has(> button[aria-label*="subagents running"]),
-div[id="antigravity.agentSidePanelInputBox"] div.flex.items-center.justify-between.cursor-pointer {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[id="antigravity.agentSidePanelInputBox"] div:has(> button[aria-label*="subagents running"]),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[id="antigravity.agentSidePanelInputBox"] div.flex.items-center.justify-between.cursor-pointer {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
   padding: 4px 12px !important;
   background: transparent !important;
 }
 
 /* 输入框内部文本与文本域透底 */
-div[data-testid="chat-input-container"] textarea,
-textarea[data-testid="chat-input-textarea"],
-textarea.bg-transparent,
-textarea {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="chat-input-container"] textarea,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) textarea[data-testid="chat-input-textarea"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) textarea.bg-transparent,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) textarea {
   background: transparent !important;
   color: #ffffff !important;
   caret-color: var(--ag-accent) !important;
@@ -1012,10 +1012,10 @@ div[id="typeahead-menu"]:empty {
 }
 
 /* 底部向上弹出的 Actions / Mention 菜单层级设为 99990 */
-div[id="antigravity.agentSidePanelInputBox"] div.bottom-full,
-div[id="antigravity.agentSidePanelInputBox"] div[data-mention-menu],
-div.bottom-full[role="listbox"],
-div.bottom-full.bg-card {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[id="antigravity.agentSidePanelInputBox"] div.bottom-full,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[id="antigravity.agentSidePanelInputBox"] div[data-mention-menu],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.bottom-full[role="listbox"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.bottom-full.bg-card {
   background-color: var(--ag-popover-bg, rgba(20, 24, 34, 0.88)) !important;
   backdrop-filter: blur(32px) saturate(190%) !important;
   -webkit-backdrop-filter: blur(32px) saturate(190%) !important;
@@ -1434,19 +1434,17 @@ body[data-ag-mode="native"] div[data-testid="sidebar-wrapper"],
 body[data-ag-mode="native"] div.bg-sidebar,
 body[data-ag-mode="native"] div.shrink-0:has(> div.bg-sidebar) {
   background-color: var(--sidebar, #0e1117) !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 body[data-ag-mode="native"] div[data-pane-id="pane-1"],
 body[data-ag-mode="native"] div.flex-1.min-w-0.h-full {
-  background-color: #12151c !important;
+  background-color: #0e1117 !important;
 }
 
 body[data-ag-mode="native"] [data-aux-pane-open],
 body[data-ag-mode="native"] div[data-aux-pane-open="true"],
 body[data-ag-mode="native"] div.flex-1.min-w-0.h-full > div.flex {
-  background-color: #12151c !important;
-  border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background-color: #0e1117 !important;
 }
 
 /* 审阅面板与终端完全回归原生深黑 */
@@ -1454,7 +1452,7 @@ body[data-ag-mode="native"] [data-testid="review-pane"],
 body[data-ag-mode="native"] [data-testid="terminal-container"],
 body[data-ag-mode="native"] div[data-aux-pane-open] .bg-background,
 body[data-ag-mode="native"] div[data-aux-pane-open] div.flex-grow.overflow-hidden {
-  background-color: #12151c !important;
+  background-color: #0e1117 !important;
 }
 
 /* Monaco 编辑器完全还原纯黑背景，不透明，无滤镜 */
@@ -1465,34 +1463,75 @@ body[data-ag-mode="native"] .monaco-editor .margin,
 body[data-ag-mode="native"] .monaco-editor .view-lines,
 body[data-ag-mode="native"] .monaco-workbench .part.editor,
 body[data-ag-mode="native"] .monaco-workbench .part.editor > .content {
-  background-color: #12151c !important;
+  background-color: #0e1117 !important;
 }
 
 body[data-ag-mode="native"] div[data-testid="conversation-view"] {
   background-color: transparent !important;
 }
 
+/* 官方原生中栏对话卡片：彻底清除自定义卡片边框、深灰底色与圆角，100% 还原官方原生 */
+body[data-ag-mode="native"] div[data-pane-id="pane-1"] [data-testid="conversation-view"] > div,
+body[data-ag-mode="native"] div[data-pane-id="pane-1"] div[class*="scroll-mt-4"],
+body[data-ag-mode="native"] div[data-pane-id="pane-1"] [data-testid="chat-turn-container"],
+body[data-ag-mode="native"] div[data-pane-id="pane-1"] div[class*="group/turn"],
+body[data-ag-mode="native"] div[data-pane-id="pane-1"] div[data-turn-id],
 body[data-ag-mode="native"] div[data-testid="conversation-view"] > div,
 body[data-ag-mode="native"] div[class*="scroll-mt-4"],
 body[data-ag-mode="native"] [data-testid="chat-turn-container"],
-body[data-ag-mode="native"] div[class*="group/turn"] {
-  background-color: #161922 !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
-  border-radius: 12px !important;
+body[data-ag-mode="native"] div[class*="group/turn"],
+body[data-ag-mode="native"] div[data-turn-id] {
+  background-color: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
+/* 原生模式下对话内部子元素彻底去除自定义边框与背景，恢复官方原生 */
+body[data-ag-mode="native"] div[data-testid="user-input-step"] div[data-testid="lifted-context-menu-trigger"],
+body[data-ag-mode="native"] div[data-testid="user-input-step"] div[class*="bg-card-border"],
+body[data-ag-mode="native"] button.group.tabular-nums,
+body[data-ag-mode="native"] button[class*="tabular-nums"],
+body[data-ag-mode="native"] div.relative:has(> button.tabular-nums),
+body[data-ag-mode="native"] div[class*="group/agent-card"],
+body[data-ag-mode="native"] div.files-changed-header {
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 原生模式左侧栏新建会话按钮与选中项还原官方原生 */
+body[data-ag-mode="native"] [data-testid="new-conversation-button"],
+body[data-ag-mode="native"] div.bg-sidebar a.bg-sidebar-secondary {
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 原生模式全域彻底清除一切毛玻璃残留 (除视觉控制台悬浮球与控制台弹窗外) */
+body[data-ag-mode="native"] *:not(#ag-theme-modal):not(#ag-theme-modal *):not(#ag-theme-pill):not(#ag-theme-pill *) {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 原生模式输入框：彻底清除任何外置边框、圆角、阴影与半透明底色，让内部官方原生 bg-card-border 和 bg-card 完美原样呈现 */
 body[data-ag-mode="native"] div[data-testid="chat-input-container"],
 body[data-ag-mode="native"] div[id="antigravity.agentSidePanelInputBox"],
-body[data-ag-mode="native"] #antigravity\\.agentSidePanelInputBox {
-  background-color: #181b22 !important;
-  border: 1px solid rgba(255, 255, 255, 0.12) !important;
-  border-radius: 14px !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40) !important;
+body[data-ag-mode="native"] #antigravity\.agentSidePanelInputBox {
+  background-color: transparent !important;
+  background-image: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 /* 二三级菜单、Radix 浮层、下拉列表、Typeahead 与设置弹窗完全还原原生纯黑实体底衬 */
 body[data-ag-mode="native"] div[role="menu"],
-body[data-ag-mode="native"] div[role="listbox"]:not(#typeahead-menu):not(.bottom-full),
+body[data-ag-mode="native"] div[role="listbox"]:not(#typeahead-menu),
 body[data-ag-mode="native"] div[class*="border-menu-border"],
 body[data-ag-mode="native"] div.absolute[class*="border-menu-border"],
 body[data-ag-mode="native"] div[class*="min-w-64"][class*="bg-card"],
@@ -1613,8 +1652,14 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] {
   top: 36% !important;
   left: 50% !important;
   transform: translate(-50%, -50%) !important;
-  z-index: 0 !important;
+  z-index: 1 !important;
   pointer-events: auto !important;
+}
+
+/* 在空白会话初始启动界面，商标自适应上浮至 18%，完美避开居中输入框遮挡 */
+body[data-ag-mode="ocean"]:not(:has(div[data-pane-id="pane-1"])) #ag-center-emblem-wrapper,
+body[data-ag-mode="ocean"]:has(div.w-full.h-full.flex.flex-col.gap-6.justify-start) #ag-center-emblem-wrapper {
+  top: 18% !important;
 }
 
 /* 中栏内部所有会话容器与交互内容置于 canvas 之上 (z-index: 1)，保证文字绝对不被遮挡 */
@@ -1630,27 +1675,98 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] [data-testid="conversation
   background-color: transparent !important;
 }
 
-/* 中栏对话卡片：采用高透黑底配合清爽描边，让晶格海洋透出，同时文字对比度极佳 */
-body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] [data-testid="conversation-view"] > div,
+/* 中栏会话视窗父容器：完全透空，绝不遮挡底层晶格海洋 */
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] [data-testid="conversation-view"],
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] [data-testid="conversation-view"] > div {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* 中栏对话卡片：采用轻量通透背景配合清爽细微描边，让晶格海洋与流动粒子清晰可见，同时保证文字易读 */
 body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div[class*="scroll-mt-4"],
 body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] [data-testid="chat-turn-container"],
 body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div[class*="group/turn"] {
-  background-color: rgba(14, 18, 26, 0.78) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  background-color: rgba(10, 14, 22, 0.16) !important;
+  backdrop-filter: blur(3px) !important;
+  -webkit-backdrop-filter: blur(3px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
   border-radius: 14px !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15) !important;
 }
 
-/* 底部输入框：高透黑底，清晰悬浮于晶格海洋之上 */
+/* 对话内部子元素：高雅微透，杜绝沉重黑块遮蔽 */
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div[data-testid="user-input-step"] div[data-testid="lifted-context-menu-trigger"],
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div[data-testid="user-input-step"] div[class*="bg-card-border"],
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] button.group.tabular-nums,
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div.relative:has(> button.tabular-nums),
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div[class*="group/agent-card"],
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div.files-changed-header {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 10px !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+/* 底部输入框：高透柔光毛玻璃悬浮，清晰悬浮于晶格海洋之上 */
+body[data-ag-mode="ocean"] div[data-testid="chat-input-container"],
+body[data-ag-mode="ocean"] div[id="antigravity.agentSidePanelInputBox"],
+body[data-ag-mode="ocean"] #antigravity\\.agentSidePanelInputBox,
 body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div:has(> textarea),
 body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] form:has(textarea),
 body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
-  background-color: rgba(16, 20, 30, 0.90) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
+  background-color: rgba(14, 18, 28, 0.48) !important;
+  backdrop-filter: blur(16px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+  position: relative !important;
+  z-index: 10 !important;
+}
+
+/* 新会话聊天启动界面 (未有对话历史时的空白初始界面)：彻底去除不透明黑底遮盖，通透毛玻璃展示让海洋完美透显 */
+body[data-ag-mode="ocean"] div.w-full.h-full.flex.flex-col.gap-6.justify-start,
+body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"],
+body[data-ag-mode="ocean"] div.animate-fade-in:has(> div.w-full.h-full.flex.flex-col.gap-6),
+body[data-ag-mode="ocean"] div.flex-1.min-h-0:has(> div.w-full.h-full.flex.animate-fade-in),
+body[data-ag-mode="ocean"] div.relative.z-0.flex-1.flex.min-h-0.h-full {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+body[data-ag-mode="ocean"] div.w-full.h-full.flex.flex-col.gap-6.justify-start > div,
+body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"] > div {
   position: relative !important;
   z-index: 2 !important;
+}
+
+/* 启动界面所有胶囊按钮/选项卡：清透高雅毛玻璃 */
+body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"] button,
+body[data-ag-mode="ocean"] div.w-full.h-full.flex.flex-col.gap-6.justify-start button {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(12px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18) !important;
+}
+
+/* 启动界面底部输入框：高透柔光毛玻璃悬浮于晶格海洋之上 */
+body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"] div.relative.flex.flex-col:has(textarea),
+body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"] div[data-testid="chat-input-container"] {
+  background-color: rgba(14, 18, 28, 0.48) !important;
+  backdrop-filter: blur(16px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
 }
 `;
 
@@ -1804,11 +1920,23 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
       } catch (e) {}
     }
 
+    function getOceanMountTarget() {
+      const p1 = document.querySelector('div[data-pane-id="pane-1"]');
+      if (p1) return p1;
+      const blankStart = document.querySelector('div.w-full.h-full.flex.flex-col.gap-6.justify-start')
+        || document.querySelector('div[class*="justify-start"][class*="animate-fade-in"]');
+      if (blankStart) return blankStart;
+      const chatContainer = document.querySelector('div.flex-1.min-h-0:has(> div.w-full.h-full.flex)');
+      if (chatContainer) return chatContainer;
+      return document.querySelector('div.relative.z-0.flex-1.flex.min-h-0.h-full');
+    }
+
     let oceanCanvas = document.getElementById('ag-center-ocean-canvas');
 
     function ensureOceanMount() {
-      const p1 = document.querySelector('div[data-pane-id="pane-1"]');
-      if (!p1) return null;
+      const target = getOceanMountTarget();
+      if (!target) return null;
+      target.style.position = 'relative';
       if (!oceanCanvas) {
         oceanCanvas = document.createElement('canvas');
         oceanCanvas.id = 'ag-center-ocean-canvas';
@@ -1823,8 +1951,8 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
         display: ${config.mode === 'ocean' ? 'block' : 'none'} !important;
         border-radius: 0 !important;
       `;
-      if (oceanCanvas.parentElement !== p1) {
-        p1.insertBefore(oceanCanvas, p1.firstChild);
+      if (oceanCanvas.parentElement !== target) {
+        target.insertBefore(oceanCanvas, target.firstChild);
       }
       return oceanCanvas;
     }
@@ -1840,12 +1968,13 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
     let emblemWrapper = document.getElementById('ag-center-emblem-wrapper');
 
     function ensureEmblemMount() {
-      const p1 = document.querySelector('div[data-pane-id="pane-1"]');
-      if (!p1) return null;
+      const target = getOceanMountTarget();
+      if (!target) return null;
+      target.style.position = 'relative';
       if (!emblemWrapper) {
         emblemWrapper = document.createElement('div');
         emblemWrapper.id = 'ag-center-emblem-wrapper';
-        emblemWrapper.title = '点击无边框流光图标向四周海面发射环形冲击波';
+        emblemWrapper.title = '点击无边框流光商标向四周海面发射环形冲击波';
         emblemWrapper.innerHTML = `
           <svg id="ag-center-emblem-svg" viewBox="0 0 24 24" style="width: 100px; height: 100px; overflow: visible; transition: transform 0.3s ease;">
             <defs>
@@ -1924,23 +2053,25 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
         };
       }
       const isOcean = config.mode === 'ocean' && config.oceanEmblemEnabled;
+      const isBlank = !document.querySelector('div[data-pane-id="pane-1"]');
+      const emblemTop = isBlank ? '18%' : '36%';
       emblemWrapper.style.cssText = `
         position: absolute !important;
-        top: 36% !important;
+        top: ${emblemTop} !important;
         left: 50% !important;
         transform: translate(-50%, -50%) !important;
-        z-index: 0 !important;
+        z-index: 1 !important;
         pointer-events: auto !important;
         cursor: pointer !important;
         display: ${isOcean ? 'flex' : 'none'} !important;
         align-items: center !important;
         justify-content: center !important;
-        transition: opacity 0.3s ease !important;
+        transition: opacity 0.3s ease, top 0.3s ease !important;
       `;
       if (oceanCanvas && oceanCanvas.nextSibling !== emblemWrapper) {
-        p1.insertBefore(emblemWrapper, oceanCanvas.nextSibling);
-      } else if (!oceanCanvas && emblemWrapper.parentElement !== p1) {
-        p1.insertBefore(emblemWrapper, p1.firstChild);
+        target.insertBefore(emblemWrapper, oceanCanvas.nextSibling);
+      } else if (!oceanCanvas && emblemWrapper.parentElement !== target) {
+        target.insertBefore(emblemWrapper, target.firstChild);
       }
       updateEmblemSvg();
       return emblemWrapper;
@@ -1980,7 +2111,8 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
         this.program = null;
         this.animId = null;
         this.running = false;
-        this.startTime = performance.now();
+        this.simTime = 0.0;
+        this.lastFrameTime = 0;
         this.ripples = Array.from({ length: 8 }, () => [0.5, 0.5, -10.0, 0.0]);
         this.rippleCursor = 0;
         this.mouse = { x: 0.5, y: 0.3 };
@@ -1993,9 +2125,12 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
       }
 
       init() {
+        if (!this.canvas) {
+          this.canvas = document.getElementById('ag-center-ocean-canvas') || ensureOceanMount();
+        }
         if (!this.canvas) return;
         try {
-          this.gl = this.canvas.getContext('webgl', { antialias: true, alpha: true });
+          this.gl = this.canvas.getContext('webgl', { antialias: true, alpha: true, preserveDrawingBuffer: true, powerPreference: 'high-performance' });
           if (!this.gl) return;
 
           const vsSrc = `
@@ -2021,8 +2156,6 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
             uniform float u_swellSpeed;
             uniform float u_rippleForce;
             uniform float u_parallax;
-            uniform float u_haloFalloff;
-            uniform int u_maskMode;
             uniform int u_shapeType;
             uniform float u_morphEnabled;
             uniform float u_emblemEnabled;
@@ -2075,7 +2208,7 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
             float sdCrossPlusMetric(vec2 p, float armRatio) {
               vec2 ap = abs(p);
               float armA = max(ap.x, ap.y / max(0.18, armRatio));
-              float armB = max(ap.y, arm.x / max(0.18, armRatio));
+              float armB = max(ap.y, ap.x / max(0.18, armRatio));
               return min(armA, armB);
             }
             float evaluateMotifDistance(vec2 p, int shapeType, float kParam, float morphFactor) {
@@ -2083,7 +2216,7 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
               float targetDist = circleDist;
               if (shapeType == 0) {
                 float k = mix(1.45, kParam, morphFactor);
-                return sdDiamondStar(p, k);
+                targetDist = sdDiamondStar(p, k);
               } else if (shapeType == 1) {
                 targetDist = (abs(p.x) + abs(p.y)) * 0.78;
               } else if (shapeType == 2) {
@@ -2095,6 +2228,9 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
                 targetDist = sdCrossPlusMetric(p, armRatio);
               } else {
                 targetDist = circleDist;
+              }
+              if (shapeType == 0) {
+                return targetDist;
               }
               return mix(circleDist, targetDist, morphFactor);
             }
@@ -2165,10 +2301,11 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
                 voiceWave = sin(radialDist * 26.0 - u_time * 9.5) * u_voiceLevel * exp(-radialDist * 1.6);
               }
 
-              // 居中发光图标向外辐射的柔和能量波环
+              // 居中发光图标向外辐射的柔和能量波环 (通过 u_emblemScale 动态缩放)
               vec2 emblemCenter = vec2(0.0, 0.0);
               float cellDistToEmblem = length(cellCenterWorld - emblemCenter);
-              float emblemPulseWave = u_emblemEnabled * (0.28 + 0.22 * sin(cellDistToEmblem * 18.0 - u_time * 3.8)) * exp(-cellDistToEmblem * 3.2);
+              float scaledEmblemDist = cellDistToEmblem / max(0.2, u_emblemScale);
+              float emblemPulseWave = u_emblemEnabled * (0.28 + 0.22 * sin(scaledEmblemDist * 18.0 - u_time * 3.8)) * exp(-scaledEmblemDist * 3.2);
 
               float rawEnergy = (oceanHeight * 0.58 + causticRidge + emblemPulseWave + cursorWave + cursorHoverGlow + rippleAccum * u_rippleForce + voiceWave * 0.7) * twinkle;
               float energy = clamp(rawEnergy * regionMask * (0.55 + 0.62 * u_intensity), 0.0, 1.0);
@@ -2210,6 +2347,9 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
             const s = this.gl.createShader(type);
             this.gl.shaderSource(s, src);
             this.gl.compileShader(s);
+            if (!this.gl.getShaderParameter(s, this.gl.COMPILE_STATUS)) {
+              console.error('[AgOceanEngine] Shader compile error:', this.gl.getShaderInfoLog(s));
+            }
             return s;
           };
 
@@ -2219,6 +2359,9 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
           this.gl.attachShader(this.program, vs);
           this.gl.attachShader(this.program, fs);
           this.gl.linkProgram(this.program);
+          if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
+            console.error('[AgOceanEngine] Program link error:', this.gl.getProgramInfoLog(this.program));
+          }
           this.gl.useProgram(this.program);
 
           const buf = this.gl.createBuffer();
@@ -2244,8 +2387,6 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
             u_swellSpeed: this.gl.getUniformLocation(this.program, 'u_swellSpeed'),
             u_rippleForce: this.gl.getUniformLocation(this.program, 'u_rippleForce'),
             u_parallax: this.gl.getUniformLocation(this.program, 'u_parallax'),
-            u_haloFalloff: this.gl.getUniformLocation(this.program, 'u_haloFalloff'),
-            u_maskMode: this.gl.getUniformLocation(this.program, 'u_maskMode'),
             u_shapeType: this.gl.getUniformLocation(this.program, 'u_shapeType'),
             u_morphEnabled: this.gl.getUniformLocation(this.program, 'u_morphEnabled'),
             u_emblemEnabled: this.gl.getUniformLocation(this.program, 'u_emblemEnabled'),
@@ -2264,9 +2405,9 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
           // 鼠标在中栏主视区交互发射涟漪
           const handlePointerAction = (e) => {
             if (!this.running || config.mode !== 'ocean') return;
-            const p1 = document.querySelector('div[data-pane-id="pane-1"]');
-            if (!p1) return;
-            const r = p1.getBoundingClientRect();
+            const target = getOceanMountTarget();
+            if (!target) return;
+            const r = target.getBoundingClientRect();
             if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
               const nx = (e.clientX - r.left) / Math.max(1, r.width);
               const ny = 1.0 - (e.clientY - r.top) / Math.max(1, r.height);
@@ -2299,8 +2440,7 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
       }
 
       spawnRipple(nx, ny, weight = 1.0) {
-        const elapsed = (performance.now() - this.startTime) * 0.001;
-        this.ripples[this.rippleCursor] = [nx, ny, elapsed, weight];
+        this.ripples[this.rippleCursor] = [nx, ny, this.simTime, weight];
         this.rippleCursor = (this.rippleCursor + 1) % 8;
       }
 
@@ -2336,75 +2476,104 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
           this.init();
         }
         this.running = true;
+        this.lastFrameTime = performance.now();
 
         const render = (time) => {
-          if (!this.running || !this.gl || !this.program) return;
+          if (!this.running) return;
+          try {
+            if (!this.canvas) {
+              this.canvas = document.getElementById('ag-center-ocean-canvas') || ensureOceanMount();
+            }
+            if (!this.gl || !this.program || (this.gl && this.gl.isContextLost())) {
+              this.init();
+              if (!this.gl || !this.program) {
+                this.animId = requestAnimationFrame(render);
+                return;
+              }
+            }
 
-          // 动态对齐尺寸
-          const dpr = Math.min(window.devicePixelRatio || 1, 2);
-          const w = Math.max(1, Math.floor(this.canvas.clientWidth * dpr));
-          const h = Math.max(1, Math.floor(this.canvas.clientHeight * dpr));
-          if (this.canvas.width !== w || this.canvas.height !== h) {
-            this.canvas.width = w;
-            this.canvas.height = h;
-            this.gl.viewport(0, 0, w, h);
+            const target = getOceanMountTarget();
+            if (target && this.canvas && this.canvas.parentElement !== target) {
+              target.style.position = 'relative';
+              target.insertBefore(this.canvas, target.firstChild);
+              if (emblemWrapper) {
+                target.insertBefore(emblemWrapper, this.canvas.nextSibling);
+              }
+            }
+
+            // 动态对齐尺寸
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            const cw = (this.canvas && this.canvas.clientWidth) || (target ? target.clientWidth : 800);
+            const ch = (this.canvas && this.canvas.clientHeight) || (target ? target.clientHeight : 600);
+            const w = Math.max(1, Math.floor(cw * dpr));
+            const h = Math.max(1, Math.floor(ch * dpr));
+            if (this.canvas && (this.canvas.width !== w || this.canvas.height !== h)) {
+              this.canvas.width = w;
+              this.canvas.height = h;
+              this.gl.viewport(0, 0, w, h);
+            }
+
+            const now = time || performance.now();
+            let dt = this.lastFrameTime ? (now - this.lastFrameTime) * 0.001 : 0.016;
+            if (dt <= 0 || dt > 0.1) dt = 0.016;
+            this.lastFrameTime = now;
+            this.simTime += dt;
+
+            this.mouse.x += (this.targetMouse.x - this.mouse.x) * 0.08;
+            this.mouse.y += (this.targetMouse.y - this.mouse.y) * 0.08;
+            this.currentIntensity += (this.targetIntensity - this.currentIntensity) * 0.07;
+
+            if (config.oceanPreset === 'voice') {
+              const v = 0.48 + 0.35 * Math.sin(this.simTime * 7.5) + 0.22 * Math.cos(this.simTime * 13.8);
+              this.voiceLevel += (v - this.voiceLevel) * 0.16;
+            } else {
+              this.voiceLevel *= 0.88;
+            }
+
+            const palKey = config.oceanPalette || 'gemini';
+            const palColors = (palKey === 'custom' && Array.isArray(config.oceanColorsHex) && config.oceanColorsHex.length >= 4)
+              ? config.oceanColorsHex
+              : (OCEAN_PALETTES[palKey] || OCEAN_PALETTES.gemini);
+            const c1 = hexToRgbNorm(palColors[0]);
+            const c2 = hexToRgbNorm(palColors[1]);
+            const c3 = hexToRgbNorm(palColors[2]);
+            const c4 = hexToRgbNorm(palColors[3]);
+
+            let speedMult = 1.0;
+            if (config.oceanPreset === 'idle') speedMult = 0.6;
+            else if (config.oceanPreset === 'thinking') speedMult = 1.6;
+
+            this.gl.useProgram(this.program);
+            this.gl.uniform2f(this.uniformLocs.u_resolution, w, h);
+            this.gl.uniform1f(this.uniformLocs.u_time, this.simTime);
+            this.gl.uniform2f(this.uniformLocs.u_mouse, this.mouse.x, this.mouse.y);
+            this.gl.uniform1f(this.uniformLocs.u_intensity, this.currentIntensity);
+            this.gl.uniform1f(this.uniformLocs.u_voiceLevel, this.voiceLevel);
+            this.gl.uniform1f(this.uniformLocs.u_gridDensity, config.oceanDensity || 48.0);
+            this.gl.uniform1f(this.uniformLocs.u_starSharpness, config.oceanSharpness || 0.54);
+            this.gl.uniform1f(this.uniformLocs.u_gridAngle, 0.785398); // 45 deg
+            this.gl.uniform1f(this.uniformLocs.u_swellSpeed, (config.oceanSpeed || 0.62) * speedMult);
+            this.gl.uniform1f(this.uniformLocs.u_rippleForce, config.oceanRippleForce || 0.95);
+            this.gl.uniform1f(this.uniformLocs.u_parallax, 0.024);
+            this.gl.uniform1i(this.uniformLocs.u_shapeType, config.oceanShape || 0);
+            this.gl.uniform1f(this.uniformLocs.u_morphEnabled, config.oceanMorphEnabled ? 1.0 : 0.0);
+            this.gl.uniform1f(this.uniformLocs.u_emblemEnabled, config.oceanEmblemEnabled ? 1.0 : 0.0);
+            this.gl.uniform1f(this.uniformLocs.u_emblemScale, config.oceanEmblemScale || 1.0);
+            this.gl.uniform3f(this.uniformLocs.u_col1, c1[0], c1[1], c1[2]);
+            this.gl.uniform3f(this.uniformLocs.u_col2, c2[0], c2[1], c2[2]);
+            this.gl.uniform3f(this.uniformLocs.u_col3, c3[0], c3[1], c3[2]);
+            this.gl.uniform3f(this.uniformLocs.u_col4, c4[0], c4[1], c4[2]);
+            this.gl.uniform1f(this.uniformLocs.u_colorSpread, config.oceanColorSpread || 1.0);
+
+            for (let i = 0; i < 8; i++) {
+              const rp = this.ripples[i];
+              this.gl.uniform4f(this.uniformLocs.u_ripples[i], rp[0], rp[1], rp[2], rp[3]);
+            }
+
+            this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
+          } catch (renderErr) {
+            console.warn('[AgOceanEngine] render exception:', renderErr);
           }
-
-          const elapsed = (time - this.startTime) * 0.001;
-          this.mouse.x += (this.targetMouse.x - this.mouse.x) * 0.08;
-          this.mouse.y += (this.targetMouse.y - this.mouse.y) * 0.08;
-          this.currentIntensity += (this.targetIntensity - this.currentIntensity) * 0.07;
-
-          if (config.oceanPreset === 'voice') {
-            const v = 0.48 + 0.35 * Math.sin(elapsed * 7.5) + 0.22 * Math.cos(elapsed * 13.8);
-            this.voiceLevel += (v - this.voiceLevel) * 0.16;
-          } else {
-            this.voiceLevel *= 0.88;
-          }
-
-          const palKey = config.oceanPalette || 'gemini';
-          const palColors = (palKey === 'custom' && Array.isArray(config.oceanColorsHex) && config.oceanColorsHex.length >= 4)
-            ? config.oceanColorsHex
-            : (OCEAN_PALETTES[palKey] || OCEAN_PALETTES.gemini);
-          const c1 = hexToRgbNorm(palColors[0]);
-          const c2 = hexToRgbNorm(palColors[1]);
-          const c3 = hexToRgbNorm(palColors[2]);
-          const c4 = hexToRgbNorm(palColors[3]);
-
-          let speedMult = 1.0;
-          if (config.oceanPreset === 'idle') speedMult = 0.6;
-          else if (config.oceanPreset === 'thinking') speedMult = 1.6;
-
-          this.gl.useProgram(this.program);
-          this.gl.uniform2f(this.uniformLocs.u_resolution, w, h);
-          this.gl.uniform1f(this.uniformLocs.u_time, elapsed);
-          this.gl.uniform2f(this.uniformLocs.u_mouse, this.mouse.x, this.mouse.y);
-          this.gl.uniform1f(this.uniformLocs.u_intensity, this.currentIntensity);
-          this.gl.uniform1f(this.uniformLocs.u_voiceLevel, this.voiceLevel);
-          this.gl.uniform1f(this.uniformLocs.u_gridDensity, config.oceanDensity || 48.0);
-          this.gl.uniform1f(this.uniformLocs.u_starSharpness, config.oceanSharpness || 0.54);
-          this.gl.uniform1f(this.uniformLocs.u_gridAngle, 0.785398); // 45 deg
-          this.gl.uniform1f(this.uniformLocs.u_swellSpeed, (config.oceanSpeed || 0.62) * speedMult);
-          this.gl.uniform1f(this.uniformLocs.u_rippleForce, config.oceanRippleForce || 0.95);
-          this.gl.uniform1f(this.uniformLocs.u_parallax, 0.024);
-          this.gl.uniform1f(this.uniformLocs.u_haloFalloff, 8.5);
-          this.gl.uniform1i(this.uniformLocs.u_maskMode, 2); // 2: 全景主视区波浪
-          this.gl.uniform1i(this.uniformLocs.u_shapeType, config.oceanShape || 0);
-          this.gl.uniform1f(this.uniformLocs.u_morphEnabled, config.oceanMorphEnabled ? 1.0 : 0.0);
-          this.gl.uniform1f(this.uniformLocs.u_emblemEnabled, config.oceanEmblemEnabled ? 1.0 : 0.0);
-          this.gl.uniform1f(this.uniformLocs.u_emblemScale, config.oceanEmblemScale || 1.0);
-          this.gl.uniform3f(this.uniformLocs.u_col1, c1[0], c1[1], c1[2]);
-          this.gl.uniform3f(this.uniformLocs.u_col2, c2[0], c2[1], c2[2]);
-          this.gl.uniform3f(this.uniformLocs.u_col3, c3[0], c3[1], c3[2]);
-          this.gl.uniform3f(this.uniformLocs.u_col4, c4[0], c4[1], c4[2]);
-          this.gl.uniform1f(this.uniformLocs.u_colorSpread, config.oceanColorSpread || 1.0);
-
-          for (let i = 0; i < 8; i++) {
-            const rp = this.ripples[i];
-            this.gl.uniform4f(this.uniformLocs.u_ripples[i], rp[0], rp[1], rp[2], rp[3]);
-          }
-
-          this.gl.drawArrays(this.gl.TRIANGLES, 0, 6);
           this.animId = requestAnimationFrame(render);
         };
         this.animId = requestAnimationFrame(render);
@@ -2424,6 +2593,18 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
     }
 
     const oceanEngine = new AgOceanEngine(ensureOceanMount());
+
+    // 动态监听 DOM 树变化（如新建会话与已有会话切换），自适应将海洋画布与商标迁移至活动容器
+    const oceanDomObserver = new MutationObserver(() => {
+      if (config.mode === 'ocean') {
+        const target = getOceanMountTarget();
+        if (target && oceanCanvas && oceanCanvas.parentElement !== target) {
+          ensureOceanMount();
+          ensureEmblemMount();
+        }
+      }
+    });
+    oceanDomObserver.observe(document.body, { childList: true, subtree: true });
 
     // 4 模态系统状态调度器 (原生UI + 3美化模态：晶格海洋 / 流体极光 / 自定义素材)
     function applyMode(modeKey, customUrl = '') {
@@ -3122,6 +3303,9 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
       if (frostedControls) {
         frostedControls.style.display = (mode === 'aurora' || mode === 'custom') ? 'block' : 'none';
       }
+      if (mode === 'ocean' && typeof syncOceanPanelControls === 'function') {
+        syncOceanPanelControls();
+      }
     }
 
     // 控制台展开/收起切换
@@ -3321,6 +3505,9 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
       }
 
       applyMode(modeKey, config.customAssetUrl);
+      if (modeKey === 'ocean' && typeof syncOceanPanelControls === 'function') {
+        syncOceanPanelControls();
+      }
       try { persistConfig(); } catch (e) {}
     }
 
@@ -3637,6 +3824,92 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
       };
     }
 
+    // 8.6 晶格海洋参数与交互面板全量状态双向同步
+    function syncOceanPanelControls() {
+      // 1. 居中流光商标状态
+      const btnEmblemToggle = document.getElementById('ag-btn-emblem-toggle');
+      const labelEmblemToggle = document.getElementById('ag-emblem-toggle-label');
+      if (btnEmblemToggle) btnEmblemToggle.classList.toggle('active', !!config.oceanEmblemEnabled);
+      if (labelEmblemToggle) labelEmblemToggle.textContent = config.oceanEmblemEnabled ? '✦ 已开启' : '🌑 已关闭';
+
+      emblemStyleKeys.forEach(k => {
+        const b = document.getElementById(`ag-emblem-${k}`);
+        if (b) b.classList.toggle('active', k === config.oceanEmblemStyle);
+      });
+
+      const slideOceanEmblemScale = document.getElementById('slide-ocean-emblem-scale');
+      const valOceanEmblemScale = document.getElementById('val-ocean-emblem-scale');
+      if (slideOceanEmblemScale) slideOceanEmblemScale.value = Math.round((config.oceanEmblemScale || 1.0) * 100);
+      if (valOceanEmblemScale) valOceanEmblemScale.textContent = `${(config.oceanEmblemScale || 1.0).toFixed(2)}x`;
+
+      const btnEmblemColorClassic = document.getElementById('ag-emblem-color-classic');
+      const btnEmblemColorSync = document.getElementById('ag-emblem-color-sync');
+      if (btnEmblemColorClassic) btnEmblemColorClassic.classList.toggle('active', config.oceanEmblemColorMode === 'classic');
+      if (btnEmblemColorSync) btnEmblemColorSync.classList.toggle('active', config.oceanEmblemColorMode === 'sync');
+
+      // 2. 动态波峰形变开关
+      const btnOceanMorph = document.getElementById('ag-btn-ocean-morph');
+      const labelOceanMorph = document.getElementById('ag-ocean-morph-label');
+      if (btnOceanMorph) btnOceanMorph.classList.toggle('active', !!config.oceanMorphEnabled);
+      if (labelOceanMorph) labelOceanMorph.textContent = config.oceanMorphEnabled ? '动态波峰形变：开' : '动态波峰形变：关';
+
+      // 3. 6大形态按钮
+      for (let i = 0; i < 6; i++) {
+        const b = document.getElementById(`ag-shape-${i}`);
+        if (b) b.classList.toggle('active', i === (config.oceanShape || 0));
+      }
+
+      // 4. 6大预设光谱按钮
+      Object.keys(palNames).forEach(k => {
+        const b = document.getElementById(`ag-pal-${k}`);
+        if (b) b.classList.toggle('active', k === config.oceanPalette);
+      });
+
+      // 5. 4 节点过渡色拾色器与渐变条
+      updateLutPreview();
+
+      // 6. 5 维实时参数滑块
+      const slideOceanSpeed = document.getElementById('slide-ocean-speed');
+      const valOceanSpeed = document.getElementById('val-ocean-speed');
+      if (slideOceanSpeed) slideOceanSpeed.value = Math.round((config.oceanSpeed || 0.62) * 10);
+      if (valOceanSpeed) valOceanSpeed.textContent = ((config.oceanSpeed || 0.62) * 10).toFixed(0);
+
+      const slideOceanDensity = document.getElementById('slide-ocean-density');
+      const valOceanDensity = document.getElementById('val-ocean-density');
+      if (slideOceanDensity) slideOceanDensity.value = Math.round(config.oceanDensity || 48);
+      if (valOceanDensity) valOceanDensity.textContent = Math.round(config.oceanDensity || 48);
+
+      const slideOceanSharpness = document.getElementById('slide-ocean-sharpness');
+      const valOceanSharpness = document.getElementById('val-ocean-sharpness');
+      if (slideOceanSharpness) slideOceanSharpness.value = Math.round((config.oceanSharpness || 0.54) * 100);
+      if (valOceanSharpness) valOceanSharpness.textContent = (config.oceanSharpness || 0.54).toFixed(2);
+
+      const slideOceanRipple = document.getElementById('slide-ocean-ripple');
+      const valOceanRipple = document.getElementById('val-ocean-ripple');
+      if (slideOceanRipple) slideOceanRipple.value = Math.round((config.oceanRippleForce || 0.95) * 100);
+      if (valOceanRipple) valOceanRipple.textContent = (config.oceanRippleForce || 0.95).toFixed(2);
+
+      const slideOceanSpread = document.getElementById('slide-ocean-spread');
+      const valOceanSpread = document.getElementById('val-ocean-spread');
+      if (slideOceanSpread) slideOceanSpread.value = Math.round((config.oceanColorSpread || 1.0) * 100);
+      if (valOceanSpread) valOceanSpread.textContent = (config.oceanColorSpread || 1.0).toFixed(2);
+
+      // 7. 动态情境预设切换
+      ['idle', 'focus', 'thinking', 'voice'].forEach(s => {
+        const b = document.getElementById(`ag-state-${s}`);
+        if (b) b.classList.toggle('active', s === (config.oceanPreset || 'focus'));
+      });
+
+      // 8. 交互水波声效反馈
+      const btnOceanAudio = document.getElementById('ag-btn-ocean-audio');
+      const iconOceanAudio = document.getElementById('ag-ocean-audio-icon');
+      if (btnOceanAudio) btnOceanAudio.classList.toggle('active', !!config.oceanAudio);
+      if (iconOceanAudio) iconOceanAudio.textContent = config.oceanAudio ? '🔊 已开启' : '🔇 已静音';
+
+      // 9. 商标 SVG 与比例更新
+      updateEmblemSvg();
+    }
+
     // 进阶特性 1 绑定：晶莹磨砂 vs 柔雾类纸膜切换
     const texGlassBtn = document.getElementById('ag-tex-glass');
     const texPaperBtn = document.getElementById('ag-tex-paper');
@@ -3814,6 +4087,8 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
       document.getElementById('val-global-opacity').textContent = `${Math.round(config.globalOpacity * 100)}%`;
       document.getElementById('slide-global-blur').value = config.globalBlur;
       document.getElementById('val-global-blur').textContent = `${config.globalBlur}px`;
+      syncOceanPanelControls();
+      applyMode(config.mode, config.customAssetUrl);
       showToast('已恢复 Apple 预设参数');
     };
 
@@ -3837,6 +4112,8 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
 
     // 暴露全局实例与对外桥接 API (供全局桌宠与外部控制调用)
     window.agVisualPanel = {
+      oceanEngine: oceanEngine,
+      syncOceanControls: syncOceanPanelControls,
       toggle: togglePanel,
       open: () => {
         modal.style.display = 'block';
@@ -3867,6 +4144,9 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
         }
       }
     };
+
+    // 初始化时立即激活当前配置模式，确保 ocean 引擎或 native 状态在冷启动时立即生效
+    applyMode(config.mode, config.customAssetUrl);
 
     console.log('[Antigravity Apple Control Panel] Apple 极简纯净控制台已载入 (⌥T 可快速唤出)');
   } // end initAppleConsole
