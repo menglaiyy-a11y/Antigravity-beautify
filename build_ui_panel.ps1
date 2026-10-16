@@ -1,4 +1,4 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 Write-Output "正在构建自包含的 ui_panel.js (包含全量 117 个锁暝动态表情包)..."
 

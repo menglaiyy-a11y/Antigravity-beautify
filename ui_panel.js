@@ -458,10 +458,11 @@
       root.style.setProperty('--ag-chat-box-bg', `rgba(18, 22, 32, ${effectiveCenter})`);
       root.style.setProperty('--ag-chat-box-blur', `${centerBlur}px`);
 
-      // 弹窗与菜单：支持跟随中栏/全局透明度，0% 时保留微透或全透，100% 时 1.0 全遮挡
-      const dialogAlpha = effectiveCenter === 0 ? 0 : (effectiveCenter >= 0.99 ? 1 : Math.min(0.96, Math.max(0.75, effectiveCenter)));
-      root.style.setProperty('--ag-dialog-bg', `rgba(20, 22, 30, ${dialogAlpha})`);
-      root.style.setProperty('--ag-popover-bg', `rgba(20, 24, 34, ${effectiveCenter >= 0.99 ? 1 : 0.88})`);
+      // 弹窗与二级菜单：支持跟随中栏/全局透明度，支持 0% 全透明与 100% 全遮挡，常态下提供通透雅致毛玻璃
+      const dialogAlpha = effectiveCenter === 0 ? 0 : (effectiveCenter >= 0.99 ? 1 : Number((effectiveCenter * 0.72).toFixed(3)));
+      const popoverAlpha = effectiveCenter === 0 ? 0 : (effectiveCenter >= 0.99 ? 1 : Number((effectiveCenter * 0.70).toFixed(3)));
+      root.style.setProperty('--ag-dialog-bg', `rgba(20, 24, 34, ${dialogAlpha})`);
+      root.style.setProperty('--ag-popover-bg', `rgba(20, 24, 34, ${popoverAlpha})`);
 
       // 右栏 (Aux Pane / Review / Monaco / 终端)：直接 1:1 对应 effectiveRight，无强制保底截断
       root.style.setProperty('--ag-right-bg', `rgba(16, 18, 24, ${effectiveRight})`);
@@ -701,9 +702,10 @@ aside svg {
 /* ---------------------------------------------------- */
 header,
 div[data-testid="top-nav-bar"],
-div[data-testid="header-bar"] {
+div[data-testid="header-bar"],
+div[data-testid="title-menu-bar"] {
   position: relative !important;
-  z-index: 100 !important;
+  z-index: 99990 !important;
   background-color: var(--ag-topbar-bg) !important;
   backdrop-filter: blur(var(--ag-topbar-blur, 24px)) saturate(180%) !important;
   -webkit-backdrop-filter: blur(var(--ag-topbar-blur, 24px)) saturate(180%) !important;
@@ -1039,22 +1041,31 @@ div[data-radix-popper-content-wrapper] {
   -webkit-backdrop-filter: none !important;
 }
 
-/* 仅对多级菜单的真实内容卡片添加毛玻璃与边框，消除双层越界边框与缩放抖动 */
+/* 仅对多级菜单与左上角标题栏菜单的真实内容卡片添加毛玻璃与边框，消除双层越界边框与缩放抖动 */
 div[role="menu"],
 div[role="listbox"]:not(#typeahead-menu):not(.bottom-full),
+div[class*="border-menu-border"],
+div.absolute[class*="border-menu-border"],
 div[data-radix-popper-content-wrapper] > div.bg-popover,
-div[data-radix-popper-content-wrapper] > div[class*="bg-popover"] {
-  background-color: var(--ag-popover-bg, rgba(22, 26, 36, 0.88)) !important;
+div[data-radix-popper-content-wrapper] > div[class*="bg-popover"],
+div.absolute.top-full.left-0.mt-1 {
+  z-index: 100000 !important;
+  background-color: var(--ag-popover-bg, rgba(20, 24, 34, 0.72)) !important;
   backdrop-filter: blur(32px) saturate(190%) !important;
   -webkit-backdrop-filter: blur(32px) saturate(190%) !important;
   border: 1px solid rgba(255, 255, 255, 0.16) !important;
   border-radius: 12px !important;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  overflow: visible !important;
 }
 
-/* 二级菜单文本统一纯白清晰度 */
+/* 二级菜单与标题栏菜单文本统一纯白清晰度 */
 div[role="menu"] [role="menuitem"],
-div[role="menu"] [role="menuitem"] span {
+div[role="menu"] [role="menuitem"] span,
+div[class*="border-menu-border"] span,
+div[class*="border-menu-border"] button,
+button[data-testid="title-menu-bar-option"] span,
+button[data-testid="title-menu-bar-option"] {
   color: #ffffff !important;
 }
 
@@ -1062,7 +1073,9 @@ div[role="menu"] [role="menuitem"] span {
 div[role="menu"] [role="menuitem"]:hover,
 div[role="listbox"]:not(.bottom-full) [role="option"]:hover,
 div.bg-popover button:hover,
-div.bg-popover [class*="hover:bg-accent"]:hover {
+div.bg-popover [class*="hover:bg-accent"]:hover,
+div[class*="border-menu-border"] button:hover,
+button[data-testid="title-menu-bar-option"]:hover {
   background: rgba(255, 255, 255, 0.12) !important;
   color: #ffffff !important;
   border-radius: 7px !important;
@@ -1117,26 +1130,59 @@ div.bg-popover [class*="hover:bg-accent"]:hover {
 /* ---------------------------------------------------- */
 /* 5. 设置弹窗 (Settings Dialog) 深度通透与磨砂          */
 /* ---------------------------------------------------- */
-div[role="dialog"],
-div.fixed.z-50.grid.w-full.max-w-lg,
-div[data-testid="settings-modal"],
-div[data-testid="modal-container"] {
-  background-color: var(--ag-dialog-bg) !important;
-  backdrop-filter: blur(34px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(34px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.16) !important;
-  border-radius: 18px !important;
-  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+div.settings-modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.35) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
 }
 
-/* 消除设置弹窗子区域死灰底色 */
+div[role="dialog"],
+div.settings-modal-container,
+div.fixed.z-50.grid.w-full.max-w-lg,
+div[data-testid="settings-modal"],
+div[data-testid="modal-container"],
+div.settings-modal-backdrop > div {
+  background-color: var(--ag-dialog-bg, rgba(20, 24, 34, 0.75)) !important;
+  backdrop-filter: blur(36px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(36px) saturate(190%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
+}
+
+/* 消除设置弹窗与二级设置列表所有子区域的死黑与灰色底衬 */
 div[role="dialog"] div.bg-muted,
 div[role="dialog"] div.bg-card,
 div[role="dialog"] div.bg-background,
 div[role="dialog"] .bg-muted,
 div[role="dialog"] .bg-card,
-div[role="dialog"] .bg-background {
+div[role="dialog"] .bg-background,
+div.settings-modal-container div.bg-muted,
+div.settings-modal-container div.bg-card,
+div.settings-modal-container div.bg-background,
+div.settings-modal-container .bg-muted,
+div.settings-modal-container .bg-card,
+div.settings-modal-container .bg-background,
+div.settings-modal-container div.text-foreground,
+div.settings-modal-container > div,
+div[role="dialog"] > div {
   background-color: transparent !important;
+}
+
+/* 设置弹窗所有文字确保纯白清晰度 */
+div[role="dialog"] span,
+div[role="dialog"] button,
+div[role="dialog"] p,
+div[role="dialog"] h1,
+div[role="dialog"] h2,
+div[role="dialog"] h3,
+div.settings-modal-container span,
+div.settings-modal-container button,
+div.settings-modal-container p,
+div.settings-modal-container h1,
+div.settings-modal-container h2,
+div.settings-modal-container h3 {
+  color: #ffffff !important;
 }
 
 /* ---------------------------------------------------- */

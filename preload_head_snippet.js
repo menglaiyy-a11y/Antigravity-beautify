@@ -97,6 +97,8 @@
       '  --ag-center-blur: ' + centerBlur + 'px;',
       '  --ag-right-bg: rgba(16, 18, 24, ' + effRight + ');',
       '  --ag-right-blur: ' + rightBlur + 'px;',
+      '  --ag-dialog-bg: rgba(20, 24, 34, ' + (effCenter === 0 ? 0 : (effCenter >= 0.99 ? 1 : (effCenter * 0.72).toFixed(3))) + ');',
+      '  --ag-popover-bg: rgba(20, 24, 34, ' + (effCenter === 0 ? 0 : (effCenter >= 0.99 ? 1 : (effCenter * 0.70).toFixed(3))) + ');',
       '}',
       'html, body, body[data-scroll-locked] {',
       '  width: 100% !important;',
