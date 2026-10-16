@@ -157,10 +157,21 @@
       centerOpacity: 0.50, // 中栏独立透明度 (主对话卡片/设置弹窗)
       rightOpacity: 0.50,  // 右栏独立透明度 (Aux Pane / Review / 终端)
       auroraSpeed: 1.0,
-      oceanShape: 0,       // 0=四芒星, 1=正菱形, 2=圆点, 3=六边形
+      oceanShape: 0,       // 0=四芒星, 1=正菱形, 2=圆点, 3=六边形, 4=十字星, 5=波纹环
       oceanSpeed: 0.62,
-      oceanDensity: 42.0,
-      oceanPalette: 'gemini', // 'gemini' | 'argon' | 'nebula' | 'emerald'
+      oceanDensity: 48.0,
+      oceanSharpness: 0.54,
+      oceanRippleForce: 0.95,
+      oceanColorSpread: 1.0,
+      oceanPalette: 'gemini', // 'gemini' | 'argon' | 'antigravity' | 'emerald' | 'miku' | 'sunset' | 'custom'
+      oceanColorsHex: ['#2980ff', '#0ac2ff', '#ad85f2', '#f570b3'],
+      oceanMorphEnabled: true,
+      oceanEmblemEnabled: true,
+      oceanEmblemStyle: 'gemini', // 'gemini' | 'antigravity' | 'windows' | 'apple'
+      oceanEmblemScale: 1.0,
+      oceanEmblemColorMode: 'classic', // 'classic' | 'sync'
+      oceanPreset: 'focus',   // 'idle' | 'focus' | 'thinking' | 'voice'
+      oceanAudio: false,
       customAssetUrl: '',
       customAssetName: ''
     };
@@ -193,6 +204,14 @@
     if (!config.customAssetType) {
       config.customAssetType = 'image';
     }
+    if (!Array.isArray(config.oceanColorsHex) || config.oceanColorsHex.length < 4) {
+      config.oceanColorsHex = ['#2980ff', '#0ac2ff', '#ad85f2', '#f570b3'];
+    }
+    if (typeof config.oceanMorphEnabled !== 'boolean') config.oceanMorphEnabled = true;
+    if (typeof config.oceanEmblemEnabled !== 'boolean') config.oceanEmblemEnabled = true;
+    if (!config.oceanEmblemStyle) config.oceanEmblemStyle = 'gemini';
+    if (typeof config.oceanEmblemScale !== 'number' || isNaN(config.oceanEmblemScale)) config.oceanEmblemScale = 1.0;
+    if (!config.oceanEmblemColorMode) config.oceanEmblemColorMode = 'classic';
 
     function updateNativeStorage(changes) {
       const previous = window.__ag_theme_storage_queue || Promise.resolve();
@@ -1052,23 +1071,23 @@ div[data-radix-popper-content-wrapper] {
   -webkit-backdrop-filter: none !important;
 }
 
-/* 仅对多级菜单、三级子菜单、左上角标题栏菜单及额度展示页面的真实内容卡片添加毛玻璃与坚实底衬 */
-div[role="menu"],
-div[role="listbox"]:not(#typeahead-menu):not(.bottom-full),
-div[class*="border-menu-border"],
-div.absolute[class*="border-menu-border"],
-div[class*="min-w-64"][class*="bg-card"],
-div[class*="z-[6000]"] > div.bg-card,
-div[data-radix-popper-content-wrapper] > div,
-div[data-radix-popper-content-wrapper] [data-radix-menu-content],
-div.absolute.top-full.left-0.mt-1,
-div[class*="quota"],
-div[class*="usage"],
-div[class*="credit"],
-div[class*="rate-limit"],
-div[data-testid*="quota"],
-div[data-testid*="credit"],
-div[data-testid*="usage"] {
+/* 仅对极光与自定义素材模态下的多级菜单、三级子菜单、左上角标题栏菜单及额度展示页面的真实内容卡片添加毛玻璃与坚实底衬 */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[role="menu"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[role="listbox"]:not(#typeahead-menu):not(.bottom-full),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="border-menu-border"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.absolute[class*="border-menu-border"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="min-w-64"][class*="bg-card"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="z-[6000]"] > div.bg-card,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-radix-popper-content-wrapper] > div,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-radix-popper-content-wrapper] [data-radix-menu-content],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.absolute.top-full.left-0.mt-1,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="quota"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="usage"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="credit"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="rate-limit"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid*="quota"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid*="credit"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid*="usage"] {
   z-index: 100000 !important;
   background-color: var(--ag-popover-bg, rgba(20, 24, 34, 0.88)) !important;
   backdrop-filter: blur(32px) saturate(190%) !important;
@@ -1079,19 +1098,19 @@ div[data-testid*="usage"] {
   overflow: visible !important;
 }
 
-/* 彻底消除额度卡片与弹出层内部纯展示容器的深色死黑底衬，但绝不误杀主卡片自身 */
-div[class*="quota"] div.bg-background,
-div[class*="quota"] div.bg-secondary,
-div[class*="quota"] div.bg-card,
-div[class*="quota"] div.bg-muted,
-div[data-testid*="quota"] div.bg-background,
-div[data-testid*="quota"] div.bg-secondary,
-div[data-testid*="quota"] div.bg-card,
-div[data-testid*="quota"] div.bg-muted,
-div[role="menu"] div.bg-secondary,
-div[role="menu"] div.bg-muted,
-div[class*="min-w-64"] div.bg-secondary,
-div[class*="min-w-64"] div.bg-muted {
+/* 彻底消除额度卡片与弹出层内部纯展示容器的深色死黑底衬，但绝不误杀主卡片自身 (仅限极光与自定义素材模态) */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="quota"] div.bg-background,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="quota"] div.bg-secondary,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="quota"] div.bg-card,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="quota"] div.bg-muted,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid*="quota"] div.bg-background,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid*="quota"] div.bg-secondary,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid*="quota"] div.bg-card,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid*="quota"] div.bg-muted,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[role="menu"] div.bg-secondary,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[role="menu"] div.bg-muted,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="min-w-64"] div.bg-secondary,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="min-w-64"] div.bg-muted {
   background-color: transparent !important;
 }
 
@@ -1201,18 +1220,18 @@ button[data-testid="title-menu-bar-option"]:hover {
 /* ---------------------------------------------------- */
 /* 5. 设置弹窗 (Settings Dialog) 深度通透与磨砂          */
 /* ---------------------------------------------------- */
-div.settings-modal-backdrop {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.settings-modal-backdrop {
   background-color: rgba(0, 0, 0, 0.35) !important;
   backdrop-filter: blur(12px) !important;
   -webkit-backdrop-filter: blur(12px) !important;
 }
 
-div[role="dialog"],
-div.settings-modal-container,
-div.fixed.z-50.grid.w-full.max-w-lg,
-div[data-testid="settings-modal"],
-div[data-testid="modal-container"],
-div.settings-modal-backdrop > div {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[role="dialog"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.settings-modal-container,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.fixed.z-50.grid.w-full.max-w-lg,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="settings-modal"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="modal-container"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.settings-modal-backdrop > div {
   background-color: var(--ag-dialog-bg, rgba(20, 24, 34, 0.75)) !important;
   backdrop-filter: blur(36px) saturate(190%) !important;
   -webkit-backdrop-filter: blur(36px) saturate(190%) !important;
@@ -1221,22 +1240,22 @@ div.settings-modal-backdrop > div {
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
 }
 
-/* 消除设置弹窗与二级设置列表所有子区域的死黑与灰色底衬 */
-div[role="dialog"] div.bg-muted,
-div[role="dialog"] div.bg-card,
-div[role="dialog"] div.bg-background,
-div[role="dialog"] .bg-muted,
-div[role="dialog"] .bg-card,
-div[role="dialog"] .bg-background,
-div.settings-modal-container div.bg-muted,
-div.settings-modal-container div.bg-card,
-div.settings-modal-container div.bg-background,
-div.settings-modal-container .bg-muted,
-div.settings-modal-container .bg-card,
-div.settings-modal-container .bg-background,
-div.settings-modal-container div.text-foreground,
-div.settings-modal-container > div,
-div[role="dialog"] > div {
+/* 消除设置弹窗与二级设置列表所有子区域的死黑与灰色底衬 (仅极光与自定义模态) */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[role="dialog"] div.bg-muted,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[role="dialog"] div.bg-card,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[role="dialog"] div.bg-background,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[role="dialog"] .bg-muted,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[role="dialog"] .bg-card,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[role="dialog"] .bg-background,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.settings-modal-container div.bg-muted,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.settings-modal-container div.bg-card,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.settings-modal-container div.bg-background,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.settings-modal-container .bg-muted,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.settings-modal-container .bg-card,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.settings-modal-container .bg-background,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.settings-modal-container div.text-foreground,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.settings-modal-container > div,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[role="dialog"] > div {
   background-color: transparent !important;
 }
 
@@ -1268,52 +1287,52 @@ div:has(> [data-aux-pane-open]) {
   border: none !important;
 }
 
-/* 6.1 右栏最外层主视窗挂载 --ag-right-bg 磨砂底衬 */
-div[data-aux-pane-open="true"],
-div[data-aux-pane-open]:not([data-aux-pane-open="false"]) {
+/* 6.1 右栏最外层主视窗挂载 --ag-right-bg 磨砂底衬 (仅极光与自定义模态) */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open="true"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open]:not([data-aux-pane-open="false"]) {
   background-color: var(--ag-right-bg) !important;
   backdrop-filter: blur(var(--ag-right-blur)) saturate(160%) !important;
   -webkit-backdrop-filter: blur(var(--ag-right-blur)) saturate(160%) !important;
   border-left: 1px solid var(--ag-left-border, rgba(255, 255, 255, 0.08)) !important;
 }
 
-/* 6.2 右栏内部嵌套视窗、Diff 审阅与文件列表消除死黑阻断 */
-div[data-aux-pane-open] .bg-background,
-div[data-aux-pane-open] div.flex-grow.overflow-hidden,
-div[data-aux-pane-open] div.w-full.bg-background,
-div[data-aux-pane-open] div.flex-col.gap-3.overflow-y-auto.h-full.w-full.bg-background,
-div[data-aux-pane-open] div.flex.cursor-pointer.select-none.items-center.justify-between.bg-background {
+/* 6.2 右栏内部嵌套视窗、Diff 审阅与文件列表消除死黑阻断 (仅极光与自定义模态) */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] .bg-background,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] div.flex-grow.overflow-hidden,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] div.w-full.bg-background,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] div.flex-col.gap-3.overflow-y-auto.h-full.w-full.bg-background,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] div.flex.cursor-pointer.select-none.items-center.justify-between.bg-background {
   background-color: transparent !important;
 }
 
-/* 6.3 Monaco 代码编辑器全域透底 (消除深黑拦截) */
-div[data-aux-pane-open] .monaco-editor,
-div[data-aux-pane-open] .monaco-editor-background,
-div[data-aux-pane-open] .monaco-editor .margin,
-div[data-aux-pane-open] .monaco-editor .overflow-guard,
-div[data-aux-pane-open] .monaco-editor .view-lines,
-div[data-aux-pane-open] .monaco-workbench .part.editor,
-div[data-aux-pane-open] .monaco-workbench .part.editor > .content {
+/* 6.3 Monaco 代码编辑器全域透底 (仅极光与自定义模态，消除深黑拦截) */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] .monaco-editor,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] .monaco-editor-background,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] .monaco-editor .margin,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] .monaco-editor .overflow-guard,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] .monaco-editor .view-lines,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] .monaco-workbench .part.editor,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] .monaco-workbench .part.editor > .content {
   background-color: transparent !important;
 }
 
-/* 6.4 终端 (xterm) 专属磨砂与消除死黑 */
-div[data-aux-pane-open] [data-testid="review-pane"],
-div[data-aux-pane-open] .terminal,
-div[data-aux-pane-open] .xterm,
-div[data-aux-pane-open] .xterm-viewport,
-div[data-aux-pane-open] .xterm-screen {
+/* 6.4 终端 (xterm) 专属磨砂与消除死黑 (仅极光与自定义模态) */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] [data-testid="review-pane"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] .terminal,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] .xterm,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] .xterm-viewport,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] .xterm-screen {
   background-color: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 
-div[data-aux-pane-open] [data-testid="terminal-container"] {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] [data-testid="terminal-container"] {
   background-color: var(--ag-right-term-bg) !important;
 }
 
-div[data-aux-pane-open] .xterm-scrollable-element,
-div[data-aux-pane-open] .composition-view {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] .xterm-scrollable-element,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] .composition-view {
   background-color: transparent !important;
 }
 
@@ -1332,9 +1351,9 @@ div[data-aux-pane-open] button[aria-label*="标签页"].bg-secondary {
   color: #ffffff !important;
 }
 
-/* 6.6 右栏卡片组件 (Subagent 列表项) */
-div[data-aux-pane-open] [data-testid="subagent-node"],
-div[data-aux-pane-open] div.flex.flex-col.rounded-lg.overflow-hidden.cursor-pointer {
+/* 6.6 右栏卡片组件 (Subagent 列表项，仅极光与自定义模态磨砂) */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] [data-testid="subagent-node"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open] div.flex.flex-col.rounded-lg.overflow-hidden.cursor-pointer {
   background: var(--ag-center-subitem-bg) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: 8px !important;
@@ -1398,50 +1417,242 @@ div[data-aux-pane-open] button {
 /* 4 模态系统样式与中栏区域控制规则                     */
 /* ==================================================== */
 
-/* [模态 1: Native 原生 UI] 完全还原原生，关闭全部毛玻璃与自定义透底，零渲染开销 */
-body[data-ag-mode="native"] div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar,
-body[data-ag-mode="native"] div.flex:has(> div.h-full.w-full > div.bg-sidebar),
-body[data-ag-mode="native"] aside {
-  background-color: var(--sidebar, #0e1117) !important;
+/* [模态 1: Native 原生 UI] 完全还原官方纯黑原生，彻底消除全部毛玻璃滤镜与半透明底色，零渲染开销 */
+body[data-ag-mode="native"] *:not(#ag-theme-modal):not(#ag-theme-modal *):not(#ag-theme-pill):not(#ag-theme-pill *) {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 
-body[data-ag-mode="native"] div.flex-1.min-w-0.h-full,
-body[data-ag-mode="native"] div.flex-grow.overflow-hidden,
-body[data-ag-mode="native"] [data-aux-pane-open],
+body[data-ag-mode="native"],
+body[data-ag-mode="native"] #root,
+body[data-ag-mode="native"] #root > div,
+body[data-ag-mode="native"] div.h-screen.w-screen {
+  background-color: #0e1117 !important;
+  background-image: none !important;
+}
+
+body[data-ag-mode="native"] aside,
+body[data-ag-mode="native"] div[data-testid="sidebar-wrapper"],
+body[data-ag-mode="native"] div.bg-sidebar,
 body[data-ag-mode="native"] div.shrink-0:has(> div.bg-sidebar) {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+  background-color: var(--sidebar, #0e1117) !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-/* [模态 2: Ocean 晶格海洋] 严格执行中栏区域控制 */
-/* 左右两边原生深黑背景完全遮光，不透出极光或图片；中栏通透独占晶格海洋动效 */
-body[data-ag-mode="ocean"] div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar,
-body[data-ag-mode="ocean"] div.flex:has(> div.h-full.w-full > div.bg-sidebar),
-body[data-ag-mode="ocean"] aside {
+body[data-ag-mode="native"] div[data-pane-id="pane-1"],
+body[data-ag-mode="native"] div.flex-1.min-w-0.h-full {
+  background-color: #12151c !important;
+}
+
+body[data-ag-mode="native"] [data-aux-pane-open],
+body[data-ag-mode="native"] div[data-aux-pane-open="true"],
+body[data-ag-mode="native"] div.flex-1.min-w-0.h-full > div.flex {
+  background-color: #12151c !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 审阅面板与终端完全回归原生深黑 */
+body[data-ag-mode="native"] [data-testid="review-pane"],
+body[data-ag-mode="native"] [data-testid="terminal-container"],
+body[data-ag-mode="native"] div[data-aux-pane-open] .bg-background,
+body[data-ag-mode="native"] div[data-aux-pane-open] div.flex-grow.overflow-hidden {
+  background-color: #12151c !important;
+}
+
+/* Monaco 编辑器完全还原纯黑背景，不透明，无滤镜 */
+body[data-ag-mode="native"] .monaco-editor,
+body[data-ag-mode="native"] .monaco-editor .overflow-guard,
+body[data-ag-mode="native"] .monaco-editor-background,
+body[data-ag-mode="native"] .monaco-editor .margin,
+body[data-ag-mode="native"] .monaco-editor .view-lines,
+body[data-ag-mode="native"] .monaco-workbench .part.editor,
+body[data-ag-mode="native"] .monaco-workbench .part.editor > .content {
+  background-color: #12151c !important;
+}
+
+body[data-ag-mode="native"] div[data-testid="conversation-view"] {
+  background-color: transparent !important;
+}
+
+body[data-ag-mode="native"] div[data-testid="conversation-view"] > div,
+body[data-ag-mode="native"] div[class*="scroll-mt-4"],
+body[data-ag-mode="native"] [data-testid="chat-turn-container"],
+body[data-ag-mode="native"] div[class*="group/turn"] {
+  background-color: #161922 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+}
+
+body[data-ag-mode="native"] div[data-testid="chat-input-container"],
+body[data-ag-mode="native"] div[id="antigravity.agentSidePanelInputBox"],
+body[data-ag-mode="native"] #antigravity\\.agentSidePanelInputBox {
+  background-color: #181b22 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.40) !important;
+}
+
+/* 二三级菜单、Radix 浮层、下拉列表、Typeahead 与设置弹窗完全还原原生纯黑实体底衬 */
+body[data-ag-mode="native"] div[role="menu"],
+body[data-ag-mode="native"] div[role="listbox"]:not(#typeahead-menu):not(.bottom-full),
+body[data-ag-mode="native"] div[class*="border-menu-border"],
+body[data-ag-mode="native"] div.absolute[class*="border-menu-border"],
+body[data-ag-mode="native"] div[class*="min-w-64"][class*="bg-card"],
+body[data-ag-mode="native"] div[class*="z-[6000]"] > div.bg-card,
+body[data-ag-mode="native"] div[data-radix-popper-content-wrapper] > div,
+body[data-ag-mode="native"] div[data-radix-popper-content-wrapper] [data-radix-menu-content],
+body[data-ag-mode="native"] #typeahead-menu,
+body[data-ag-mode="native"] div[role="dialog"],
+body[data-ag-mode="native"] div.settings-modal-container,
+body[data-ag-mode="native"] div.fixed.z-50.grid.w-full.max-w-lg,
+body[data-ag-mode="native"] div[data-testid="settings-modal"],
+body[data-ag-mode="native"] div[data-testid="modal-container"],
+body[data-ag-mode="native"] div[class*="quota"],
+body[data-ag-mode="native"] div[class*="usage"],
+body[data-ag-mode="native"] div[class*="credit"] {
+  background-color: #181b22 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65) !important;
+}
+
+/* 弹窗与菜单内部子元素还原原生背景 */
+body[data-ag-mode="native"] div[role="dialog"] div.bg-muted,
+body[data-ag-mode="native"] div[role="dialog"] div.bg-card,
+body[data-ag-mode="native"] div[role="dialog"] div.bg-background,
+body[data-ag-mode="native"] div.settings-modal-container div.bg-muted,
+body[data-ag-mode="native"] div.settings-modal-container div.bg-card,
+body[data-ag-mode="native"] div.settings-modal-container div.bg-background,
+body[data-ag-mode="native"] div.settings-modal-container > div,
+body[data-ag-mode="native"] div[role="dialog"] > div,
+body[data-ag-mode="native"] div[role="menu"] div.bg-secondary,
+body[data-ag-mode="native"] div[role="menu"] div.bg-muted,
+body[data-ag-mode="native"] div[class*="quota"] div.bg-background,
+body[data-ag-mode="native"] div[class*="quota"] div.bg-secondary,
+body[data-ag-mode="native"] div[class*="quota"] div.bg-card,
+body[data-ag-mode="native"] div[class*="quota"] div.bg-muted {
+  background-color: #161922 !important;
+}
+
+/* [模态 2: Ocean 晶格海洋] 严格执行中栏区域控制与零遮盖 */
+/* 左右两边原生深黑背景完全遮光，绝不透出画布；零毛玻璃，零模糊 */
+body[data-ag-mode="ocean"] aside,
+body[data-ag-mode="ocean"] div[data-testid="sidebar-wrapper"],
+body[data-ag-mode="ocean"] div.bg-sidebar,
+body[data-ag-mode="ocean"] div.shrink-0:has(> div.bg-sidebar) {
   background-color: #0b0e14 !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-body[data-ag-mode="ocean"] div.shrink-0:has(> div.bg-sidebar) {
+body[data-ag-mode="ocean"] [data-aux-pane-open],
+body[data-ag-mode="ocean"] div[data-aux-pane-open="true"],
+body[data-ag-mode="ocean"] div.flex-1.min-w-0.h-full > div.flex:not(:has(div[data-pane-id="pane-1"])) {
+  background-color: #0b0e14 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+body[data-ag-mode="ocean"] [data-testid="review-pane"],
+body[data-ag-mode="ocean"] [data-testid="terminal-container"],
+body[data-ag-mode="ocean"] div[data-aux-pane-open] .bg-background,
+body[data-ag-mode="ocean"] div[data-aux-pane-open] div.flex-grow.overflow-hidden {
   background-color: #0b0e14 !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 
-body[data-ag-mode="ocean"] div[data-aux-pane-open],
-body[data-ag-mode="ocean"] div.flex-1.min-w-0.h-full > div.flex {
-  background-color: #0b0e14 !important;
+body[data-ag-mode="ocean"] .monaco-editor,
+body[data-ag-mode="ocean"] .monaco-editor .overflow-guard,
+body[data-ag-mode="ocean"] .monaco-editor-background,
+body[data-ag-mode="ocean"] .monaco-editor .margin,
+body[data-ag-mode="ocean"] .monaco-editor .view-lines,
+body[data-ag-mode="ocean"] .monaco-workbench .part.editor,
+body[data-ag-mode="ocean"] .monaco-workbench .part.editor > .content {
+  background-color: #12151c !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
 
-body[data-ag-mode="ocean"] div.flex-1.min-w-0.h-full,
-body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.relative.outline-none.overflow-y-auto {
+body[data-ag-mode="ocean"] div[role="menu"],
+body[data-ag-mode="ocean"] div[role="listbox"]:not(#typeahead-menu):not(.bottom-full),
+body[data-ag-mode="ocean"] div[class*="border-menu-border"],
+body[data-ag-mode="ocean"] div.absolute[class*="border-menu-border"],
+body[data-ag-mode="ocean"] div[data-radix-popper-content-wrapper] > div,
+body[data-ag-mode="ocean"] #typeahead-menu,
+body[data-ag-mode="ocean"] div[role="dialog"],
+body[data-ag-mode="ocean"] div.settings-modal-container {
+  background-color: #181b22 !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65) !important;
+}
+
+/* 中栏 pane-1 容器透出底部的 WebGL 画布，限制溢出 */
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] {
   background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  position: absolute !important;
+  overflow: hidden !important;
+}
+
+/* 中栏画布置于中栏绝对底层 z-index: 0，pointer-events: none */
+#ag-center-ocean-canvas {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+  z-index: 0 !important;
+}
+
+/* 居中流光商标置于 canvas 之上、文本之下 */
+#ag-center-emblem-wrapper {
+  position: absolute !important;
+  top: 36% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 0 !important;
+  pointer-events: auto !important;
+}
+
+/* 中栏内部所有会话容器与交互内容置于 canvas 之上 (z-index: 1)，保证文字绝对不被遮挡 */
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] > div:not(#ag-center-ocean-canvas):not(#ag-center-emblem-wrapper),
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] > [class*="group"] {
+  position: relative !important;
+  z-index: 1 !important;
+  background-color: transparent !important;
+  pointer-events: auto !important;
+}
+
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] [data-testid="conversation-view"] {
+  background-color: transparent !important;
+}
+
+/* 中栏对话卡片：采用高透黑底配合清爽描边，让晶格海洋透出，同时文字对比度极佳 */
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] [data-testid="conversation-view"] > div,
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div[class*="scroll-mt-4"],
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] [data-testid="chat-turn-container"],
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div[class*="group/turn"] {
+  background-color: rgba(14, 18, 26, 0.78) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.10) !important;
+  border-radius: 14px !important;
+}
+
+/* 底部输入框：高透黑底，清晰悬浮于晶格海洋之上 */
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div:has(> textarea),
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] form:has(textarea),
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
+  background-color: rgba(16, 20, 30, 0.90) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  position: relative !important;
+  z-index: 2 !important;
 }
 `;
 
@@ -1546,19 +1757,222 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
       }
     }
 
-    // 3.1 Gemini 晶格海洋 WebGL 引擎 (仅在中栏主视口区域独占运行，左右两边原生深黑遮光)
+    // 3.1 Gemini 晶格海洋 WebGL 引擎 (仅在中栏主视口区域独占运行，左右两边原生深黑遮光，零遮挡会话文字)
+    const OCEAN_PALETTES = {
+      gemini: ['#2980ff', '#0ac2ff', '#ad85f2', '#f570b3'],
+      argon: ['#0d6bff', '#00dbff', '#26f2cc', '#618aff'],
+      antigravity: ['#7a47fa', '#e05cf0', '#ffa847', '#5299ff'],
+      emerald: ['#0ad199', '#1ff5d9', '#38a8ff', '#99fa70'],
+      miku: ['#39c5bb', '#66f0e6', '#3b82f6', '#c084fc'],
+      sunset: ['#f43f5e', '#fb7185', '#f59e0b', '#8b5cf6']
+    };
+
+    function hexToRgbNorm(hex) {
+      const clean = (hex || '#000000').replace('#', '');
+      const num = parseInt(clean, 16);
+      return [
+        ((num >> 16) & 255) / 255,
+        ((num >> 8) & 255) / 255,
+        (num & 255) / 255
+      ];
+    }
+
+    let oceanAudioCtx = null;
+    function playRippleSynth(freqBase = 520, isLiftoff = false) {
+      if (!config.oceanAudio) return;
+      try {
+        if (!oceanAudioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (AudioContextClass) oceanAudioCtx = new AudioContextClass();
+        }
+        if (!oceanAudioCtx) return;
+        if (oceanAudioCtx.state === 'suspended') {
+          oceanAudioCtx.resume();
+        }
+        const now = oceanAudioCtx.currentTime;
+        const osc = oceanAudioCtx.createOscillator();
+        const gain = oceanAudioCtx.createGain();
+        osc.type = isLiftoff ? 'triangle' : 'sine';
+        osc.frequency.setValueAtTime(freqBase, now);
+        osc.frequency.exponentialRampToValueAtTime(isLiftoff ? freqBase * 1.85 : freqBase * 1.35, now + (isLiftoff ? 0.38 : 0.16));
+
+        gain.gain.setValueAtTime(isLiftoff ? 0.08 : 0.035, now);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + (isLiftoff ? 0.42 : 0.18));
+
+        osc.connect(gain);
+        gain.connect(oceanAudioCtx.destination);
+        osc.start(now);
+        osc.stop(now + (isLiftoff ? 0.44 : 0.2));
+      } catch (e) {}
+    }
+
     let oceanCanvas = document.getElementById('ag-center-ocean-canvas');
-    if (!oceanCanvas) {
-      oceanCanvas = document.createElement('canvas');
-      oceanCanvas.id = 'ag-center-ocean-canvas';
+
+    function ensureOceanMount() {
+      const p1 = document.querySelector('div[data-pane-id="pane-1"]');
+      if (!p1) return null;
+      if (!oceanCanvas) {
+        oceanCanvas = document.createElement('canvas');
+        oceanCanvas.id = 'ag-center-ocean-canvas';
+      }
       oceanCanvas.style.cssText = `
-        position: fixed;
-        pointer-events: none;
-        z-index: 0;
-        display: none;
-        border-radius: 12px;
+        position: absolute !important;
+        inset: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        pointer-events: none !important;
+        z-index: 0 !important;
+        display: ${config.mode === 'ocean' ? 'block' : 'none'} !important;
+        border-radius: 0 !important;
       `;
-      document.body.appendChild(oceanCanvas);
+      if (oceanCanvas.parentElement !== p1) {
+        p1.insertBefore(oceanCanvas, p1.firstChild);
+      }
+      return oceanCanvas;
+    }
+
+    const OFFICIAL_TRADEMARK_PATHS = {
+      gemini: 'M11.04 19.32Q12 21.51 12 24q0-2.49.93-4.68.96-2.19 2.58-3.81t3.81-2.55Q21.51 12 24 12q-2.49 0-4.68-.93a12.3 12.3 0 0 1-3.81-2.58 12.3 12.3 0 0 1-2.58-3.81Q12 2.49 12 0q0 2.49-.96 4.68-.93 2.19-2.55 3.81T4.68 11.04Q2.49 12 0 12q2.49 0 4.68.96 2.19.93 3.81 2.55t2.55 3.81Z',
+      antigravity: 'M12.0 2.6C9.4 2.6 8.1 5.0 6.7 9.2C5.2 13.6 3.9 17.2 2.1 20.0C1.7 20.6 2.3 21.2 3.1 20.7C5.1 19.5 6.8 16.6 8.2 14.0C9.4 11.7 10.6 10.6 12.0 10.6C13.4 10.6 14.6 11.7 15.8 14.0C17.2 16.6 18.9 19.5 20.9 20.7C21.7 21.2 22.3 20.6 21.9 20.0C20.1 17.2 18.8 13.6 17.3 9.2C15.9 5.0 14.6 2.6 12.0 2.6Z',
+      windows: 'M1.5 1.5H11.1V11.1H1.5ZM12.9 1.5H22.5V11.1H12.9ZM1.5 12.9H11.1V22.5H1.5ZM12.9 12.9H22.5V22.5H12.9Z',
+      apple: 'M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701Z'
+    };
+    const CLASSIC_FOUR_COLORS = ['#4285F4', '#EA4335', '#FBBC05', '#34A853'];
+
+    let emblemWrapper = document.getElementById('ag-center-emblem-wrapper');
+
+    function ensureEmblemMount() {
+      const p1 = document.querySelector('div[data-pane-id="pane-1"]');
+      if (!p1) return null;
+      if (!emblemWrapper) {
+        emblemWrapper = document.createElement('div');
+        emblemWrapper.id = 'ag-center-emblem-wrapper';
+        emblemWrapper.title = '点击无边框流光图标向四周海面发射环形冲击波';
+        emblemWrapper.innerHTML = `
+          <svg id="ag-center-emblem-svg" viewBox="0 0 24 24" style="width: 100px; height: 100px; overflow: visible; transition: transform 0.3s ease;">
+            <defs>
+              <path id="ag-tm-path-gemini" d="${OFFICIAL_TRADEMARK_PATHS.gemini}" />
+              <path id="ag-tm-path-antigravity" d="${OFFICIAL_TRADEMARK_PATHS.antigravity}" />
+              <path id="ag-tm-path-windows" d="${OFFICIAL_TRADEMARK_PATHS.windows}" />
+              <path id="ag-tm-path-apple" d="${OFFICIAL_TRADEMARK_PATHS.apple}" />
+
+              <linearGradient id="ag-classic-four-grad" gradientUnits="userSpaceOnUse" x1="2" y1="2" x2="22" y2="22">
+                <stop id="ag-emblem-stop1" offset="0%" stop-color="#4285F4" />
+                <stop id="ag-emblem-stop2" offset="33%" stop-color="#EA4335" />
+                <stop id="ag-emblem-stop3" offset="66%" stop-color="#FBBC05" />
+                <stop id="ag-emblem-stop4" offset="100%" stop-color="#34A853" />
+                <animateTransform id="ag-emblem-body-rot" attributeName="gradientTransform" type="rotate" from="0 12 12" to="360 12 12" dur="5.5s" repeatCount="indefinite" />
+              </linearGradient>
+
+              <linearGradient id="ag-edge-flow-grad" gradientUnits="userSpaceOnUse" x1="0" y1="12" x2="24" y2="12">
+                <stop offset="0%" stop-color="#FFFFFF" />
+                <stop id="ag-edge-stop-a" offset="22%" stop-color="#4285F4" />
+                <stop id="ag-edge-stop-b" offset="50%" stop-color="#EA4335" />
+                <stop id="ag-edge-stop-c" offset="78%" stop-color="#FBBC05" />
+                <stop offset="100%" stop-color="#34A853" />
+                <animateTransform id="ag-emblem-edge-rot" attributeName="gradientTransform" type="rotate" from="360 12 12" to="0 12 12" dur="2.8s" repeatCount="indefinite" />
+              </linearGradient>
+
+              <filter id="ag-emblem-aura-filter" x="-60%" y="-60%" width="220%" height="220%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="1.6" result="glowNear" />
+                <feGaussianBlur in="SourceGraphic" stdDeviation="3.8" result="glowFar" />
+                <feMerge>
+                  <feMergeNode in="glowFar" />
+                  <feMergeNode in="glowNear" />
+                </feMerge>
+              </filter>
+
+              <filter id="ag-emblem-edge-rim-filter" x="-30%" y="-30%" width="160%" height="160%">
+                <feMorphology in="SourceAlpha" operator="erode" radius="0.65" result="eroded" />
+                <feGaussianBlur in="eroded" stdDeviation="0.55" result="blurredInner" />
+                <feComposite in="SourceGraphic" in2="blurredInner" operator="out" result="innerRimBand" />
+                <feGaussianBlur in="innerRimBand" stdDeviation="0.35" result="softRimGlow" />
+                <feMerge>
+                  <feMergeNode in="softRimGlow" />
+                  <feMergeNode in="innerRimBand" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            <g id="ag-icon-group-gemini">
+              <use href="#ag-tm-path-gemini" fill="url(#ag-edge-flow-grad)" filter="url(#ag-emblem-aura-filter)" opacity="0.85" />
+              <use href="#ag-tm-path-gemini" fill="url(#ag-classic-four-grad)" opacity="0.92" />
+              <use href="#ag-tm-path-gemini" fill="url(#ag-edge-flow-grad)" filter="url(#ag-emblem-edge-rim-filter)" opacity="0.98" />
+            </g>
+            <g id="ag-icon-group-antigravity" style="display: none;">
+              <use href="#ag-tm-path-antigravity" fill="url(#ag-edge-flow-grad)" filter="url(#ag-emblem-aura-filter)" opacity="0.85" />
+              <use href="#ag-tm-path-antigravity" fill="url(#ag-classic-four-grad)" opacity="0.92" />
+              <use href="#ag-tm-path-antigravity" fill="url(#ag-edge-flow-grad)" filter="url(#ag-emblem-edge-rim-filter)" opacity="0.98" />
+            </g>
+            <g id="ag-icon-group-windows" style="display: none;">
+              <use href="#ag-tm-path-windows" fill="url(#ag-edge-flow-grad)" filter="url(#ag-emblem-aura-filter)" opacity="0.85" />
+              <use href="#ag-tm-path-windows" fill="url(#ag-classic-four-grad)" opacity="0.92" />
+              <use href="#ag-tm-path-windows" fill="url(#ag-edge-flow-grad)" filter="url(#ag-emblem-edge-rim-filter)" opacity="0.98" />
+            </g>
+            <g id="ag-icon-group-apple" style="display: none;">
+              <use href="#ag-tm-path-apple" fill="url(#ag-edge-flow-grad)" filter="url(#ag-emblem-aura-filter)" opacity="0.85" />
+              <use href="#ag-tm-path-apple" fill="url(#ag-classic-four-grad)" opacity="0.92" />
+              <use href="#ag-tm-path-apple" fill="url(#ag-edge-flow-grad)" filter="url(#ag-emblem-edge-rim-filter)" opacity="0.98" />
+            </g>
+          </svg>
+        `;
+        emblemWrapper.onclick = (e) => {
+          e.stopPropagation();
+          if (oceanEngine) {
+            oceanEngine.spawnRipple(0.5, 0.60, 1.55);
+            setTimeout(() => oceanEngine.spawnRipple(0.5, 0.60, 1.25), 110);
+          }
+          playRippleSynth(640, true);
+        };
+      }
+      const isOcean = config.mode === 'ocean' && config.oceanEmblemEnabled;
+      emblemWrapper.style.cssText = `
+        position: absolute !important;
+        top: 36% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        z-index: 0 !important;
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        display: ${isOcean ? 'flex' : 'none'} !important;
+        align-items: center !important;
+        justify-content: center !important;
+        transition: opacity 0.3s ease !important;
+      `;
+      if (oceanCanvas && oceanCanvas.nextSibling !== emblemWrapper) {
+        p1.insertBefore(emblemWrapper, oceanCanvas.nextSibling);
+      } else if (!oceanCanvas && emblemWrapper.parentElement !== p1) {
+        p1.insertBefore(emblemWrapper, p1.firstChild);
+      }
+      updateEmblemSvg();
+      return emblemWrapper;
+    }
+
+    function updateEmblemSvg() {
+      if (!emblemWrapper) return;
+      const svg = document.getElementById('ag-center-emblem-svg');
+      if (svg) {
+        svg.style.transform = `scale(${config.oceanEmblemScale || 1.0})`;
+      }
+      ['gemini', 'antigravity', 'windows', 'apple'].forEach(k => {
+        const g = document.getElementById(`ag-icon-group-${k}`);
+        if (g) g.style.display = (k === config.oceanEmblemStyle) ? 'block' : 'none';
+      });
+
+      const activeColors = config.oceanEmblemColorMode === 'sync'
+        ? (config.oceanPalette === 'custom' ? config.oceanColorsHex : (OCEAN_PALETTES[config.oceanPalette] || OCEAN_PALETTES.gemini))
+        : CLASSIC_FOUR_COLORS;
+
+      ['stop1', 'stop2', 'stop3', 'stop4'].forEach((s, idx) => {
+        const el = document.getElementById(`ag-emblem-${s}`);
+        if (el) el.setAttribute('stop-color', activeColors[idx] || '#4285F4');
+      });
+      const edgeA = document.getElementById('ag-edge-stop-a');
+      const edgeB = document.getElementById('ag-edge-stop-b');
+      const edgeC = document.getElementById('ag-edge-stop-c');
+      if (edgeA) edgeA.setAttribute('stop-color', activeColors[0]);
+      if (edgeB) edgeB.setAttribute('stop-color', activeColors[1]);
+      if (edgeC) edgeC.setAttribute('stop-color', activeColors[2]);
     }
 
     class AgOceanEngine {
@@ -1571,8 +1985,11 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
         this.startTime = performance.now();
         this.ripples = Array.from({ length: 8 }, () => [0.5, 0.5, -10.0, 0.0]);
         this.rippleCursor = 0;
-        this.mouse = { x: 0.5, y: 0.5 };
-        this.targetMouse = { x: 0.5, y: 0.5 };
+        this.mouse = { x: 0.5, y: 0.3 };
+        this.targetMouse = { x: 0.5, y: 0.3 };
+        this.currentIntensity = 0.92;
+        this.targetIntensity = 0.92;
+        this.voiceLevel = 0.0;
         this.uniformLocs = {};
         this.init();
       }
@@ -1584,38 +2001,52 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
           if (!this.gl) return;
 
           const vsSrc = `
-            attribute vec2 a_pos;
+            attribute vec2 a_position;
             varying vec2 v_uv;
             void main() {
-              v_uv = a_pos * 0.5 + 0.5;
-              gl_Position = vec4(a_pos, 0.0, 1.0);
+              v_uv = a_position * 0.5 + 0.5;
+              gl_Position = vec4(a_position, 0.0, 1.0);
             }
           `;
 
           const fsSrc = `
             precision highp float;
             varying vec2 v_uv;
-            uniform vec2 u_res;
+            uniform vec2 u_resolution;
             uniform float u_time;
             uniform vec2 u_mouse;
             uniform float u_intensity;
-            uniform float u_density;
-            uniform float u_speed;
-            uniform float u_sharpness;
-            uniform int u_shape;
+            uniform float u_voiceLevel;
+            uniform float u_gridDensity;
+            uniform float u_starSharpness;
+            uniform float u_gridAngle;
+            uniform float u_swellSpeed;
+            uniform float u_rippleForce;
+            uniform float u_parallax;
+            uniform float u_haloFalloff;
+            uniform int u_maskMode;
+            uniform int u_shapeType;
+            uniform float u_morphEnabled;
+            uniform float u_emblemEnabled;
+            uniform float u_emblemScale;
             uniform vec3 u_col1;
             uniform vec3 u_col2;
             uniform vec3 u_col3;
             uniform vec3 u_col4;
+            uniform float u_colorSpread;
             uniform vec4 u_ripples[8];
 
+            float hash21(vec2 p) {
+              p = fract(p * vec2(234.34, 435.345));
+              p += dot(p, p + 34.23);
+              return fract(p.x * p.y);
+            }
             vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
             vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
             vec3 permute(vec3 x) { return mod289(((x * 34.0) + 1.0) * x); }
-
             float snoise(vec2 v) {
-              const vec4 C = vec4(0.2113248654, 0.3660254037, -0.5773502691, 0.0243902439);
-              vec2 i = floor(v + dot(v, C.yy));
+              const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
+              vec2 i  = floor(v + dot(v, C.yy));
               vec2 x0 = v - i + dot(i, C.xx);
               vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
               vec4 x12 = x0.xyxy + C.xxzz;
@@ -1628,9 +2059,9 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
               vec3 h = abs(x) - 0.5;
               vec3 ox = floor(x + 0.5);
               vec3 a0 = x - ox;
-              m *= 1.792842914 - 0.85373472 * (a0 * a0 + h * h);
+              m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
               vec3 g;
-              g.x = a0.x * x0.x + h.x * x0.y;
+              g.x  = a0.x  * x0.x  + h.x  * x0.y;
               g.yz = a0.yz * x12.xz + h.yz * x12.yw;
               return 130.0 * dot(m, g);
             }
@@ -1639,8 +2070,37 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
               vec2 ap = abs(p) + 1e-4;
               return pow(pow(ap.x, k) + pow(ap.y, k), 1.0 / k);
             }
-
-            vec3 getGradient(float t) {
+            float sdHexagonMetric(vec2 p) {
+              p = abs(p);
+              return max(dot(p, vec2(0.8660254, 0.5)), p.y);
+            }
+            float sdCrossPlusMetric(vec2 p, float armRatio) {
+              vec2 ap = abs(p);
+              float armA = max(ap.x, ap.y / max(0.18, armRatio));
+              float armB = max(ap.y, arm.x / max(0.18, armRatio));
+              return min(armA, armB);
+            }
+            float evaluateMotifDistance(vec2 p, int shapeType, float kParam, float morphFactor) {
+              float circleDist = length(p);
+              float targetDist = circleDist;
+              if (shapeType == 0) {
+                float k = mix(1.45, kParam, morphFactor);
+                return sdDiamondStar(p, k);
+              } else if (shapeType == 1) {
+                targetDist = (abs(p.x) + abs(p.y)) * 0.78;
+              } else if (shapeType == 2) {
+                targetDist = circleDist;
+              } else if (shapeType == 3) {
+                targetDist = sdHexagonMetric(p) * 1.06;
+              } else if (shapeType == 4) {
+                float armRatio = clamp(kParam * 0.55, 0.20, 0.58);
+                targetDist = sdCrossPlusMetric(p, armRatio);
+              } else {
+                targetDist = circleDist;
+              }
+              return mix(circleDist, targetDist, morphFactor);
+            }
+            vec3 evaluateCustomGradient(float t) {
               float c = fract(t);
               if (c < 0.25) return mix(u_col1, u_col2, smoothstep(0.0, 0.25, c));
               if (c < 0.50) return mix(u_col2, u_col3, smoothstep(0.25, 0.50, c));
@@ -1649,69 +2109,102 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
             }
 
             void main() {
-              vec2 aspect = vec2(u_res.x / max(1.0, u_res.y), 1.0);
+              vec2 aspect = vec2(u_resolution.x / max(1.0, u_resolution.y), 1.0);
               vec2 uv = (v_uv - 0.5) * aspect;
-              vec2 mouseW = (u_mouse - 0.5) * aspect;
+              vec2 mouseWorld = (u_mouse - 0.5) * aspect;
 
-              float t = u_time * u_speed;
-              float bWave1 = snoise(uv * 2.4 + vec2(t * 0.55, t * 0.24));
-              float bWave2 = snoise(uv * 4.8 - vec2(t * 0.38, -t * 0.46));
-              vec2 waveGrad = vec2(bWave1, bWave2) * 0.024;
-              vec2 warpedUV = uv + waveGrad * u_intensity;
+              float regionMask = 1.0;
 
-              mat2 rotMat = mat2(0.70710678, -0.70710678, 0.70710678, 0.70710678);
-              mat2 invRotMat = mat2(0.70710678, 0.70710678, -0.70710678, 0.70710678);
+              float t = u_time * u_swellSpeed;
+              float baseWave1 = snoise(uv * 2.3 + vec2(t * 0.62, t * 0.28));
+              float baseWave2 = snoise(uv * 4.6 - vec2(t * 0.45, -t * 0.52));
+              vec2 waveGrad = vec2(baseWave1, baseWave2);
+              vec2 warpedUV = uv + waveGrad * u_parallax * u_intensity;
 
-              vec2 gridSpace = rotMat * warpedUV * u_density;
+              float cosA = cos(u_gridAngle);
+              float sinA = sin(u_gridAngle);
+              mat2 rotMat = mat2(cosA, -sinA, sinA, cosA);
+              mat2 invRotMat = mat2(cosA, sinA, -sinA, cosA);
+
+              vec2 gridSpace = rotMat * warpedUV * u_gridDensity;
               vec2 cellId = floor(gridSpace);
               vec2 localP = fract(gridSpace) - 0.5;
-              vec2 cellCenterWorld = invRotMat * ((cellId + 0.5) / u_density);
+              vec2 cellCenterWorld = invRotMat * ((cellId + 0.5) / u_gridDensity);
 
-              float swellA = snoise(cellCenterWorld * 2.2 + vec2(t * 0.52, t * 0.22));
-              float swellB = snoise(cellCenterWorld * 4.6 - vec2(t * 0.35, -t * 0.42));
-              float oceanH = (swellA * 0.62 + swellB * 0.38) * 0.5 + 0.5;
+              float swellA = snoise(cellCenterWorld * 2.4 + vec2(t * 0.55, t * 0.24));
+              float swellB = snoise(cellCenterWorld * 5.0 - vec2(t * 0.38, -t * 0.46));
+              float oceanHeight = (swellA * 0.62 + swellB * 0.38) * 0.5 + 0.5;
 
-              float dMouse = length(cellCenterWorld - mouseW);
-              float cursorWave = sin(dMouse * 22.0 - u_time * 5.8) * exp(-dMouse * 3.2) * 0.35;
-              float cursorGlow = exp(-dMouse * 4.0) * 0.26;
+              float wavePhase = cellCenterWorld.x * 3.2 + cellCenterWorld.y * 2.1 - t * 1.15 + swellA * 1.6;
+              float causticRidge = pow(1.0 - abs(sin(wavePhase)), 3.2) * 0.42;
 
-              float ripAcc = 0.0;
+              float cellRand = hash21(cellId);
+              float twinkle = 0.88 + 0.12 * sin(u_time * 3.8 + cellRand * 6.2831);
+
+              float distMouse = length(cellCenterWorld - mouseWorld);
+              float cursorWave = sin(distMouse * 22.0 - u_time * 6.0) * exp(-distMouse * 3.1) * 0.36 * u_rippleForce;
+              float cursorHoverGlow = exp(-distMouse * 4.2) * 0.28 * u_rippleForce;
+
+              float rippleAccum = 0.0;
               for (int i = 0; i < 8; i++) {
                 vec4 rp = u_ripples[i];
                 if (rp.z >= 0.0) {
                   float age = u_time - rp.z;
-                  if (age >= 0.0 && age < 2.6) {
+                  if (age >= 0.0 && age < 2.8) {
                     vec2 rpPos = (rp.xy - 0.5) * aspect;
                     float d = length(cellCenterWorld - rpPos);
-                    float rad = age * 0.72;
-                    float ring = cos((d - rad) * 28.0) * exp(-abs(d - rad) * 6.0);
-                    ripAcc += ring * exp(-age * 1.3) * rp.w;
+                    float radius = age * 0.74;
+                    float ring = cos((d - radius) * 28.0) * exp(-abs(d - radius) * 6.2);
+                    float fade = exp(-age * 1.3) * rp.w;
+                    rippleAccum += ring * fade;
                   }
                 }
               }
 
-              float rawEnergy = (oceanH * 0.62 + cursorWave + cursorGlow + ripAcc * 0.85);
-              float energy = clamp(rawEnergy * u_intensity, 0.0, 1.0);
+              float voiceWave = 0.0;
+              if (u_voiceLevel > 0.01) {
+                float radialDist = length(cellCenterWorld - vec2(0.0, -0.22));
+                voiceWave = sin(radialDist * 26.0 - u_time * 9.5) * u_voiceLevel * exp(-radialDist * 1.6);
+              }
+
+              // 居中发光图标向外辐射的柔和能量波环
+              vec2 emblemCenter = vec2(0.0, 0.0);
+              float cellDistToEmblem = length(cellCenterWorld - emblemCenter);
+              float emblemPulseWave = u_emblemEnabled * (0.28 + 0.22 * sin(cellDistToEmblem * 18.0 - u_time * 3.8)) * exp(-cellDistToEmblem * 3.2);
+
+              float rawEnergy = (oceanHeight * 0.58 + causticRidge + emblemPulseWave + cursorWave + cursorHoverGlow + rippleAccum * u_rippleForce + voiceWave * 0.7) * twinkle;
+              float energy = clamp(rawEnergy * regionMask * (0.55 + 0.62 * u_intensity), 0.0, 1.0);
 
               vec2 motifP = invRotMat * localP;
-              float kParam = mix(1.35, u_sharpness, smoothstep(0.12, 0.85, energy));
-              float sdf = sdDiamondStar(motifP, kParam);
+              float morphFactor = mix(1.0, smoothstep(0.14, 0.82, energy), u_morphEnabled);
+              float sdfDist = evaluateMotifDistance(motifP, u_shapeType, u_starSharpness, morphFactor);
 
-              float radius = 0.48 * pow(energy, 1.15);
-              float aa = 0.045;
-              float shapeMask = 1.0 - smoothstep(radius - aa, radius + aa, sdf);
-              float coreGlow = (1.0 - smoothstep(0.0, radius * 0.45, sdf)) * smoothstep(0.38, 0.95, energy);
+              float radius = 0.49 * pow(energy, 1.12);
+              float aa = 0.052;
+              float shapeMask = 0.0;
 
-              float colPhase = (cellCenterWorld.x * 0.44 + cellCenterWorld.y * 0.32) - u_time * 0.14 + oceanH * 0.38;
-              vec3 specCol = getGradient(colPhase);
-              vec3 motifCol = mix(specCol, vec3(0.98, 0.99, 1.0), coreGlow * 0.85);
+              if (u_shapeType == 5) {
+                float ringThick = clamp(u_starSharpness * 0.24, 0.06, 0.22) * (0.5 + 0.5 * energy);
+                float ringDist = abs(sdfDist - radius * 0.72);
+                shapeMask = 1.0 - smoothstep(ringThick - aa, ringThick + aa, ringDist);
+              } else {
+                shapeMask = 1.0 - smoothstep(radius - aa, radius + aa, sdfDist);
+              }
 
-              vec3 bgCol = vec3(0.02, 0.032, 0.058);
-              float underGlow = (0.10 + 0.32 * oceanH + max(0.0, ripAcc) * 0.28) * u_intensity;
-              vec3 finCol = bgCol + specCol * underGlow * 0.42;
-              finCol = mix(finCol, motifCol, shapeMask * smoothstep(0.03, 0.22, energy));
+              float coreHighlight = (1.0 - smoothstep(0.0, radius * 0.45, sdfDist)) * smoothstep(0.42, 0.95, energy);
 
-              gl_FragColor = vec4(finCol, 1.0);
+              float colorPhase = (cellCenterWorld.x * 0.46 + cellCenterWorld.y * 0.34) * u_colorSpread - u_time * 0.15 + oceanHeight * 0.40 + rippleAccum * 0.18;
+              vec3 spectralCol = evaluateCustomGradient(colorPhase);
+              vec3 motifCol = mix(spectralCol, vec3(0.98, 0.99, 1.0), coreHighlight * 0.82);
+
+              vec3 bgCol = vec3(0.024, 0.035, 0.066);
+              float underGlow = regionMask * (0.14 + 0.32 * oceanHeight + causticRidge * 0.4 + max(0.0, rippleAccum) * 0.28) * u_intensity;
+              vec3 finalColor = bgCol + spectralCol * underGlow * 0.44;
+
+              float alphaWeight = shapeMask * smoothstep(0.03, 0.20, energy);
+              finalColor = mix(finalColor, motifCol, alphaWeight);
+
+              gl_FragColor = vec4(finalColor, 1.0);
             }
           `;
 
@@ -1737,48 +2230,71 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
             -1, 1, 1, -1, 1, 1
           ]), this.gl.STATIC_DRAW);
 
-          const aPos = this.gl.getAttribLocation(this.program, 'a_pos');
+          const aPos = this.gl.getAttribLocation(this.program, 'a_position');
           this.gl.enableVertexAttribArray(aPos);
           this.gl.vertexAttribPointer(aPos, 2, this.gl.FLOAT, false, 0, 0);
 
           this.uniformLocs = {
-            u_res: this.gl.getUniformLocation(this.program, 'u_res'),
+            u_resolution: this.gl.getUniformLocation(this.program, 'u_resolution'),
             u_time: this.gl.getUniformLocation(this.program, 'u_time'),
             u_mouse: this.gl.getUniformLocation(this.program, 'u_mouse'),
             u_intensity: this.gl.getUniformLocation(this.program, 'u_intensity'),
-            u_density: this.gl.getUniformLocation(this.program, 'u_density'),
-            u_speed: this.gl.getUniformLocation(this.program, 'u_speed'),
-            u_sharpness: this.gl.getUniformLocation(this.program, 'u_sharpness'),
-            u_shape: this.gl.getUniformLocation(this.program, 'u_shape'),
+            u_voiceLevel: this.gl.getUniformLocation(this.program, 'u_voiceLevel'),
+            u_gridDensity: this.gl.getUniformLocation(this.program, 'u_gridDensity'),
+            u_starSharpness: this.gl.getUniformLocation(this.program, 'u_starSharpness'),
+            u_gridAngle: this.gl.getUniformLocation(this.program, 'u_gridAngle'),
+            u_swellSpeed: this.gl.getUniformLocation(this.program, 'u_swellSpeed'),
+            u_rippleForce: this.gl.getUniformLocation(this.program, 'u_rippleForce'),
+            u_parallax: this.gl.getUniformLocation(this.program, 'u_parallax'),
+            u_haloFalloff: this.gl.getUniformLocation(this.program, 'u_haloFalloff'),
+            u_maskMode: this.gl.getUniformLocation(this.program, 'u_maskMode'),
+            u_shapeType: this.gl.getUniformLocation(this.program, 'u_shapeType'),
+            u_morphEnabled: this.gl.getUniformLocation(this.program, 'u_morphEnabled'),
+            u_emblemEnabled: this.gl.getUniformLocation(this.program, 'u_emblemEnabled'),
+            u_emblemScale: this.gl.getUniformLocation(this.program, 'u_emblemScale'),
             u_col1: this.gl.getUniformLocation(this.program, 'u_col1'),
             u_col2: this.gl.getUniformLocation(this.program, 'u_col2'),
             u_col3: this.gl.getUniformLocation(this.program, 'u_col3'),
             u_col4: this.gl.getUniformLocation(this.program, 'u_col4'),
+            u_colorSpread: this.gl.getUniformLocation(this.program, 'u_colorSpread'),
             u_ripples: []
           };
           for (let i = 0; i < 8; i++) {
             this.uniformLocs.u_ripples.push(this.gl.getUniformLocation(this.program, `u_ripples[${i}]`));
           }
 
-          // 鼠标在中栏交互时发射波纹
-          window.addEventListener('mousemove', (e) => {
-            if (!this.running || !this.canvas) return;
-            const r = this.canvas.getBoundingClientRect();
-            if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
-              this.targetMouse.x = (e.clientX - r.left) / Math.max(1, r.width);
-              this.targetMouse.y = 1.0 - (e.clientY - r.top) / Math.max(1, r.height);
-            }
-          });
-
-          window.addEventListener('click', (e) => {
-            if (!this.running || !this.canvas) return;
-            const r = this.canvas.getBoundingClientRect();
+          // 鼠标在中栏主视区交互发射涟漪
+          const handlePointerAction = (e) => {
+            if (!this.running || config.mode !== 'ocean') return;
+            const p1 = document.querySelector('div[data-pane-id="pane-1"]');
+            if (!p1) return;
+            const r = p1.getBoundingClientRect();
             if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
               const nx = (e.clientX - r.left) / Math.max(1, r.width);
               const ny = 1.0 - (e.clientY - r.top) / Math.max(1, r.height);
-              this.spawnRipple(nx, ny, 1.25);
+              if (e.type === 'pointermove' || e.type === 'mousemove') {
+                this.targetMouse.x = nx;
+                this.targetMouse.y = ny;
+              } else if (e.type === 'pointerdown' || e.type === 'click') {
+                this.spawnRipple(nx, ny, 1.3);
+                playRippleSynth(440 + Math.round(nx * 260), false);
+              }
             }
-          });
+          };
+
+          window.addEventListener('mousemove', handlePointerAction, { passive: true });
+          window.addEventListener('click', handlePointerAction, { passive: true });
+
+          // 键盘在输入框打字触发水波共振
+          window.addEventListener('keydown', (e) => {
+            if (!this.running || config.mode !== 'ocean') return;
+            const target = e.target;
+            if (target && (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT')) {
+              this.spawnRipple(0.5, 0.88, 1.15);
+              playRippleSynth(580, false);
+            }
+          }, { passive: true });
+
         } catch (e) {
           console.warn('[AgOceanEngine] WebGL 初始化异常', e);
         }
@@ -1790,40 +2306,43 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
         this.rippleCursor = (this.rippleCursor + 1) % 8;
       }
 
-      updateRect() {
-        if (!this.canvas) return;
-        const getCenterEl = () => {
-          const chat = document.querySelector('div.w-full.flex.h-full.min-h-0.flex-col.items-center.relative.outline-none.overflow-y-auto');
-          if (chat && chat.offsetWidth >= 400 && chat.offsetHeight >= 400) return chat;
-
-          const main = document.querySelector('main');
-          if (main && main.offsetWidth >= 400) return main;
-
-          const candidates = Array.from(document.querySelectorAll('div')).filter(el => {
-            const r = el.getBoundingClientRect();
-            return r.left >= 180 && r.width >= 400 && r.height >= 400;
-          });
-          return candidates[0] || document.querySelector('div[data-pane-id="pane-1"]') || document.querySelector('div.flex-1.min-w-0.h-full');
-        };
-
-        const centerEl = getCenterEl();
-        if (centerEl) {
-          const r = centerEl.getBoundingClientRect();
-          this.canvas.style.left = `${Math.round(r.left)}px`;
-          this.canvas.style.top = `${Math.round(r.top)}px`;
-          this.canvas.style.width = `${Math.round(r.width)}px`;
-          this.canvas.style.height = `${Math.round(r.height)}px`;
+      setStatePreset(preset) {
+        config.oceanPreset = preset;
+        if (preset === 'idle') {
+          this.targetIntensity = 0.55;
+        } else if (preset === 'focus') {
+          this.targetIntensity = 0.92;
+          this.spawnRipple(0.5, 0.4, 1.25);
+          playRippleSynth(540, false);
+        } else if (preset === 'thinking') {
+          this.targetIntensity = 1.0;
+          this.spawnRipple(0.5, 0.35, 1.5);
+          setTimeout(() => this.spawnRipple(0.35, 0.45, 1.2), 90);
+          setTimeout(() => this.spawnRipple(0.65, 0.45, 1.2), 180);
+          playRippleSynth(620, true);
+        } else if (preset === 'voice') {
+          this.targetIntensity = 0.95;
+          this.spawnRipple(0.5, 0.3, 1.35);
+          playRippleSynth(580, false);
         }
+        try { persistConfig(); } catch (e) {}
       }
 
       start() {
         if (this.running) return;
+        ensureOceanMount();
+        if (!this.canvas) {
+          this.canvas = document.getElementById('ag-center-ocean-canvas');
+        }
+        if (!this.gl || !this.program) {
+          this.init();
+        }
         this.running = true;
-        this.updateRect();
+
         const render = (time) => {
           if (!this.running || !this.gl || !this.program) return;
-          this.updateRect();
 
+          // 动态对齐尺寸
           const dpr = Math.min(window.devicePixelRatio || 1, 2);
           const w = Math.max(1, Math.floor(this.canvas.clientWidth * dpr));
           const h = Math.max(1, Math.floor(this.canvas.clientHeight * dpr));
@@ -1836,22 +2355,51 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
           const elapsed = (time - this.startTime) * 0.001;
           this.mouse.x += (this.targetMouse.x - this.mouse.x) * 0.08;
           this.mouse.y += (this.targetMouse.y - this.mouse.y) * 0.08;
+          this.currentIntensity += (this.targetIntensity - this.currentIntensity) * 0.07;
+
+          if (config.oceanPreset === 'voice') {
+            const v = 0.48 + 0.35 * Math.sin(elapsed * 7.5) + 0.22 * Math.cos(elapsed * 13.8);
+            this.voiceLevel += (v - this.voiceLevel) * 0.16;
+          } else {
+            this.voiceLevel *= 0.88;
+          }
+
+          const palKey = config.oceanPalette || 'gemini';
+          const palColors = (palKey === 'custom' && Array.isArray(config.oceanColorsHex) && config.oceanColorsHex.length >= 4)
+            ? config.oceanColorsHex
+            : (OCEAN_PALETTES[palKey] || OCEAN_PALETTES.gemini);
+          const c1 = hexToRgbNorm(palColors[0]);
+          const c2 = hexToRgbNorm(palColors[1]);
+          const c3 = hexToRgbNorm(palColors[2]);
+          const c4 = hexToRgbNorm(palColors[3]);
+
+          let speedMult = 1.0;
+          if (config.oceanPreset === 'idle') speedMult = 0.6;
+          else if (config.oceanPreset === 'thinking') speedMult = 1.6;
 
           this.gl.useProgram(this.program);
-          this.gl.uniform2f(this.uniformLocs.u_res, w, h);
+          this.gl.uniform2f(this.uniformLocs.u_resolution, w, h);
           this.gl.uniform1f(this.uniformLocs.u_time, elapsed);
           this.gl.uniform2f(this.uniformLocs.u_mouse, this.mouse.x, this.mouse.y);
-          this.gl.uniform1f(this.uniformLocs.u_intensity, 0.95);
-          this.gl.uniform1f(this.uniformLocs.u_density, config.oceanDensity || 42.0);
-          this.gl.uniform1f(this.uniformLocs.u_speed, config.oceanSpeed || 0.62);
-          this.gl.uniform1f(this.uniformLocs.u_sharpness, config.oceanShape === 1 ? 1.0 : (config.oceanShape === 2 ? 2.0 : 0.54));
-          this.gl.uniform1i(this.uniformLocs.u_shape, config.oceanShape || 0);
-
-          // 经典 Gemini 四配色光谱
-          this.gl.uniform3f(this.uniformLocs.u_col1, 0.16, 0.50, 1.0);  // #2980ff
-          this.gl.uniform3f(this.uniformLocs.u_col2, 0.04, 0.76, 1.0);  // #0ac2ff
-          this.gl.uniform3f(this.uniformLocs.u_col3, 0.68, 0.52, 0.95); // #ad85f2
-          this.gl.uniform3f(this.uniformLocs.u_col4, 0.96, 0.44, 0.70); // #f570b3
+          this.gl.uniform1f(this.uniformLocs.u_intensity, this.currentIntensity);
+          this.gl.uniform1f(this.uniformLocs.u_voiceLevel, this.voiceLevel);
+          this.gl.uniform1f(this.uniformLocs.u_gridDensity, config.oceanDensity || 48.0);
+          this.gl.uniform1f(this.uniformLocs.u_starSharpness, config.oceanSharpness || 0.54);
+          this.gl.uniform1f(this.uniformLocs.u_gridAngle, 0.785398); // 45 deg
+          this.gl.uniform1f(this.uniformLocs.u_swellSpeed, (config.oceanSpeed || 0.62) * speedMult);
+          this.gl.uniform1f(this.uniformLocs.u_rippleForce, config.oceanRippleForce || 0.95);
+          this.gl.uniform1f(this.uniformLocs.u_parallax, 0.024);
+          this.gl.uniform1f(this.uniformLocs.u_haloFalloff, 8.5);
+          this.gl.uniform1i(this.uniformLocs.u_maskMode, 2); // 2: 全景主视区波浪
+          this.gl.uniform1i(this.uniformLocs.u_shapeType, config.oceanShape || 0);
+          this.gl.uniform1f(this.uniformLocs.u_morphEnabled, config.oceanMorphEnabled ? 1.0 : 0.0);
+          this.gl.uniform1f(this.uniformLocs.u_emblemEnabled, config.oceanEmblemEnabled ? 1.0 : 0.0);
+          this.gl.uniform1f(this.uniformLocs.u_emblemScale, config.oceanEmblemScale || 1.0);
+          this.gl.uniform3f(this.uniformLocs.u_col1, c1[0], c1[1], c1[2]);
+          this.gl.uniform3f(this.uniformLocs.u_col2, c2[0], c2[1], c2[2]);
+          this.gl.uniform3f(this.uniformLocs.u_col3, c3[0], c3[1], c3[2]);
+          this.gl.uniform3f(this.uniformLocs.u_col4, c4[0], c4[1], c4[2]);
+          this.gl.uniform1f(this.uniformLocs.u_colorSpread, config.oceanColorSpread || 1.0);
 
           for (let i = 0; i < 8; i++) {
             const rp = this.ripples[i];
@@ -1877,7 +2425,7 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
       }
     }
 
-    const oceanEngine = new AgOceanEngine(oceanCanvas);
+    const oceanEngine = new AgOceanEngine(ensureOceanMount());
 
     // 4 模态系统状态调度器 (原生UI + 3美化模态：晶格海洋 / 流体极光 / 自定义素材)
     function applyMode(modeKey, customUrl = '') {
@@ -1895,6 +2443,9 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
         oceanEngine.stop();
       }
       if (oceanCanvas) oceanCanvas.style.display = 'none';
+      if (emblemWrapper) {
+        emblemWrapper.style.display = 'none';
+      }
 
       if (videoBg) {
         videoBg.pause();
@@ -1908,6 +2459,10 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
         // [模态 2: Gemini 晶格海洋] 严格中栏区域控制：左右两边原生深黑遮光，中栏独占通透
         if (oceanCanvas) oceanCanvas.style.display = 'block';
         if (oceanEngine) oceanEngine.start();
+        ensureEmblemMount();
+        if (emblemWrapper) {
+          emblemWrapper.style.display = config.oceanEmblemEnabled ? 'flex' : 'none';
+        }
       } else if (modeKey === 'aurora') {
         // [模态 3: 全景流体极光] 全屏通透极光
         if (stageCanvas) stageCanvas.style.display = 'block';
@@ -2199,28 +2754,158 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
 
         <!-- 模态 1：原生 UI 面板 -->
         <div id="ag-panel-native" class="ag-apple-card" style="display: ${config.mode === 'native' ? 'block' : 'none'};">
-          <div style="font-size: 11px; color: rgba(255, 255, 255, 0.85); line-height: 1.5;">
-            当前为纯净原生 UI 模式：完全保留客户端原生黑白界面，零背景动画，零系统 GPU/CPU 负载。
+          <div style="font-size: 11px; color: rgba(255, 255, 255, 0.90); line-height: 1.6;">
+            <div style="font-weight: 600; color: #ffffff; margin-bottom: 4px;">官方纯净原生 UI 模式</div>
+            完全保留官方纯黑/纯白原生界面，已彻底关闭所有毛玻璃滤镜与背景图层，二三级菜单、Monaco 及审阅面板完全回归官方原生深色，零 GPU/CPU 渲染负担。
           </div>
         </div>
 
         <!-- 模态 2：Gemini 晶格海洋控制面板 (中栏区域控制独占) -->
         <div id="ag-panel-ocean" class="ag-apple-card" style="display: ${config.mode === 'ocean' ? 'block' : 'none'};">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <span style="font-size: 11px; font-weight: 600; color: #ffffff;">晶格波纹形态</span>
-            <div class="ag-apple-segmented" style="padding: 2px;">
-              <button class="ag-apple-segment-item ${config.oceanShape === 0 ? 'active' : ''}" id="ag-shape-star" style="font-size: 10px; padding: 2px 7px;">✦ 四芒星</button>
-              <button class="ag-apple-segment-item ${config.oceanShape === 1 ? 'active' : ''}" id="ag-shape-diamond" style="font-size: 10px; padding: 2px 7px;">◆ 菱形</button>
-              <button class="ag-apple-segment-item ${config.oceanShape === 2 ? 'active' : ''}" id="ag-shape-dots" style="font-size: 10px; padding: 2px 7px;">● 圆点</button>
+          <div style="font-size: 11px; font-weight: 600; color: #ffffff; margin-bottom: 8px;">Gemini 晶格波纹海洋参数</div>
+
+          <!-- 0. 居中无边框官方流光商标控制 (1:1 官方还原商标) -->
+          <div style="margin-bottom: 10px; padding: 8px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+              <span style="font-size: 11px; font-weight: 600; color: #ffffff;">居中无边框流光商标</span>
+              <button id="ag-btn-emblem-toggle" class="ag-apple-segment-item ${config.oceanEmblemEnabled ? 'active' : ''}" style="flex: 0 0 auto; padding: 2px 8px; font-size: 10px; border-radius: 6px;">
+                <span id="ag-emblem-toggle-label">${config.oceanEmblemEnabled ? '✦ 已开启' : '🌑 已关闭'}</span>
+              </button>
+            </div>
+            <!-- 4款官方商标切换 -->
+            <div class="ag-apple-segmented" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; padding: 2px; margin-bottom: 6px;">
+              <button class="ag-apple-segment-item ${config.oceanEmblemStyle === 'gemini' ? 'active' : ''}" id="ag-emblem-gemini" data-emblem="gemini" style="font-size: 10px; padding: 3px 0;">✦ Gemini</button>
+              <button class="ag-apple-segment-item ${config.oceanEmblemStyle === 'antigravity' ? 'active' : ''}" id="ag-emblem-antigravity" data-emblem="antigravity" style="font-size: 10px; padding: 3px 0;">🚀 AG</button>
+              <button class="ag-apple-segment-item ${config.oceanEmblemStyle === 'windows' ? 'active' : ''}" id="ag-emblem-windows" data-emblem="windows" style="font-size: 10px; padding: 3px 0;">⊞ Win</button>
+              <button class="ag-apple-segment-item ${config.oceanEmblemStyle === 'apple' ? 'active' : ''}" id="ag-emblem-apple" data-emblem="apple" style="font-size: 10px; padding: 3px 0;"> Apple</button>
+            </div>
+            <!-- 商标缩放滑块 -->
+            <div class="ag-apple-slider-row" style="margin: 4px 0;">
+              <div class="ag-apple-slider-header">
+                <span style="font-size: 10px; color: rgba(255, 255, 255, 0.75);">商标尺寸缩放</span>
+                <span class="val" id="val-ocean-emblem-scale" style="font-size: 10px; color: #ffffff;">${(config.oceanEmblemScale || 1.0).toFixed(2)}x</span>
+              </div>
+              <input type="range" class="ag-apple-slider" id="slide-ocean-emblem-scale" min="50" max="200" value="${Math.round((config.oceanEmblemScale || 1.0) * 100)}" />
+            </div>
+            <!-- 商标色彩模式切换 (经典四色 vs 同步海洋色谱) -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 4px;">
+              <span style="font-size: 10px; color: rgba(255, 255, 255, 0.75);">商标流光色彩模式</span>
+              <div class="ag-apple-segmented" style="padding: 2px;">
+                <button class="ag-apple-segment-item ${config.oceanEmblemColorMode === 'classic' ? 'active' : ''}" id="ag-emblem-color-classic" style="font-size: 9px; padding: 2px 6px;">四色流光</button>
+                <button class="ag-apple-segment-item ${config.oceanEmblemColorMode === 'sync' ? 'active' : ''}" id="ag-emblem-color-sync" style="font-size: 9px; padding: 2px 6px;">同步海洋</button>
+              </div>
             </div>
           </div>
-          <div class="ag-apple-slider-header" style="margin-bottom: 4px;">
-            <span style="font-size: 11px; color: #ffffff;">海洋涌浪流速</span>
-            <span class="val" id="val-ocean-speed" style="color: #ffffff;">${((config.oceanSpeed || 0.62) * 10).toFixed(0)}</span>
+
+          <!-- 1. 形态切换 (6大形态) 与 动态形变开关 -->
+          <div style="margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+              <span style="font-size: 10px; color: rgba(255, 255, 255, 0.75);">晶格波纹形态</span>
+              <button id="ag-btn-ocean-morph" class="ag-apple-segment-item ${config.oceanMorphEnabled ? 'active' : ''}" style="flex: 0 0 auto; padding: 1px 6px; font-size: 9px; border-radius: 4px;">
+                <span id="ag-ocean-morph-label">${config.oceanMorphEnabled ? '动态波峰形变：开' : '动态波峰形变：关'}</span>
+              </button>
+            </div>
+            <div class="ag-apple-segmented" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 2px;">
+              <button class="ag-apple-segment-item ${config.oceanShape === 0 ? 'active' : ''}" id="ag-shape-0" data-shape="0" style="font-size: 10px; padding: 3px 0;">✦ 四芒星</button>
+              <button class="ag-apple-segment-item ${config.oceanShape === 1 ? 'active' : ''}" id="ag-shape-1" data-shape="1" style="font-size: 10px; padding: 3px 0;">◆ 正菱形</button>
+              <button class="ag-apple-segment-item ${config.oceanShape === 2 ? 'active' : ''}" id="ag-shape-2" data-shape="2" style="font-size: 10px; padding: 3px 0;">● 圆点阵</button>
+              <button class="ag-apple-segment-item ${config.oceanShape === 3 ? 'active' : ''}" id="ag-shape-3" data-shape="3" style="font-size: 10px; padding: 3px 0;">⬡ 六边形</button>
+              <button class="ag-apple-segment-item ${config.oceanShape === 4 ? 'active' : ''}" id="ag-shape-4" data-shape="4" style="font-size: 10px; padding: 3px 0;">✚ 十字星</button>
+              <button class="ag-apple-segment-item ${config.oceanShape === 5 ? 'active' : ''}" id="ag-shape-5" data-shape="5" style="font-size: 10px; padding: 3px 0;">◎ 波纹环</button>
+            </div>
           </div>
-          <input type="range" class="ag-apple-slider" id="slide-ocean-speed" min="2" max="20" value="${Math.round((config.oceanSpeed || 0.62) * 10)}" />
-          <div style="font-size: 10px; color: rgba(255, 255, 255, 0.70); margin-top: 6px;">
-            ✦ 区域控制：晶格海洋仅在中栏主视口区域渲染，左右两侧保持原生纯色。
+
+          <!-- 2. 预设色谱 (6大色谱) 与 4 节点自定义过渡色拾色器 -->
+          <div style="margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px;">
+              <span style="font-size: 10px; color: rgba(255, 255, 255, 0.75);">海洋光谱预设</span>
+              <div style="display: flex; gap: 4px;">
+                <button id="ag-btn-random-lut" type="button" style="padding: 1px 6px; font-size: 9px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #ffffff; cursor: pointer;" title="随机生成 4 色光谱">🎲 随机光谱</button>
+                <button id="ag-btn-random-ripple" type="button" style="padding: 1px 6px; font-size: 9px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; color: #38bdf8; cursor: pointer;" title="投掷石子发射冲击波">🌊 投石涟漪</button>
+              </div>
+            </div>
+            <div class="ag-apple-segmented" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 2px; margin-bottom: 6px;">
+              <button class="ag-apple-segment-item ${config.oceanPalette === 'gemini' ? 'active' : ''}" id="ag-pal-gemini" data-pal="gemini" style="font-size: 10px; padding: 3px 0;">🌌 经典极光</button>
+              <button class="ag-apple-segment-item ${config.oceanPalette === 'argon' ? 'active' : ''}" id="ag-pal-argon" data-pal="argon" style="font-size: 10px; padding: 3px 0;">🌊 深海蓝青</button>
+              <button class="ag-apple-segment-item ${config.oceanPalette === 'antigravity' ? 'active' : ''}" id="ag-pal-antigravity" data-pal="antigravity" style="font-size: 10px; padding: 3px 0;">🚀 星云紫金</button>
+              <button class="ag-apple-segment-item ${config.oceanPalette === 'emerald' ? 'active' : ''}" id="ag-pal-emerald" data-pal="emerald" style="font-size: 10px; padding: 3px 0;">🌿 赛博翡翠</button>
+              <button class="ag-apple-segment-item ${config.oceanPalette === 'miku' ? 'active' : ''}" id="ag-pal-miku" data-pal="miku" style="font-size: 10px; padding: 3px 0;">🎵 初音苍绿</button>
+              <button class="ag-apple-segment-item ${config.oceanPalette === 'sunset' ? 'active' : ''}" id="ag-pal-sunset" data-pal="sunset" style="font-size: 10px; padding: 3px 0;">🌅 落日熔金</button>
+            </div>
+            <!-- 4 节点过渡色拾色器与渐变条 -->
+            <div style="padding: 6px 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;">
+              <div id="ag-ocean-lut-preview" style="width: 100%; height: 8px; border-radius: 4px; margin-bottom: 6px; background: linear-gradient(to right, ${config.oceanColorsHex[0]}, ${config.oceanColorsHex[1]}, ${config.oceanColorsHex[2]}, ${config.oceanColorsHex[3]}); border: 1px solid rgba(255,255,255,0.15);"></div>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px;">
+                <input type="color" id="ag-ocean-color-0" value="${config.oceanColorsHex[0]}" style="width: 22%; height: 20px; border: none; border-radius: 4px; background: transparent; cursor: pointer;" title="Stop 1" />
+                <input type="color" id="ag-ocean-color-1" value="${config.oceanColorsHex[1]}" style="width: 22%; height: 20px; border: none; border-radius: 4px; background: transparent; cursor: pointer;" title="Stop 2" />
+                <input type="color" id="ag-ocean-color-2" value="${config.oceanColorsHex[2]}" style="width: 22%; height: 20px; border: none; border-radius: 4px; background: transparent; cursor: pointer;" title="Stop 3" />
+                <input type="color" id="ag-ocean-color-3" value="${config.oceanColorsHex[3]}" style="width: 22%; height: 20px; border: none; border-radius: 4px; background: transparent; cursor: pointer;" title="Stop 4" />
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. 参数滑块 -->
+          <div class="ag-apple-slider-row">
+            <div class="ag-apple-slider-header">
+              <span style="font-size: 11px; color: #ffffff;">海洋流速</span>
+              <span class="val" id="val-ocean-speed" style="color: #ffffff;">${((config.oceanSpeed || 0.62) * 10).toFixed(0)}</span>
+            </div>
+            <input type="range" class="ag-apple-slider" id="slide-ocean-speed" min="1" max="20" value="${Math.round((config.oceanSpeed || 0.62) * 10)}" />
+          </div>
+
+          <div class="ag-apple-slider-row">
+            <div class="ag-apple-slider-header">
+              <span style="font-size: 11px; color: #ffffff;">晶格密度</span>
+              <span class="val" id="val-ocean-density" style="color: #ffffff;">${Math.round(config.oceanDensity || 48)}</span>
+            </div>
+            <input type="range" class="ag-apple-slider" id="slide-ocean-density" min="24" max="72" value="${Math.round(config.oceanDensity || 48)}" />
+          </div>
+
+          <div class="ag-apple-slider-row">
+            <div class="ag-apple-slider-header">
+              <span style="font-size: 11px; color: #ffffff;">星芒锐度</span>
+              <span class="val" id="val-ocean-sharpness" style="color: #ffffff;">${(config.oceanSharpness || 0.54).toFixed(2)}</span>
+            </div>
+            <input type="range" class="ag-apple-slider" id="slide-ocean-sharpness" min="20" max="80" value="${Math.round((config.oceanSharpness || 0.54) * 100)}" />
+          </div>
+
+          <div class="ag-apple-slider-row">
+            <div class="ag-apple-slider-header">
+              <span style="font-size: 11px; color: #ffffff;">涟漪冲击力</span>
+              <span class="val" id="val-ocean-ripple" style="color: #ffffff;">${(config.oceanRippleForce || 0.95).toFixed(2)}</span>
+            </div>
+            <input type="range" class="ag-apple-slider" id="slide-ocean-ripple" min="20" max="200" value="${Math.round((config.oceanRippleForce || 0.95) * 100)}" />
+          </div>
+
+          <div class="ag-apple-slider-row">
+            <div class="ag-apple-slider-header">
+              <span style="font-size: 11px; color: #ffffff;">色彩扩散度</span>
+              <span class="val" id="val-ocean-spread" style="color: #ffffff;">${(config.oceanColorSpread || 1.0).toFixed(2)}</span>
+            </div>
+            <input type="range" class="ag-apple-slider" id="slide-ocean-spread" min="40" max="200" value="${Math.round((config.oceanColorSpread || 1.0) * 100)}" />
+          </div>
+
+          <!-- 4. 动画动态预设快捷按键 -->
+          <div style="margin-top: 8px; margin-bottom: 8px;">
+            <div style="font-size: 10px; color: rgba(255, 255, 255, 0.75); margin-bottom: 4px;">动态情境预设</div>
+            <div class="ag-apple-segmented" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; padding: 2px;">
+              <button class="ag-apple-segment-item ${config.oceanPreset === 'idle' ? 'active' : ''}" id="ag-state-idle" data-state="idle" style="font-size: 9px; padding: 3px 0;">🌊 静默</button>
+              <button class="ag-apple-segment-item ${config.oceanPreset === 'focus' ? 'active' : ''}" id="ag-state-focus" data-state="focus" style="font-size: 9px; padding: 3px 0;">✨ 聚焦</button>
+              <button class="ag-apple-segment-item ${config.oceanPreset === 'thinking' ? 'active' : ''}" id="ag-state-thinking" data-state="thinking" style="font-size: 9px; padding: 3px 0;">🚀 涌浪</button>
+              <button class="ag-apple-segment-item ${config.oceanPreset === 'voice' ? 'active' : ''}" id="ag-state-voice" data-state="voice" style="font-size: 9px; padding: 3px 0;">🎙️ 声浪</button>
+            </div>
+          </div>
+
+          <!-- 5. 交互波纹声效开关 -->
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255, 255, 255, 0.08);">
+            <span style="font-size: 11px; color: #ffffff;">交互水波声效反馈</span>
+            <button id="ag-btn-ocean-audio" class="ag-apple-segment-item ${config.oceanAudio ? 'active' : ''}" style="flex: 0 0 auto; padding: 3px 10px; font-size: 10px; border-radius: 6px;">
+              <span id="ag-ocean-audio-icon">${config.oceanAudio ? '🔊 已开启' : '🔇 已静音'}</span>
+            </button>
+          </div>
+
+          <div style="font-size: 9px; color: rgba(255, 255, 255, 0.60); margin-top: 6px;">
+            ✦ 区域控制：晶格海洋仅在中栏主视口独占，左右两侧原生深黑遮光，对话文本置于上层。
           </div>
         </div>
 
@@ -2247,91 +2932,94 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
           <button id="ag-clear-asset" type="button" style="width: 100%; margin-top: 6px; padding: 5px 8px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10); border-radius: 8px; color: rgba(255,255,255,.88); font-size: 10px; cursor: pointer;">清除已保存素材</button>
         </div>
 
-        <!-- 进阶特性 1：质感风格一键切换 (晶莹磨砂 vs 柔雾类纸膜) -->
-        <div class="ag-apple-card">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
-            <span style="font-size: 12px; font-weight: 600; color: #ffffff;">界面质感风格</span>
-            <div class="ag-apple-segmented" style="padding: 2px;">
-              <button class="ag-apple-segment-item ${config.textureStyle === 'glass' ? 'active' : ''}" id="ag-tex-glass" style="font-size: 10px; padding: 3px 10px; color: #ffffff;">晶莹磨砂</button>
-              <button class="ag-apple-segment-item ${config.textureStyle === 'paper' ? 'active' : ''}" id="ag-tex-paper" style="font-size: 10px; padding: 3px 10px; color: #ffffff;">柔雾类纸膜</button>
-            </div>
-          </div>
-          <div id="ag-tex-desc" style="font-size: 10px; color: rgba(255, 255, 255, 0.75); line-height: 1.4;">
-            ${config.textureStyle === 'paper' ? '类纸膜模式：漫反射防眩光微噪点纹理，护眼低反光，降低视觉疲劳' : '晶莹磨砂模式：Apple 标志性通透高斯模糊与高光微边缘'}
-          </div>
-        </div>
-
-        <!-- 调节架构：全局共享 vs 独立分栏微调 (统一白字) -->
-        <div class="ag-apple-card">
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
-            <span style="font-size: 12px; font-weight: 600; color: #ffffff;">透底与模糊调节</span>
-            <!-- 微型模式分段器 -->
-            <div class="ag-apple-segmented" style="padding: 2px;">
-              <button class="ag-apple-segment-item ${config.tuneMode === 'global' ? 'active' : ''}" id="ag-subtab-global" style="font-size: 10px; padding: 3px 8px; color: #ffffff;">全局共享</button>
-              <button class="ag-apple-segment-item ${config.tuneMode === 'split' ? 'active' : ''}" id="ag-subtab-split" style="font-size: 10px; padding: 3px 8px; color: #ffffff;">独立微调</button>
-            </div>
-          </div>
-
-          <!-- 默认全局共享调节 (所有视窗联动) -->
-          <div id="ag-box-tune-global" style="display: ${config.tuneMode === 'global' ? 'block' : 'none'};">
-            <div class="ag-apple-slider-row">
-              <div class="ag-apple-slider-header">
-                <span style="color: #ffffff;">全局视窗透明度 (全域联动)</span>
-                <span class="val" id="val-global-opacity" style="color: #ffffff;">${Math.round(config.globalOpacity * 100)}%</span>
+        <!-- 毛玻璃与透视专属控制容器 (仅在 流体极光 aurora 与 自定义素材 custom 下展示) -->
+        <div id="ag-frosted-controls" style="display: ${(config.mode === 'aurora' || config.mode === 'custom') ? 'block' : 'none'};">
+          <!-- 进阶特性 1：质感风格一键切换 (晶莹磨砂 vs 柔雾类纸膜) -->
+          <div class="ag-apple-card">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+              <span style="font-size: 12px; font-weight: 600; color: #ffffff;">界面质感风格</span>
+              <div class="ag-apple-segmented" style="padding: 2px;">
+                <button class="ag-apple-segment-item ${config.textureStyle === 'glass' ? 'active' : ''}" id="ag-tex-glass" style="font-size: 10px; padding: 3px 10px; color: #ffffff;">晶莹磨砂</button>
+                <button class="ag-apple-segment-item ${config.textureStyle === 'paper' ? 'active' : ''}" id="ag-tex-paper" style="font-size: 10px; padding: 3px 10px; color: #ffffff;">柔雾类纸膜</button>
               </div>
-              <input type="range" class="ag-apple-slider" id="slide-global-opacity" min="0" max="100" step="1" value="${Math.round(config.globalOpacity * 100)}" />
             </div>
-
-            <div class="ag-apple-slider-row">
-              <div class="ag-apple-slider-header">
-                <span style="color: #ffffff;">全局毛玻璃高斯模糊</span>
-                <span class="val" id="val-global-blur" style="color: #ffffff;">${config.globalBlur}px</span>
-              </div>
-              <input type="range" class="ag-apple-slider" id="slide-global-blur" min="0" max="45" value="${config.globalBlur}" />
-            </div>
-            <div style="font-size: 10px; color: rgba(255, 255, 255, 0.75); margin-top: 4px;">默认共享调节，左栏、中栏卡片与设置弹窗同步生效</div>
-          </div>
-
-          <!-- 可选左中右独立微调 (仅左/中/右三大分区) -->
-          <div id="ag-box-tune-split" style="display: ${config.tuneMode === 'split' ? 'block' : 'none'};">
-            <div class="ag-apple-slider-row">
-              <div class="ag-apple-slider-header">
-                <span style="color: #ffffff;">左栏侧边栏 (Sidebar)</span>
-                <span class="val" id="val-left-opacity" style="color: #ffffff;">${Math.round(config.leftOpacity * 100)}%</span>
-              </div>
-              <input type="range" class="ag-apple-slider" id="slide-left-opacity" min="0" max="100" step="1" value="${Math.round(config.leftOpacity * 100)}" />
-            </div>
-
-            <div class="ag-apple-slider-row">
-              <div class="ag-apple-slider-header">
-                <span style="color: #ffffff;">中栏对话与设置 (Chat & Modal)</span>
-                <span class="val" id="val-center-opacity" style="color: #ffffff;">${Math.round(config.centerOpacity * 100)}%</span>
-              </div>
-              <input type="range" class="ag-apple-slider" id="slide-center-opacity" min="0" max="100" step="1" value="${Math.round(config.centerOpacity * 100)}" />
-            </div>
-
-            <div class="ag-apple-slider-row">
-              <div class="ag-apple-slider-header">
-                <span style="color: #ffffff;">右栏审阅与工作区 (Review & Terminal)</span>
-                <span class="val" id="val-right-opacity" style="color: #ffffff;">${Math.round(config.rightOpacity * 100)}%</span>
-              </div>
-              <input type="range" class="ag-apple-slider" id="slide-right-opacity" min="0" max="100" step="1" value="${Math.round(config.rightOpacity * 100)}" />
-              <div style="font-size: 9px; color: rgba(255, 255, 255, 0.75);">支持深度透明调节，终端视窗自动保留字符反差增强</div>
+            <div id="ag-tex-desc" style="font-size: 10px; color: rgba(255, 255, 255, 0.75); line-height: 1.4;">
+              ${config.textureStyle === 'paper' ? '类纸膜模式：漫反射防眩光微噪点纹理，护眼低反光，降低视觉疲劳' : '晶莹磨砂模式：Apple 标志性通透高斯模糊与高光微边缘'}
             </div>
           </div>
 
-        </div>
-
-        <!-- 唯一的广色域调色盘入口卡片 (Apple 极简纯白字，点开进入二级专业调色) -->
-        <div id="ag-color-entry-bar" class="ag-apple-card" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
-          <div>
-            <div style="font-size: 12px; font-weight: 600; color: #ffffff;">广色域调色盘与色彩设置</div>
-            <div style="font-size: 10px; color: rgba(255, 255, 255, 0.75); margin-top: 3px;">
-              当前主强调色：<span id="ag-color-hex-tag" style="font-family: monospace; font-weight: 600; color: #ffffff;">${config.accentHex.toUpperCase()}</span>
+          <!-- 调节架构：全局共享 vs 独立分栏微调 (统一白字) -->
+          <div class="ag-apple-card">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+              <span style="font-size: 12px; font-weight: 600; color: #ffffff;">透底与模糊调节</span>
+              <!-- 微型模式分段器 -->
+              <div class="ag-apple-segmented" style="padding: 2px;">
+                <button class="ag-apple-segment-item ${config.tuneMode === 'global' ? 'active' : ''}" id="ag-subtab-global" style="font-size: 10px; padding: 3px 8px; color: #ffffff;">全局共享</button>
+                <button class="ag-apple-segment-item ${config.tuneMode === 'split' ? 'active' : ''}" id="ag-subtab-split" style="font-size: 10px; padding: 3px 8px; color: #ffffff;">独立微调</button>
+              </div>
             </div>
+
+            <!-- 默认全局共享调节 (所有视窗联动) -->
+            <div id="ag-box-tune-global" style="display: ${config.tuneMode === 'global' ? 'block' : 'none'};">
+              <div class="ag-apple-slider-row">
+                <div class="ag-apple-slider-header">
+                  <span style="color: #ffffff;">全局视窗透明度 (全域联动)</span>
+                  <span class="val" id="val-global-opacity" style="color: #ffffff;">${Math.round(config.globalOpacity * 100)}%</span>
+                </div>
+                <input type="range" class="ag-apple-slider" id="slide-global-opacity" min="0" max="100" step="1" value="${Math.round(config.globalOpacity * 100)}" />
+              </div>
+
+              <div class="ag-apple-slider-row">
+                <div class="ag-apple-slider-header">
+                  <span style="color: #ffffff;">全局毛玻璃高斯模糊</span>
+                  <span class="val" id="val-global-blur" style="color: #ffffff;">${config.globalBlur}px</span>
+                </div>
+                <input type="range" class="ag-apple-slider" id="slide-global-blur" min="0" max="45" value="${config.globalBlur}" />
+              </div>
+              <div style="font-size: 10px; color: rgba(255, 255, 255, 0.75); margin-top: 4px;">默认共享调节，左栏、中栏卡片与设置弹窗同步生效</div>
+            </div>
+
+            <!-- 可选左中右独立微调 (仅左/中/右三大分区) -->
+            <div id="ag-box-tune-split" style="display: ${config.tuneMode === 'split' ? 'block' : 'none'};">
+              <div class="ag-apple-slider-row">
+                <div class="ag-apple-slider-header">
+                  <span style="color: #ffffff;">左栏侧边栏 (Sidebar)</span>
+                  <span class="val" id="val-left-opacity" style="color: #ffffff;">${Math.round(config.leftOpacity * 100)}%</span>
+                </div>
+                <input type="range" class="ag-apple-slider" id="slide-left-opacity" min="0" max="100" step="1" value="${Math.round(config.leftOpacity * 100)}" />
+              </div>
+
+              <div class="ag-apple-slider-row">
+                <div class="ag-apple-slider-header">
+                  <span style="color: #ffffff;">中栏对话与设置 (Chat & Modal)</span>
+                  <span class="val" id="val-center-opacity" style="color: #ffffff;">${Math.round(config.centerOpacity * 100)}%</span>
+                </div>
+                <input type="range" class="ag-apple-slider" id="slide-center-opacity" min="0" max="100" step="1" value="${Math.round(config.centerOpacity * 100)}" />
+              </div>
+
+              <div class="ag-apple-slider-row">
+                <div class="ag-apple-slider-header">
+                  <span style="color: #ffffff;">右栏审阅与工作区 (Review & Terminal)</span>
+                  <span class="val" id="val-right-opacity" style="color: #ffffff;">${Math.round(config.rightOpacity * 100)}%</span>
+                </div>
+                <input type="range" class="ag-apple-slider" id="slide-right-opacity" min="0" max="100" step="1" value="${Math.round(config.rightOpacity * 100)}" />
+                <div style="font-size: 9px; color: rgba(255, 255, 255, 0.75);">支持深度透明调节，终端视窗自动保留字符反差增强</div>
+              </div>
+            </div>
+
           </div>
-          <div style="font-size: 11px; color: #ffffff; font-weight: 500; padding: 4px 12px; background: rgba(255, 255, 255, 0.12); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.18);">
-            <span>打开调色</span>
+
+          <!-- 唯一的广色域调色盘入口卡片 (Apple 极简纯白字，点开进入二级专业调色) -->
+          <div id="ag-color-entry-bar" class="ag-apple-card" style="cursor: pointer; display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);">
+            <div>
+              <div style="font-size: 12px; font-weight: 600; color: #ffffff;">广色域调色盘与色彩设置</div>
+              <div style="font-size: 10px; color: rgba(255, 255, 255, 0.75); margin-top: 3px;">
+                当前主强调色：<span id="ag-color-hex-tag" style="font-family: monospace; font-weight: 600; color: #ffffff;">${config.accentHex.toUpperCase()}</span>
+              </div>
+            </div>
+            <div style="font-size: 11px; color: #ffffff; font-weight: 500; padding: 4px 12px; background: rgba(255, 255, 255, 0.12); border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.18);">
+              <span>打开调色</span>
+            </div>
           </div>
         </div>
 
@@ -2424,11 +3112,26 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
 
     document.body.appendChild(modal);
 
+    function syncModalView() {
+      const mode = config.mode || 'native';
+      ['native', 'ocean', 'aurora', 'custom'].forEach(k => {
+        const tabEl = document.getElementById('ag-tab-' + k);
+        const panEl = document.getElementById('ag-panel-' + k);
+        if (tabEl) tabEl.classList.toggle('active', k === mode);
+        if (panEl) panEl.style.display = (k === mode) ? 'block' : 'none';
+      });
+      const frostedControls = document.getElementById('ag-frosted-controls');
+      if (frostedControls) {
+        frostedControls.style.display = (mode === 'aurora' || mode === 'custom') ? 'block' : 'none';
+      }
+    }
+
     // 控制台展开/收起切换
     function togglePanel() {
       const isVisible = modal.style.display === 'block';
       modal.style.display = isVisible ? 'none' : 'block';
       if (!isVisible) {
+        syncModalView();
         showMainView();
       }
     }
@@ -2612,6 +3315,13 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
       [panelNative, panelOcean, panelAurora, panelCustom].forEach(p => p && (p.style.display = 'none'));
       if (activeTab) activeTab.classList.add('active');
       if (activePanel) activePanel.style.display = 'block';
+
+      // 关键隔离：只有 aurora 和 custom 模式才展示质感风格、透底模糊与色盘设置
+      const frostedControls = document.getElementById('ag-frosted-controls');
+      if (frostedControls) {
+        frostedControls.style.display = (modeKey === 'aurora' || modeKey === 'custom') ? 'block' : 'none';
+      }
+
       applyMode(modeKey, config.customAssetUrl);
       try { persistConfig(); } catch (e) {}
     }
@@ -2644,25 +3354,212 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
       };
     }
 
-    // 8.1 晶格海洋专属形态切换 (✦ 四芒星 / ◆ 菱形 / ● 圆点)
-    const shapeStarBtn = document.getElementById('ag-shape-star');
-    const shapeDiamondBtn = document.getElementById('ag-shape-diamond');
-    const shapeDotsBtn = document.getElementById('ag-shape-dots');
-
-    function updateOceanShapeUI(shapeIdx) {
-      config.oceanShape = shapeIdx;
-      [shapeStarBtn, shapeDiamondBtn, shapeDotsBtn].forEach(b => b && b.classList.remove('active'));
-      if (shapeIdx === 0 && shapeStarBtn) shapeStarBtn.classList.add('active');
-      if (shapeIdx === 1 && shapeDiamondBtn) shapeDiamondBtn.classList.add('active');
-      if (shapeIdx === 2 && shapeDotsBtn) shapeDotsBtn.classList.add('active');
-      try { persistConfig(); } catch (e) {}
+    // 8.0 居中无边框流光商标交互绑定
+    const btnEmblemToggle = document.getElementById('ag-btn-emblem-toggle');
+    const labelEmblemToggle = document.getElementById('ag-emblem-toggle-label');
+    if (btnEmblemToggle) {
+      btnEmblemToggle.onclick = () => {
+        config.oceanEmblemEnabled = !config.oceanEmblemEnabled;
+        btnEmblemToggle.classList.toggle('active', config.oceanEmblemEnabled);
+        if (labelEmblemToggle) labelEmblemToggle.textContent = config.oceanEmblemEnabled ? '✦ 已开启' : '🌑 已关闭';
+        if (emblemWrapper) emblemWrapper.style.display = config.oceanEmblemEnabled ? 'flex' : 'none';
+        if (config.oceanEmblemEnabled) {
+          ensureEmblemMount();
+          if (oceanEngine) oceanEngine.spawnRipple(0.5, 0.60, 1.4);
+          playRippleSynth(580, false);
+        }
+        try { persistConfig(); } catch (e) {}
+        showToast(config.oceanEmblemEnabled ? '已开启居中无边框流光商标' : '已关闭居中流光商标');
+      };
     }
 
-    if (shapeStarBtn) shapeStarBtn.onclick = () => { updateOceanShapeUI(0); showToast('晶格形态：✦ 四芒星'); };
-    if (shapeDiamondBtn) shapeDiamondBtn.onclick = () => { updateOceanShapeUI(1); showToast('晶格形态：◆ 正菱形'); };
-    if (shapeDotsBtn) shapeDotsBtn.onclick = () => { updateOceanShapeUI(2); showToast('晶格形态：● 圆点阵'); };
+    const emblemStyleKeys = ['gemini', 'antigravity', 'windows', 'apple'];
+    const emblemStyleNames = {
+      gemini: '✦ Gemini',
+      antigravity: '🚀 Antigravity',
+      windows: '⊞ Windows',
+      apple: ' Apple'
+    };
+    emblemStyleKeys.forEach(k => {
+      const btn = document.getElementById(`ag-emblem-${k}`);
+      if (btn) {
+        btn.onclick = () => {
+          config.oceanEmblemStyle = k;
+          config.oceanEmblemEnabled = true;
+          if (btnEmblemToggle) btnEmblemToggle.classList.add('active');
+          if (labelEmblemToggle) labelEmblemToggle.textContent = '✦ 已开启';
+          emblemStyleKeys.forEach(j => {
+            const b = document.getElementById(`ag-emblem-${j}`);
+            if (b) b.classList.toggle('active', j === k);
+          });
+          ensureEmblemMount();
+          if (emblemWrapper) emblemWrapper.style.display = 'flex';
+          updateEmblemSvg();
+          if (oceanEngine) oceanEngine.spawnRipple(0.5, 0.60, 1.45);
+          playRippleSynth(600, false);
+          try { persistConfig(); } catch (e) {}
+          showToast(`流光商标已切换为 1:1 官方 ${emblemStyleNames[k]}`);
+        };
+      }
+    });
 
-    // 8.2 海洋流速滑块
+    const slideOceanEmblemScale = document.getElementById('slide-ocean-emblem-scale');
+    if (slideOceanEmblemScale) {
+      slideOceanEmblemScale.oninput = (e) => {
+        config.oceanEmblemScale = parseInt(e.target.value) / 100;
+        const valEl = document.getElementById('val-ocean-emblem-scale');
+        if (valEl) valEl.textContent = `${config.oceanEmblemScale.toFixed(2)}x`;
+        updateEmblemSvg();
+        try { persistConfig(); } catch (err) {}
+      };
+    }
+
+    const btnEmblemColorClassic = document.getElementById('ag-emblem-color-classic');
+    const btnEmblemColorSync = document.getElementById('ag-emblem-color-sync');
+    if (btnEmblemColorClassic && btnEmblemColorSync) {
+      btnEmblemColorClassic.onclick = () => {
+        config.oceanEmblemColorMode = 'classic';
+        btnEmblemColorClassic.classList.add('active');
+        btnEmblemColorSync.classList.remove('active');
+        updateEmblemSvg();
+        try { persistConfig(); } catch (e) {}
+        showToast('商标色彩：经典四色流光');
+      };
+      btnEmblemColorSync.onclick = () => {
+        config.oceanEmblemColorMode = 'sync';
+        btnEmblemColorSync.classList.add('active');
+        btnEmblemColorClassic.classList.remove('active');
+        updateEmblemSvg();
+        try { persistConfig(); } catch (e) {}
+        showToast('商标色彩：同步海洋色谱');
+      };
+    }
+
+    // 8.01 动态波峰形变开关
+    const btnOceanMorph = document.getElementById('ag-btn-ocean-morph');
+    const labelOceanMorph = document.getElementById('ag-ocean-morph-label');
+    if (btnOceanMorph) {
+      btnOceanMorph.onclick = () => {
+        config.oceanMorphEnabled = !config.oceanMorphEnabled;
+        btnOceanMorph.classList.toggle('active', config.oceanMorphEnabled);
+        if (labelOceanMorph) labelOceanMorph.textContent = config.oceanMorphEnabled ? '动态波峰形变：开' : '动态波峰形变：关';
+        try { persistConfig(); } catch (e) {}
+        showToast(config.oceanMorphEnabled ? '已开启动态波峰形变（平滑形变）' : '已固定静态晶格形态');
+      };
+    }
+
+    // 8.02 4 节点自定义过渡色与渐变条同步
+    function updateLutPreview() {
+      const preview = document.getElementById('ag-ocean-lut-preview');
+      if (preview && Array.isArray(config.oceanColorsHex) && config.oceanColorsHex.length >= 4) {
+        preview.style.background = `linear-gradient(to right, ${config.oceanColorsHex[0]}, ${config.oceanColorsHex[1]}, ${config.oceanColorsHex[2]}, ${config.oceanColorsHex[3]})`;
+      }
+      for (let i = 0; i < 4; i++) {
+        const inp = document.getElementById(`ag-ocean-color-${i}`);
+        if (inp && config.oceanColorsHex[i]) inp.value = config.oceanColorsHex[i];
+      }
+      if (config.oceanEmblemColorMode === 'sync') updateEmblemSvg();
+    }
+
+    for (let i = 0; i < 4; i++) {
+      const inp = document.getElementById(`ag-ocean-color-${i}`);
+      if (inp) {
+        inp.oninput = (e) => {
+          config.oceanColorsHex[i] = e.target.value;
+          config.oceanPalette = 'custom';
+          Object.keys(palNames).forEach(j => {
+            const b = document.getElementById(`ag-pal-${j}`);
+            if (b) b.classList.remove('active');
+          });
+          updateLutPreview();
+          try { persistConfig(); } catch (err) {}
+        };
+      }
+    }
+
+    // 8.03 🎲 随机光谱生成
+    const btnRandomLut = document.getElementById('ag-btn-random-lut');
+    if (btnRandomLut) {
+      btnRandomLut.onclick = () => {
+        const hBase = Math.floor(Math.random() * 360);
+        const randColors = [
+          rgbToHex(...hslToRgb(hBase, 90, 56)),
+          rgbToHex(...hslToRgb((hBase + 45 + Math.floor(Math.random() * 40)) % 360, 95, 52)),
+          rgbToHex(...hslToRgb((hBase + 120 + Math.floor(Math.random() * 60)) % 360, 90, 58)),
+          rgbToHex(...hslToRgb((hBase + 200 + Math.floor(Math.random() * 80)) % 360, 95, 60))
+        ];
+        config.oceanColorsHex = randColors;
+        config.oceanPalette = 'custom';
+        Object.keys(palNames).forEach(j => {
+          const b = document.getElementById(`ag-pal-${j}`);
+          if (b) b.classList.remove('active');
+        });
+        updateLutPreview();
+        if (oceanEngine) oceanEngine.spawnRipple(0.5, 0.45, 1.35);
+        playRippleSynth(620, false);
+        try { persistConfig(); } catch (err) {}
+        showToast('已生成随机光谱！');
+      };
+    }
+
+    // 8.04 🌊 投石激起波纹
+    const btnRandomRipple = document.getElementById('ag-btn-random-ripple');
+    if (btnRandomRipple) {
+      btnRandomRipple.onclick = () => {
+        const nx = 0.2 + Math.random() * 0.6;
+        const ny = 0.25 + Math.random() * 0.5;
+        if (oceanEngine) oceanEngine.spawnRipple(nx, ny, 1.4);
+        playRippleSynth(480 + Math.round(nx * 300), false);
+        showToast('🌊 投掷石子激起涟漪与水波回响');
+      };
+    }
+
+    // 8.1 晶格海洋形态切换 (6大形态: 0=四芒星, 1=正菱形, 2=圆点, 3=六边形, 4=十字星, 5=波纹环)
+    const shapeNames = ['✦ 四芒星', '◆ 正菱形', '● 圆点阵', '⬡ 六边形', '✚ 十字星', '◎ 波纹环'];
+    for (let i = 0; i < 6; i++) {
+      const btn = document.getElementById(`ag-shape-${i}`);
+      if (btn) {
+        btn.onclick = () => {
+          config.oceanShape = i;
+          for (let j = 0; j < 6; j++) {
+            const b = document.getElementById(`ag-shape-${j}`);
+            if (b) b.classList.toggle('active', j === i);
+          }
+          try { persistConfig(); } catch (e) {}
+          showToast(`晶格形态：${shapeNames[i]}`);
+        };
+      }
+    }
+
+    // 8.2 海洋光谱预设切换 (6大光谱预设)
+    const palNames = {
+      gemini: '🌌 经典极光',
+      argon: '🌊 深海蓝青',
+      antigravity: '🚀 星云紫金',
+      emerald: '🌿 赛博翡翠',
+      miku: '🎵 初音苍绿',
+      sunset: '🌅 落日熔金'
+    };
+    Object.keys(palNames).forEach(k => {
+      const btn = document.getElementById(`ag-pal-${k}`);
+      if (btn) {
+        btn.onclick = () => {
+          config.oceanPalette = k;
+          if (OCEAN_PALETTES[k]) {
+            config.oceanColorsHex = [...OCEAN_PALETTES[k]];
+            updateLutPreview();
+          }
+          Object.keys(palNames).forEach(j => {
+            const b = document.getElementById(`ag-pal-${j}`);
+            if (b) b.classList.toggle('active', j === k);
+          });
+          try { persistConfig(); } catch (e) {}
+          showToast(`海洋光谱：${palNames[k]}`);
+        };
+      }
+    });
+
+    // 8.3 晶格海洋实时参数滑块绑定
     const slideOceanSpeed = document.getElementById('slide-ocean-speed');
     if (slideOceanSpeed) {
       slideOceanSpeed.oninput = (e) => {
@@ -2670,6 +3567,75 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
         const valEl = document.getElementById('val-ocean-speed');
         if (valEl) valEl.textContent = (config.oceanSpeed * 10).toFixed(0);
         try { persistConfig(); } catch (err) {}
+      };
+    }
+
+    const slideOceanDensity = document.getElementById('slide-ocean-density');
+    if (slideOceanDensity) {
+      slideOceanDensity.oninput = (e) => {
+        config.oceanDensity = parseInt(e.target.value);
+        const valEl = document.getElementById('val-ocean-density');
+        if (valEl) valEl.textContent = config.oceanDensity;
+        try { persistConfig(); } catch (err) {}
+      };
+    }
+
+    const slideOceanSharpness = document.getElementById('slide-ocean-sharpness');
+    if (slideOceanSharpness) {
+      slideOceanSharpness.oninput = (e) => {
+        config.oceanSharpness = parseInt(e.target.value) / 100;
+        const valEl = document.getElementById('val-ocean-sharpness');
+        if (valEl) valEl.textContent = config.oceanSharpness.toFixed(2);
+        try { persistConfig(); } catch (err) {}
+      };
+    }
+
+    const slideOceanRipple = document.getElementById('slide-ocean-ripple');
+    if (slideOceanRipple) {
+      slideOceanRipple.oninput = (e) => {
+        config.oceanRippleForce = parseInt(e.target.value) / 100;
+        const valEl = document.getElementById('val-ocean-ripple');
+        if (valEl) valEl.textContent = config.oceanRippleForce.toFixed(2);
+        try { persistConfig(); } catch (err) {}
+      };
+    }
+
+    const slideOceanSpread = document.getElementById('slide-ocean-spread');
+    if (slideOceanSpread) {
+      slideOceanSpread.oninput = (e) => {
+        config.oceanColorSpread = parseInt(e.target.value) / 100;
+        const valEl = document.getElementById('val-ocean-spread');
+        if (valEl) valEl.textContent = config.oceanColorSpread.toFixed(2);
+        try { persistConfig(); } catch (err) {}
+      };
+    }
+
+    // 8.4 动态情境预设切换
+    ['idle', 'focus', 'thinking', 'voice'].forEach(st => {
+      const btn = document.getElementById(`ag-state-${st}`);
+      if (btn) {
+        btn.onclick = () => {
+          ['idle', 'focus', 'thinking', 'voice'].forEach(s => {
+            const b = document.getElementById(`ag-state-${s}`);
+            if (b) b.classList.toggle('active', s === st);
+          });
+          if (oceanEngine) oceanEngine.setStatePreset(st);
+          showToast(`动态情境：${st}`);
+        };
+      }
+    });
+
+    // 8.5 交互水波声效反馈切换
+    const btnOceanAudio = document.getElementById('ag-btn-ocean-audio');
+    const iconOceanAudio = document.getElementById('ag-ocean-audio-icon');
+    if (btnOceanAudio) {
+      btnOceanAudio.onclick = () => {
+        config.oceanAudio = !config.oceanAudio;
+        btnOceanAudio.classList.toggle('active', config.oceanAudio);
+        if (iconOceanAudio) iconOceanAudio.textContent = config.oceanAudio ? '🔊 已开启' : '🔇 已静音';
+        if (config.oceanAudio) playRippleSynth(540, false);
+        try { persistConfig(); } catch (e) {}
+        showToast(config.oceanAudio ? '已开启水波交互声效反馈' : '已静音水波交互声效');
       };
     }
 
@@ -2876,6 +3842,7 @@ body[data-ag-mode="ocean"] div.w-full.flex.h-full.min-h-0.flex-col.items-center.
       toggle: togglePanel,
       open: () => {
         modal.style.display = 'block';
+        syncModalView();
         showMainView();
       },
       close: () => {

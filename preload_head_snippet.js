@@ -86,6 +86,53 @@
     const rgb = (Array.isArray(earlyConfig.accentRgb) && earlyConfig.accentRgb.length === 3) ? earlyConfig.accentRgb : [10, 132, 255];
     const r = rgb[0], g = rgb[1], b = rgb[2];
 
+    if (earlyConfig.mode === 'native') {
+      earlyStyle.textContent = [
+        'html, body {',
+        '  background-color: #0b0d13 !important;',
+        '  background-image: none !important;',
+        '}',
+        'aside, div[data-testid="sidebar-wrapper"], div.bg-sidebar {',
+        '  background-color: var(--sidebar, #0e1117) !important;',
+        '}',
+        'div[data-pane-id="pane-1"], [data-aux-pane-open] {',
+        '  background-color: #12151c !important;',
+        '}',
+        '*:not(#ag-theme-modal):not(#ag-theme-modal *):not(#ag-theme-pill):not(#ag-theme-pill *) {',
+        '  backdrop-filter: none !important;',
+        '  -webkit-backdrop-filter: none !important;',
+        '}'
+      ].join('\n');
+      targetParent.appendChild(earlyStyle);
+      return;
+    }
+
+    if (earlyConfig.mode === 'ocean') {
+      earlyStyle.textContent = [
+        'html, body {',
+        '  background-color: #0b0d13 !important;',
+        '  background-image: none !important;',
+        '}',
+        'aside, div[data-testid="sidebar-wrapper"], div.bg-sidebar {',
+        '  background-color: #0b0e14 !important;',
+        '  backdrop-filter: none !important;',
+        '  -webkit-backdrop-filter: none !important;',
+        '}',
+        '[data-aux-pane-open], div.flex-1.min-w-0.h-full > div.flex {',
+        '  background-color: #0b0e14 !important;',
+        '  backdrop-filter: none !important;',
+        '  -webkit-backdrop-filter: none !important;',
+        '}',
+        'div[data-pane-id="pane-1"] {',
+        '  background-color: transparent !important;',
+        '  backdrop-filter: none !important;',
+        '  -webkit-backdrop-filter: none !important;',
+        '}'
+      ].join('\n');
+      targetParent.appendChild(earlyStyle);
+      return;
+    }
+
     earlyStyle.textContent = [
       ':root {',
       '  --background: transparent !important;',
