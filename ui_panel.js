@@ -545,25 +545,32 @@ div[data-aux-pane-open] div.relative.outline-none {
 }
 
 /* ---------------------------------------------------- */
-/* 1. 左栏 (Sidebar) 区域全面重构为 Apple 极简通透风格    */
-/* ---------------------------------------------------- */
+/* 1. 左栏 (Sidebar) 区域全面重构为 Apple 极简通透风格 */
 aside,
 div[data-testid="sidebar-wrapper"],
-div.bg-sidebar:not(aside *):not([data-testid="sidebar-wrapper"] *) {
+div.shrink-0:has(> div [data-testid="conversation-row-sidebar"]),
+div.shrink-0:has(> div.bg-sidebar) {
   background-color: var(--ag-left-bg) !important;
   backdrop-filter: blur(var(--ag-left-blur)) saturate(160%) !important;
   -webkit-backdrop-filter: blur(var(--ag-left-blur)) saturate(160%) !important;
   border-right: 1px solid var(--ag-left-border, rgba(255, 255, 255, 0.08)) !important;
 }
 
+/* 彻底清除左栏内部所有子容器、项目条目、折叠条目的重复背景与死黑色块，消除斑驳感 */
+aside div.bg-sidebar,
 aside [class*="bg-sidebar"],
 aside .bg-muted,
+div[data-testid="sidebar-wrapper"] div.bg-sidebar,
 div[data-testid="sidebar-wrapper"] [class*="bg-sidebar"],
 div[data-testid="sidebar-wrapper"] .bg-muted,
+div.shrink-0 div.bg-sidebar,
+div.shrink-0 [class*="bg-sidebar"],
+div.bg-sidebar div.bg-sidebar,
 div.bg-sidebar [class*="bg-sidebar"],
-div.bg-sidebar .bg-muted,
-div.bg-sidebar div.w-full.h-full.group,
-div[class*="group/section-header"] {
+div.bg-sidebar div.pt-1,
+div.bg-sidebar div[class*="pt-1"],
+div[class*="group/section-header"],
+div[class*="group/header"] {
   background-color: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -599,9 +606,9 @@ aside a[class*="bg-sidebar-muted"]:hover {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
 }
 
-/* 1.2 左栏常规导航项 */
+/* 1.2 左栏常规导航项与按钮 */
 div.bg-sidebar a:not([class*="bg-sidebar-muted"]):not([data-testid="new-conversation-button"]),
-div.bg-sidebar button:not([class*="h-5"]):not([class*="h-6"]),
+div.bg-sidebar button:not([class*="h-5"]):not([class*="h-6"]):not([class*="group/headerbtn"]),
 div[data-testid="sidebar-wrapper"] a:not([class*="bg-sidebar-muted"]),
 aside a:not([class*="bg-sidebar-muted"]) {
   background-color: transparent !important;
@@ -621,24 +628,24 @@ aside a:not([class*="bg-sidebar-muted"]):hover {
 }
 
 /* 1.3 项目列表标题行 */
-div.bg-sidebar div[class*="group/section-header"],
-div.bg-sidebar div[class*="group/section-header"] button,
-div.bg-sidebar div[class*="group/section-header"] span,
-div[class*="group/section-header"] {
+div[class*="group/section-header"],
+div[class*="group/section-header"] button,
+div[class*="group/section-header"] span,
+div[class*="group/section-header"] h2 {
   background: transparent !important;
   color: rgba(255, 255, 255, 0.75) !important;
   font-weight: 500 !important;
 }
 
-/* 1.4 文件夹条目与表头按钮 */
+/* 1.4 项目列表折叠项与项目卡片 */
 div.bg-sidebar button[class*="group/headerbtn"],
 div.bg-sidebar div[class*="group/header"] button,
 button[class*="group/headerbtn"] {
   background: transparent !important;
-  border: none !important;
+  border: 1px solid transparent !important;
   color: #ffffff !important;
   font-weight: 500 !important;
-  border-radius: 7px !important;
+  border-radius: 8px !important;
   transition: all 0.2s ease !important;
 }
 
@@ -646,45 +653,43 @@ div.bg-sidebar button[class*="group/headerbtn"]:hover,
 div.bg-sidebar div[class*="group/header"] button:hover,
 button[class*="group/headerbtn"]:hover {
   background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
   color: #ffffff !important;
 }
 
-/* 1.5 会话列表条目 */
+/* 1.5 会话列表条目与历史对话项 (全域通透与优雅卡片化) */
+div[data-testid="conversation-row-sidebar"],
+div.bg-sidebar div.cursor-pointer.rounded-lg,
 div.bg-sidebar div.w-full.h-full.group,
 div[data-testid="sidebar-wrapper"] div.w-full.h-full.group,
 aside div.w-full.h-full.group {
   background-color: transparent !important;
-  margin: 2px 0 !important;
-}
-
-/* 未激活的会话条目 */
-div.bg-sidebar div[class*="group pl-[30px]"]:not(.bg-sidebar-secondary),
-div[data-testid="sidebar-wrapper"] div[class*="group pl-[30px]"]:not(.bg-sidebar-secondary),
-aside div[class*="group pl-[30px]"]:not(.bg-sidebar-secondary) {
-  background-color: transparent !important;
-  color: rgba(255, 255, 255, 0.82) !important;
-  border-radius: 8px !important;
+  margin: 1px 0 !important;
   border: 1px solid transparent !important;
+  border-radius: 8px !important;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-div.bg-sidebar div[class*="group pl-[30px]"]:not(.bg-sidebar-secondary):hover,
-div[data-testid="sidebar-wrapper"] div[class*="group pl-[30px]"]:not(.bg-sidebar-secondary):hover,
-aside div[class*="group pl-[30px]"]:not(.bg-sidebar-secondary):hover {
+div[data-testid="conversation-row-sidebar"]:hover,
+div.bg-sidebar div.cursor-pointer.rounded-lg:hover,
+div.bg-sidebar div.w-full.h-full.group:hover {
   background: rgba(255, 255, 255, 0.08) !important;
-  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
 }
 
-/* 当前激活选中的会话项 (Apple 风格典雅微透卡片) */
-div.bg-sidebar div[class*="group pl-[30px]"].bg-sidebar-secondary,
+/* 当前激活选中的会话项 (Apple 风格典雅微透高光毛玻璃卡片) */
+div[data-testid="conversation-row-sidebar"]:has(a.bg-sidebar-secondary),
+div[data-testid="conversation-row-sidebar"].bg-sidebar-secondary,
 div.bg-sidebar div.bg-sidebar-secondary,
 div[data-testid="sidebar-wrapper"] div.bg-sidebar-secondary,
 aside div.bg-sidebar-secondary {
   background: rgba(255, 255, 255, 0.12) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  border: 1px solid rgba(255, 255, 255, 0.20) !important;
   border-radius: 8px !important;
   color: #ffffff !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
 }
 
 /* 1.6 左侧栏图标与文字统一纯白 */
@@ -1041,14 +1046,25 @@ div[data-radix-popper-content-wrapper] {
   -webkit-backdrop-filter: none !important;
 }
 
-/* 仅对多级菜单与左上角标题栏菜单的真实内容卡片添加毛玻璃与边框，消除双层越界边框与缩放抖动 */
+/* 仅对多级菜单、三级子菜单、左上角标题栏菜单及额度展示页面的真实内容卡片添加毛玻璃与边框 */
 div[role="menu"],
 div[role="listbox"]:not(#typeahead-menu):not(.bottom-full),
 div[class*="border-menu-border"],
 div.absolute[class*="border-menu-border"],
 div[data-radix-popper-content-wrapper] > div.bg-popover,
 div[data-radix-popper-content-wrapper] > div[class*="bg-popover"],
-div.absolute.top-full.left-0.mt-1 {
+div[data-radix-popper-content-wrapper] > div.bg-card,
+div[data-radix-popper-content-wrapper] > div[class*="bg-card"],
+div[data-radix-popper-content-wrapper] [data-radix-menu-content],
+div[data-radix-popper-content-wrapper] [data-radix-popper-content-wrapper] > div,
+div.absolute.top-full.left-0.mt-1,
+div[class*="quota"],
+div[class*="usage"],
+div[class*="credit"],
+div[class*="rate-limit"],
+div[data-testid*="quota"],
+div[data-testid*="credit"],
+div[data-testid*="usage"] {
   z-index: 100000 !important;
   background-color: var(--ag-popover-bg, rgba(20, 24, 34, 0.72)) !important;
   backdrop-filter: blur(32px) saturate(190%) !important;
@@ -1059,13 +1075,52 @@ div.absolute.top-full.left-0.mt-1 {
   overflow: visible !important;
 }
 
-/* 二级菜单与标题栏菜单文本统一纯白清晰度 */
+/* 彻底消除三级菜单、模型选择项与额度页面内部所有深色死黑底衬 */
+div[class*="quota"] div.bg-background,
+div[class*="quota"] div.bg-secondary,
+div[class*="quota"] div.bg-card,
+div[class*="quota"] div.bg-muted,
+div[data-testid*="quota"] div.bg-background,
+div[data-testid*="quota"] div.bg-secondary,
+div[data-testid*="quota"] div.bg-card,
+div[data-testid*="quota"] div.bg-muted,
+div[role="menu"] div.bg-secondary,
+div[role="menu"] div.bg-muted,
+div[role="menu"] div.bg-card,
+div.bg-popover div.bg-secondary,
+div.bg-popover div.bg-muted,
+div.bg-popover div.bg-card,
+div[data-radix-popper-content-wrapper] div.bg-secondary,
+div[data-radix-popper-content-wrapper] div.bg-muted,
+div[data-radix-popper-content-wrapper] div.bg-card,
+div[data-radix-popper-content-wrapper] div.bg-background,
+div[data-radix-popper-content-wrapper] button.bg-secondary:not(:hover) {
+  background-color: transparent !important;
+}
+
+/* 额度进度条与滑轨通透高光美化 */
+div[class*="quota"] div[role="progressbar"],
+div[class*="quota"] progress,
+div[data-testid*="quota"] div[role="progressbar"],
+div[data-testid*="quota"] progress {
+  background-color: rgba(255, 255, 255, 0.12) !important;
+  border-radius: 9999px !important;
+  overflow: hidden !important;
+}
+
+/* 二级/三级菜单与标题栏菜单文本统一纯白清晰度 */
 div[role="menu"] [role="menuitem"],
 div[role="menu"] [role="menuitem"] span,
 div[class*="border-menu-border"] span,
 div[class*="border-menu-border"] button,
 button[data-testid="title-menu-bar-option"] span,
-button[data-testid="title-menu-bar-option"] {
+button[data-testid="title-menu-bar-option"],
+div[class*="quota"] span,
+div[class*="quota"] p,
+div[class*="quota"] h3,
+div[class*="quota"] h4,
+div[data-testid*="quota"] span,
+div[data-testid*="quota"] p {
   color: #ffffff !important;
 }
 
