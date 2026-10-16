@@ -16,9 +16,10 @@ export const BUILTIN_SKINS = [
 ];
 
 export class AssetRegistry {
-  constructor(storageBridge = null, defaultGif = '') {
+  constructor(storageBridge = null, defaultGif = '', builtinFrames = {}) {
     this.storageBridge = storageBridge;
     this.defaultGif = defaultGif;
+    this.builtinFrames = builtinFrames;
     this.customSkins = [];
     this.listeners = new Set();
     this.loadCustomSkins();
@@ -95,8 +96,11 @@ export class AssetRegistry {
     }
     // 若指向某个特定皮肤
     const targetSkin = this.getAllSkins().find(s => s.id === config.activePetSkinId);
-    if (targetSkin && targetSkin.customDataUrl) {
-      return targetSkin.customDataUrl;
+    if (targetSkin) {
+      if (targetSkin.customDataUrl) return targetSkin.customDataUrl;
+      if (this.builtinFrames && this.builtinFrames[targetSkin.id]) {
+        return this.builtinFrames[targetSkin.id];
+      }
     }
     return this.defaultGif;
   }

@@ -25,7 +25,8 @@ export class ThemeStateMachine {
   }
 
   setMode(mode) {
-    if (this.config.mode === mode) return;
+    const curAttr = typeof document !== 'undefined' && document.body ? document.body.getAttribute('data-theme-mode') : null;
+    if (this.config.mode === mode && curAttr === mode) return;
     this.config.mode = mode;
     this.applyMode(mode);
     this.notify('modeChange', mode);

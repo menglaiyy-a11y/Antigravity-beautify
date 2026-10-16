@@ -6,8 +6,8 @@
 body[data-theme-mode="aurora"],
 body[data-theme-mode="custom"] {
   --background: transparent !important;
-  --card: 14 18 26 / 0.35 !important;
-  --sidebar: 10 14 22 / 0.45 !important;
+  --card: 14 18 26 / var(--ag-card-opacity, 0.35) !important;
+  --sidebar: 10 14 22 / var(--ag-sidebar-opacity, 0.45) !important;
   --border: 255 255 255 / 0.08 !important;
 }
 
@@ -17,9 +17,9 @@ body[data-theme-mode="aurora"] #ag-stage-canvas {
 
 body[data-theme-mode="aurora"] div[class*="scroll-mt-4"],
 body[data-theme-mode="custom"] div[class*="scroll-mt-4"] {
-  background-color: rgba(14, 18, 26, 0.35) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  background-color: rgba(14, 18, 26, var(--ag-card-opacity, 0.35)) !important;
+  backdrop-filter: blur(var(--ag-glass-blur, 20px)) !important;
+  -webkit-backdrop-filter: blur(var(--ag-glass-blur, 20px)) !important;
   border: 1px solid rgba(255, 255, 255, 0.10) !important;
 }
 
@@ -30,8 +30,17 @@ body[data-theme-mode="aurora"] div.bg-sidebar,
 body[data-theme-mode="custom"] aside,
 body[data-theme-mode="custom"] [data-testid="sidebar"],
 body[data-theme-mode="custom"] div.bg-sidebar {
-  background-color: rgba(10, 14, 22, 0.45) !important;
-  backdrop-filter: blur(24px) !important;
-  -webkit-backdrop-filter: blur(24px) !important;
+  background-color: rgba(10, 14, 22, var(--ag-sidebar-opacity, 0.45)) !important;
+  backdrop-filter: blur(var(--ag-sidebar-blur, 24px)) !important;
+  -webkit-backdrop-filter: blur(var(--ag-sidebar-blur, 24px)) !important;
   border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* 自定义模式暗化遮罩 */
+body[data-theme-mode="custom"] #ag-custom-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-color: rgba(0, 0, 0, var(--ag-mask-opacity, 0.35));
 }

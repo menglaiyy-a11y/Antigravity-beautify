@@ -42,6 +42,18 @@ if (Test-Path -LiteralPath $gifPath) {
 }
 $jsonGif = $gifBase64 | ConvertTo-Json -Compress
 
+$builtinSkinFrames = @{}
+$skinsDir = Join-Path $srcDir "assets\pet_skins"
+for ($i = 1; $i -le 5; $i++) {
+    $skinPath = Join-Path $skinsDir "skin_$i\frame_00.png"
+    if (Test-Path -LiteralPath $skinPath) {
+        $bytes = [System.IO.File]::ReadAllBytes($skinPath)
+        $b64 = [Convert]::ToBase64String($bytes)
+        $builtinSkinFrames["skin_$i"] = "data:image/png;base64," + $b64
+    }
+}
+$jsonBuiltinSkinFrames = $builtinSkinFrames | ConvertTo-Json -Compress
+
 # 3. 模块解耦与清理
 function Clean-ModuleContent([string]$code) {
     $c = [regex]::Replace($code, 'import\s+[\s\S]*?from\s+[''"].*?[''"];', '')
@@ -54,6 +66,7 @@ $modules = @(
     (Join-Path $srcDir "core\storage_bridge.js"),
     (Join-Path $srcDir "core\asset_registry.js"),
     (Join-Path $srcDir "core\state_machine.js"),
+    (Join-Path $srcDir "core\drag_controller.js"),
     (Join-Path $srcDir "shaders\ocean_renderer.js"),
     (Join-Path $srcDir "shaders\aurora_renderer.js"),
     (Join-Path $srcDir "components\pet_widget\pet.js"),
@@ -76,9 +89,11 @@ foreach ($m in $modules) {
 
 [void]$bundleSb.AppendLine("  const V2_COMBINED_CSS = $jsonCss;")
 [void]$bundleSb.AppendLine("  const V2_SUOMING_GIF = $jsonGif;")
+[void]$bundleSb.AppendLine("  const V2_BUILTIN_SKIN_FRAMES = $jsonBuiltinSkinFrames;")
 [void]$bundleSb.AppendLine("  bootstrapAntigravityV2({")
 [void]$bundleSb.AppendLine("    combinedCss: V2_COMBINED_CSS,")
-[void]$bundleSb.AppendLine("    sunglassesGifBase64: V2_SUOMING_GIF")
+[void]$bundleSb.AppendLine("    sunglassesGifBase64: V2_SUOMING_GIF,")
+[void]$bundleSb.AppendLine("    builtinSkinFrames: V2_BUILTIN_SKIN_FRAMES")
 [void]$bundleSb.AppendLine("  });")
 [void]$bundleSb.AppendLine("})();")
 

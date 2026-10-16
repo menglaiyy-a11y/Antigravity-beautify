@@ -55,10 +55,10 @@ div[class*="scroll-mt-4"] div.flex.shrink-0:has(img) {
   box-shadow: none !important;
 }
 
-/* 5. 用户消息缩略图媒体容器：清除深黑矩形硬切边框与外壳边框 */
-div:has(> img),
-div:has(> div > img),
-div.flex.shrink-0:has(img) {
+/* 5. 用户消息缩略图媒体容器：清除深黑矩形硬切边框与外壳边框 (限定模态作用域) */
+body[data-theme-mode] div:has(> img),
+body[data-theme-mode] div:has(> div > img),
+body[data-theme-mode] div.flex.shrink-0:has(img) {
   border: none !important;
   border-width: 0px !important;
   border-color: transparent !important;

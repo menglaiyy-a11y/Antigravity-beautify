@@ -30,6 +30,7 @@ export function bootstrapAntigravityV2(options = {}) {
       'ag-center-emblem-wrapper',
       'ag-control-panel-host',
       'ag-pet-widget-host',
+      'ag-custom-mask',
       'ag-v2-theme-styles'
     ];
     oldNodes.forEach(id => {
@@ -63,6 +64,12 @@ export function bootstrapAntigravityV2(options = {}) {
     videoBg.style.cssText = 'position: fixed; inset: 0; width: 100vw; height: 100vh; object-fit: cover; z-index: 0; pointer-events: none; display: none;';
     document.body.insertBefore(videoBg, document.body.firstChild);
 
+    // 初始化自定义素材暗化遮罩节点 (用于 custom 模态防背景眩光)
+    const customMask = document.createElement('div');
+    customMask.id = 'ag-custom-mask';
+    customMask.style.display = 'none';
+    document.body.insertBefore(customMask, document.body.firstChild);
+
     // 晶格海洋 Canvas (挂载在中栏)
     const oceanCanvas = document.createElement('canvas');
     oceanCanvas.id = 'ag-center-ocean-canvas';
@@ -82,7 +89,7 @@ export function bootstrapAntigravityV2(options = {}) {
     // 3. 实例化独立着色器引擎与资产注册表
     const oceanRenderer = new OceanRenderer(oceanCanvas);
     const auroraRenderer = new AuroraRenderer(stageCanvas);
-    const assetRegistry = new AssetRegistry(storageBridge, options.sunglassesGifBase64 || '');
+    const assetRegistry = new AssetRegistry(storageBridge, options.sunglassesGifBase64 || '', options.builtinSkinFrames || {});
 
     // 4. 读取持久化配置并启动状态机
     const initialConfig = storageBridge.readLocalConfig();
@@ -99,12 +106,14 @@ export function bootstrapAntigravityV2(options = {}) {
     async function applyCustomAsset() {
       const cfg = stateMachine.getConfig();
       if (cfg.mode !== 'custom') {
+        if (customMask) customMask.style.display = 'none';
         if (videoBg) { videoBg.pause(); videoBg.style.display = 'none'; }
         if (document.body.getAttribute('data-theme-mode') !== 'custom') {
           document.body.style.backgroundImage = 'none';
         }
         return;
       }
+      if (customMask) customMask.style.display = 'block';
       const assetId = cfg.customAssetId || 'default_custom';
       const assetData = await storageBridge.getAsset(assetId);
       if (assetData) {
@@ -172,6 +181,7 @@ export function bootstrapAntigravityV2(options = {}) {
 
     window.__ag_v2_theme = publicApi;
     document.__ag_v2_theme = publicApi;
+    window.agVisualPanel = controlPanel;
 
     // 尝试安全暴露至 Main World
     try {
