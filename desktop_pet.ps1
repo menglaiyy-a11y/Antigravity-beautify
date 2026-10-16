@@ -1,4 +1,4 @@
-# =====================================================================
+﻿# =====================================================================
 # Antigravity 电脑全局桌面伴侣 (Desktop Pet)
 # 特性：纯原生 WPF、完全无边框透明渲染、点击与拖拽精准分离、实时额度同步、一键唤出总控
 # 稳定性加固版：ExplicitShutdown 工业级常驻保活、全局线程池异常隔离、安全字典解包
@@ -102,7 +102,7 @@ function Send-CdpCommand($method, $params = @{}) {
         $wsUrl = $page["webSocketDebuggerUrl"].ToString()
         $ws = New-Object System.Net.WebSockets.ClientWebSocket
         $ct = [System.Threading.CancellationToken]::None
-        $ws.ConnectAsync([Uri]$wsUrl, $ct).Wait(2000)
+        [void]$ws.ConnectAsync([Uri]$wsUrl, $ct).Wait(2000)
 
         $reqObj = @{
             id = 1
@@ -112,7 +112,7 @@ function Send-CdpCommand($method, $params = @{}) {
         $reqJson = $ser.Serialize($reqObj)
         $bytes = [System.Text.Encoding]::UTF8.GetBytes($reqJson)
         $seg = New-Object System.ArraySegment[byte]($bytes, 0, $bytes.Length)
-        $ws.SendAsync($seg, [System.Net.WebSockets.WebSocketMessageType]::Text, $true, $ct).Wait(3000)
+        [void]$ws.SendAsync($seg, [System.Net.WebSockets.WebSocketMessageType]::Text, $true, $ct).Wait(3000)
 
         $ms = New-Object System.IO.MemoryStream
         $buf = New-Object byte[] 65536
@@ -122,11 +122,15 @@ function Send-CdpCommand($method, $params = @{}) {
             $ms.Write($buf, 0, $res.Count)
         } while (-not $res.EndOfMessage)
 
-        $ws.CloseAsync([System.Net.WebSockets.WebSocketCloseStatus]::NormalClosure, "done", $ct).Wait(1000)
+        [void]$ws.CloseAsync([System.Net.WebSockets.WebSocketCloseStatus]::NormalClosure, "done", $ct).Wait(1000)
         $respJson = [System.Text.Encoding]::UTF8.GetString($ms.ToArray())
         return $ser.DeserializeObject($respJson)
     } catch {
         return $null
+    } finally {
+        if ($ws) { try { $ws.Dispose() } catch {} }
+        if ($ms) { try { $ms.Dispose() } catch {} }
+        if ($wc) { try { $wc.Dispose() } catch {} }
     }
 }
 
@@ -137,6 +141,15 @@ function Invoke-OpenVisualPanel {
         Send-CdpCommand "Page.bringToFront" @{} | Out-Null
     } catch {}
 }
+
+function Notify-PetState($running) {
+    try {
+        $boolStr = if ($running) { "true" } else { "false" }
+        $evalJs = "window.agVisualPanel && window.agVisualPanel.pet && window.agVisualPanel.pet.onPetAlive && window.agVisualPanel.pet.onPetAlive($boolStr);"
+        Send-CdpCommand "Runtime.evaluate" @{ expression = $evalJs; returnByValue = $true } | Out-Null
+    } catch {}
+}
+
 
 function Get-LiveQuota {
     try {
@@ -388,89 +401,103 @@ function Toggle-Flyout {
     }
 }
 
-# 8. 更新额度信息到卡片 UI (隔离线程池，防崩溃加固)
+# 8. 更新额度信息到卡片 UI (主线程安全调用，防崩溃加固)
 function Update-QuotaUI {
     try {
-        $txtGeminiPercent.Text = "读取中..."
-        $txtClaudeStatus.Text = "同步中..."
-    } catch {}
-
-    [System.Threading.ThreadPool]::QueueUserWorkItem({
-        try {
-            $quota = Get-LiveQuota
-            if ($flyoutWindow -and $flyoutWindow.Dispatcher) {
-                $flyoutWindow.Dispatcher.Invoke([Action]{
-                    try {
-                        if ($quota) {
-                            $configs = @()
-                            if ($quota.ContainsKey("cascadeModelConfigData") -and $quota["cascadeModelConfigData"] -and $quota["cascadeModelConfigData"].ContainsKey("clientModelConfigs")) {
-                                $configs = $quota["cascadeModelConfigData"]["clientModelConfigs"]
-                            }
-
-                            $geminiCfg = $null
-                            $claudeCfg = $null
-
-                            foreach ($c in $configs) {
-                                if ($c.ContainsKey("label")) {
-                                    if ($c["label"] -match "Gemini.*Flash.*Medium" -or $c["label"] -match "Gemini.*Flash" -or $c["label"] -match "Gemini") {
-                                        if (-not $geminiCfg) { $geminiCfg = $c }
-                                    }
-                                    if ($c["label"] -match "Claude.*Sonnet" -or $c["label"] -match "Claude") {
-                                        if (-not $claudeCfg) { $claudeCfg = $c }
-                                    }
-                                }
-                            }
-
-                            if ($geminiCfg -and $geminiCfg.ContainsKey("quotaInfo") -and $geminiCfg["quotaInfo"].ContainsKey("remainingFraction")) {
-                                $fraction = [double]$geminiCfg["quotaInfo"]["remainingFraction"]
-                                $percent = [Math]::Round($fraction * 100, 1)
-                                $txtGeminiPercent.Text = "$percent% 剩余"
-                                $barGemini.Width = [Math]::Max(4, 250 * $fraction)
-                                
-                                $colorHex = if ($percent -gt 50) { "#30D158" } elseif ($percent -gt 20) { "#FF9F0A" } else { "#FF453A" }
-                                $brush = [System.Windows.Media.BrushConverter]::new().ConvertFromString($colorHex)
-                                $barGemini.Background = $brush
-                                $txtGeminiPercent.Foreground = $brush
-
-                                if ($geminiCfg["quotaInfo"].ContainsKey("resetTime")) {
-                                    $resetStr = $geminiCfg["quotaInfo"]["resetTime"]
-                                    try {
-                                        $dt = [DateTime]::Parse($resetStr).ToLocalTime()
-                                        $txtGeminiReset.Text = "重置时间: " + $dt.ToString("HH:mm") + " (周期刷新)"
-                                    } catch {
-                                        $txtGeminiReset.Text = "重置时间: " + $resetStr
-                                    }
-                                }
-                            } else {
-                                $txtGeminiPercent.Text = "100% 充裕"
-                                $barGemini.Width = 250
-                                $txtGeminiReset.Text = "服务连接正常"
-                            }
-
-                            if ($claudeCfg) {
-                                $txtClaudeStatus.Text = "就绪活跃"
-                                if ($claudeCfg.ContainsKey("quotaInfo") -and $claudeCfg["quotaInfo"].ContainsKey("resetTime")) {
-                                    try {
-                                        $dt2 = [DateTime]::Parse($claudeCfg["quotaInfo"]["resetTime"]).ToLocalTime()
-                                        $txtClaudeReset.Text = "周期重置: " + $dt2.ToString("HH:mm")
-                                    } catch {
-                                        $txtClaudeReset.Text = "高级模型状态正常"
-                                    }
-                                }
-                            } else {
-                                $txtClaudeStatus.Text = "正常调用"
-                            }
-                        } else {
-                            $txtGeminiPercent.Text = "离线/待命"
-                            $txtGeminiReset.Text = "客户端连接中..."
-                            $txtClaudeStatus.Text = "等待启动"
-                            $txtClaudeReset.Text = "请打开 Antigravity 客户端"
-                        }
-                    } catch {}
-                })
+        $quota = Get-LiveQuota
+        if ($quota) {
+            $configs = @()
+            if ($quota.ContainsKey("cascadeModelConfigData") -and $quota["cascadeModelConfigData"] -and $quota["cascadeModelConfigData"].ContainsKey("clientModelConfigs")) {
+                $configs = $quota["cascadeModelConfigData"]["clientModelConfigs"]
             }
-        } catch {}
-    }) | Out-Null
+
+            $geminiCandidates = @()
+            $claudeCandidates = @()
+
+            foreach ($c in $configs) {
+                if ($c.ContainsKey("label") -and $c["label"]) {
+                    $lbl = [string]$c["label"]
+                    $hasQuota = ($c.ContainsKey("quotaInfo") -and $c["quotaInfo"] -and $c["quotaInfo"].ContainsKey("remainingFraction") -and $null -ne $c["quotaInfo"]["remainingFraction"] -and [string]$c["quotaInfo"]["remainingFraction"] -ne "")
+
+                    if ($lbl -match "Gemini") {
+                        $score = 0
+                        if ($hasQuota) { $score += 100 }
+                        if ($lbl -match "Flash") { $score += 20 }
+                        if ($lbl -match "Pro") { $score += 10 }
+                        if ($lbl -match "Argon") { $score -= 50 }
+                        $geminiCandidates += @{ Config = $c; Score = $score }
+                    }
+
+                    if ($lbl -match "Claude") {
+                        $score = 0
+                        if ($hasQuota) { $score += 100 }
+                        if ($lbl -match "Sonnet") { $score += 20 }
+                        $claudeCandidates += @{ Config = $c; Score = $score }
+                    }
+                }
+            }
+
+            $geminiCfg = $null
+            if ($geminiCandidates.Count -gt 0) {
+                $geminiCfg = ($geminiCandidates | Sort-Object -Property { $_.Score } -Descending | Select-Object -First 1).Config
+            }
+
+            $claudeCfg = $null
+            if ($claudeCandidates.Count -gt 0) {
+                $claudeCfg = ($claudeCandidates | Sort-Object -Property { $_.Score } -Descending | Select-Object -First 1).Config
+            }
+
+            if ($geminiCfg -and $geminiCfg.ContainsKey("quotaInfo") -and $geminiCfg["quotaInfo"] -and $geminiCfg["quotaInfo"].ContainsKey("remainingFraction") -and $null -ne $geminiCfg["quotaInfo"]["remainingFraction"] -and [string]$geminiCfg["quotaInfo"]["remainingFraction"] -ne "") {
+                $fraction = [double]$geminiCfg["quotaInfo"]["remainingFraction"]
+                $percent = [Math]::Round($fraction * 100, 1)
+                $txtGeminiPercent.Text = "$percent% 剩余"
+                $barGemini.Width = [Math]::Max(4, 250 * $fraction)
+                
+                $colorHex = if ($percent -gt 50) { "#30D158" } elseif ($percent -gt 20) { "#FF9F0A" } else { "#FF453A" }
+                $brush = [System.Windows.Media.BrushConverter]::new().ConvertFromString($colorHex)
+                $barGemini.Background = $brush
+                $txtGeminiPercent.Foreground = $brush
+
+                if ($geminiCfg["quotaInfo"].ContainsKey("resetTime") -and $geminiCfg["quotaInfo"]["resetTime"]) {
+                    $resetStr = $geminiCfg["quotaInfo"]["resetTime"]
+                    try {
+                        $dt = [DateTime]::Parse($resetStr).ToLocalTime()
+                        $txtGeminiReset.Text = "重置时间: " + $dt.ToString("HH:mm") + " (周期刷新)"
+                    } catch {
+                        $txtGeminiReset.Text = "重置时间: " + $resetStr
+                    }
+                } else {
+                    $txtGeminiReset.Text = "重置周期: 正常活跃"
+                }
+            } else {
+                $txtGeminiPercent.Text = "100% 充裕"
+                $barGemini.Width = 250
+                $txtGeminiReset.Text = "服务连接正常"
+            }
+
+            if ($claudeCfg) {
+                $txtClaudeStatus.Text = "就绪活跃"
+                if ($claudeCfg.ContainsKey("quotaInfo") -and $claudeCfg["quotaInfo"] -and $claudeCfg["quotaInfo"].ContainsKey("resetTime") -and $claudeCfg["quotaInfo"]["resetTime"]) {
+                    try {
+                        $dt2 = [DateTime]::Parse($claudeCfg["quotaInfo"]["resetTime"]).ToLocalTime()
+                        $txtClaudeReset.Text = "周期重置: " + $dt2.ToString("HH:mm")
+                    } catch {
+                        $txtClaudeReset.Text = "高级模型状态正常"
+                    }
+                } else {
+                    $txtClaudeReset.Text = "高级模型状态正常"
+                }
+            } else {
+                $txtClaudeStatus.Text = "正常调用"
+                $txtClaudeReset.Text = "高级模型状态正常"
+            }
+        } else {
+            $txtGeminiPercent.Text = "离线/待命"
+            $txtGeminiReset.Text = "客户端连接中..."
+            $txtClaudeStatus.Text = "等待启动"
+            $txtClaudeReset.Text = "请打开 Antigravity 客户端"
+        }
+    } catch {}
 }
 
 # 按钮事件绑定
@@ -550,6 +577,7 @@ $petWindow.Add_MouseLeftButtonUp({
 # 11. 右键菜单与托盘退出统一逻辑
 $safeExitAction = {
     try {
+        Notify-PetState $false
         if ($notifyIcon) {
             $notifyIcon.Visible = $false
             $notifyIcon.Dispose()
@@ -560,6 +588,7 @@ $safeExitAction = {
         [System.Windows.Application]::Current.Shutdown()
     } catch {}
 }
+
 
 # 右键菜单
 $contextMenu = New-Object System.Windows.Controls.ContextMenu
@@ -656,6 +685,10 @@ $animTimer.Start()
 
 # 首次在后台预加载一次额度缓存
 Update-QuotaUI
+
+# 向 Antigravity 总控发送在线信号
+Notify-PetState $true
+
 
 Write-Host "Antigravity 桌面伴侣已成功启动并常驻！"
 Write-Host "操作指南："

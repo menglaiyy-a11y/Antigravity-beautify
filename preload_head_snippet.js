@@ -153,6 +153,9 @@
 
     if (earlyConfig.mode === 'ocean') {
       earlyStyle.textContent = [
+        ':root {',
+        '  --background: transparent !important;',
+        '}',
         'html[data-ag-early-mode="ocean"], body[data-ag-mode="ocean"], html[data-ag-early-mode="ocean"] body {',
         '  background-color: #000000 !important;',
         '  background-image: none !important;',
@@ -189,20 +192,48 @@
         '  backdrop-filter: none !important;',
         '  -webkit-backdrop-filter: none !important;',
         '}',
-        'body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div[class*="scroll-mt-4"],',
-        'body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] [data-testid="chat-turn-container"],',
-        'body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div[class*="group/turn"] {',
-        '  background-color: rgba(10, 14, 22, 0.16) !important;',
-        '  backdrop-filter: blur(3px) !important;',
-        '  -webkit-backdrop-filter: blur(3px) !important;',
-        '  border: 1px solid rgba(255, 255, 255, 0.05) !important;',
+        'body[data-ag-mode="ocean"] [data-testid="chat-turn-container"] {',
+        '  background-color: transparent !important;',
+        '  backdrop-filter: none !important;',
+        '  -webkit-backdrop-filter: none !important;',
+        '  border: none !important;',
+        '  box-shadow: none !important;',
+        '  margin: 0 !important;',
+        '  padding: 0 !important;',
         '}',
+        'body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div[class*="scroll-mt-4"],',
+        'body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] {',
+        '  background-color: rgba(10, 14, 22, 0.12) !important;',
+        '  backdrop-filter: none !important;',
+        '  -webkit-backdrop-filter: none !important;',
+        '  border: 1px solid rgba(255, 255, 255, 0.05) !important;',
+        '  border-radius: 12px !important;',
+        '  box-shadow: none !important;',
+        '}',
+        'body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] div[class*="group/turn"],',
+        'body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] div[data-turn-id],',
         'body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] .bg-card,',
         'body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] .bg-card-border,',
         'body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] .bg-muted,',
-        'body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] article {',
+        'body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] article,',
+        'body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] div[data-testid="user-input-step"],',
+        'body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] div:has(> img),',
+        'body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] div:has(> div > img),',
+        'body[data-ag-mode="ocean"] div.md-sticky-message-bleed {',
         '  background-color: transparent !important;',
+        '  border: none !important;',
         '  box-shadow: none !important;',
+        '  backdrop-filter: none !important;',
+        '  -webkit-backdrop-filter: none !important;',
+        '}',
+        'body[data-ag-mode="ocean"] div.md-sticky-message-bleed::before,',
+        'body[data-ag-mode="ocean"] div.md-sticky-message-bleed::after,',
+        'body[data-ag-mode="ocean"] .md-table-bleed .md-sticky-message-bleed::before,',
+        'body[data-ag-mode="ocean"] .md-table-bleed .md-sticky-message-bleed::after,',
+        'body[data-ag-mode="ocean"] [class*="md-sticky-message-bleed"]::before,',
+        'body[data-ag-mode="ocean"] [class*="md-sticky-message-bleed"]::after {',
+        '  display: none !important;',
+        '  background: transparent !important;',
         '}'
       ].join('\n');
       targetParent.appendChild(earlyStyle);
@@ -258,22 +289,18 @@
       'body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.isolate:not([role="dialog"] *):not(.settings-modal-container *) {',
       '  background-color: transparent !important;',
       '}',
-      'body[data-ag-mode="aurora"] aside,',
-      'body[data-ag-mode="aurora"] div[data-testid="sidebar-wrapper"],',
-      'body[data-ag-mode="aurora"] div.bg-sidebar:not(aside *):not([data-testid="sidebar-wrapper"] *) {',
-      '  background-color: rgba(8, 10, 14, 0.94) !important;',
-      '  backdrop-filter: blur(12px) saturate(160%) !important;',
-      '  -webkit-backdrop-filter: blur(12px) saturate(160%) !important;',
-      '  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;',
-      '}',
-      'body[data-ag-mode="custom"] aside,',
-      'body[data-ag-mode="custom"] div[data-testid="sidebar-wrapper"],',
-      'body[data-ag-mode="custom"] div.bg-sidebar:not(aside *):not([data-testid="sidebar-wrapper"] *) {',
+      'body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.relative.flex.w-full.h-full.outline-none > div.flex,',
+      'body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar,',
+      'body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) aside,',
+      'body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="sidebar-wrapper"],',
+      'body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.bg-sidebar:not(aside *):not([data-testid="sidebar-wrapper"] *) {',
       '  background-color: var(--ag-left-bg) !important;',
       '  backdrop-filter: blur(var(--ag-left-blur)) saturate(160%) !important;',
       '  -webkit-backdrop-filter: blur(var(--ag-left-blur)) saturate(160%) !important;',
       '  border-right: 1px solid var(--ag-left-border, rgba(255, 255, 255, 0.08)) !important;',
       '}',
+      'body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar *,',
+      'body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.bg-sidebar *,',
       'aside [class*="bg-sidebar"],',
       'aside .bg-muted,',
       'div[data-testid="sidebar-wrapper"] [class*="bg-sidebar"],',
@@ -287,10 +314,20 @@
       '  -webkit-backdrop-filter: none !important;',
       '  border-color: transparent !important;',
       '}',
-      'body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-pane-id="pane-1"] {',
-      '  background-color: var(--ag-center-bg) !important;',
-      '  backdrop-filter: blur(var(--ag-center-blur)) saturate(160%) !important;',
-      '  -webkit-backdrop-filter: blur(var(--ag-center-blur)) saturate(160%) !important;',
+      'body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-pane-id="pane-1"],',
+      'body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-pane-id="pane-1"] div[class*="group/pane"] {',
+      '  background-color: transparent !important;',
+      '  backdrop-filter: none !important;',
+      '  -webkit-backdrop-filter: none !important;',
+      '}',
+      'body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) [data-testid="chat-turn-container"] {',
+      '  background-color: transparent !important;',
+      '  backdrop-filter: none !important;',
+      '  -webkit-backdrop-filter: none !important;',
+      '  border: none !important;',
+      '  box-shadow: none !important;',
+      '  margin: 0 !important;',
+      '  padding: 0 !important;',
       '}',
       'body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.flex-1.flex.flex-col,',
       'body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="overview-panel-host"],',
@@ -299,6 +336,15 @@
       '  background-color: transparent !important;',
       '  backdrop-filter: none !important;',
       '  -webkit-backdrop-filter: none !important;',
+      '}',
+      'div.md-sticky-message-bleed::before,',
+      'div.md-sticky-message-bleed::after,',
+      '.md-table-bleed .md-sticky-message-bleed::before,',
+      '.md-table-bleed .md-sticky-message-bleed::after,',
+      '[class*="md-sticky-message-bleed"]::before,',
+      '[class*="md-sticky-message-bleed"]::after {',
+      '  display: none !important;',
+      '  background: transparent !important;',
       '}'
     ].join('\n');
     targetParent.appendChild(earlyStyle);
@@ -387,4 +433,90 @@
       }, { once: true });
     }
   }
+
+  /* 8. 桌面伴侣 (Desktop Pet) 宿主级启停桥接与开机自启动引擎 */
+  const petScriptPath = 'D:\\Antigravity\\6\\desktop_pet.ps1';
+  let childProcessRef = null;
+  try {
+    childProcessRef = (typeof require === 'function') ? require('child_process') : null;
+  } catch (e) {}
+
+  const petBridge = {
+    isSupported: !!childProcessRef,
+    startPet: function () {
+      if (!childProcessRef) return false;
+      try {
+        const p = childProcessRef.spawn('powershell.exe', [
+          '-ExecutionPolicy', 'Bypass',
+          '-WindowStyle', 'Hidden',
+          '-File', petScriptPath
+        ], {
+          detached: true,
+          stdio: 'ignore'
+        });
+        p.unref();
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+    stopPet: function () {
+      if (!childProcessRef) return false;
+      try {
+        childProcessRef.exec('powershell.exe -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like \'*desktop_pet.ps1*\' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }"');
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+    checkRunning: function (cb) {
+      if (!childProcessRef) {
+        if (typeof cb === 'function') cb(false);
+        return;
+      }
+      try {
+        childProcessRef.exec('powershell.exe -NoProfile -Command "(Get-CimInstance Win32_Process | Where-Object { $_.CommandLine -like \'*desktop_pet.ps1*\' }).Count"', (err, stdout) => {
+          const count = parseInt(String(stdout || '').trim(), 10) || 0;
+          if (typeof cb === 'function') cb(count > 0);
+        });
+      } catch (e) {
+        if (typeof cb === 'function') cb(false);
+      }
+    }
+  };
+
+  window.__ag_pet_bridge = petBridge;
+
+  // 建立跨世界 CustomEvent 窄接口通信，保障任何上下文均能无缝调用
+  try {
+    document.addEventListener('ag-pet-cmd', (ev) => {
+      const detail = ev.detail || {};
+      const action = detail.action;
+      if (action === 'start') {
+        const ok = petBridge.startPet();
+        document.dispatchEvent(new CustomEvent('ag-pet-status-change', { detail: { action: 'start', ok } }));
+      } else if (action === 'stop') {
+        const ok = petBridge.stopPet();
+        document.dispatchEvent(new CustomEvent('ag-pet-status-change', { detail: { action: 'stop', ok } }));
+      } else if (action === 'check') {
+        petBridge.checkRunning((running) => {
+          document.dispatchEvent(new CustomEvent('ag-pet-status-change', { detail: { action: 'check', running } }));
+        });
+      }
+    });
+  } catch (e) {}
+
+  // 随客户端启动自启动检测（常驻开启项检查）
+  try {
+    const PET_AUTO_KEY = 'ag_pet_auto_launch_v1';
+    const isAuto = localStorage.getItem(PET_AUTO_KEY) === 'true';
+    if (isAuto && petBridge.isSupported) {
+      petBridge.checkRunning((running) => {
+        if (!running) {
+          petBridge.startPet();
+        }
+      });
+    }
+  } catch (e) {}
 })();
+

@@ -1,6 +1,4 @@
 @echo off
-chcp 65001 >nul
-title Antigravity 桌面伴侣启动器
-echo 正在启动 Antigravity 全局桌面伴侣...
-start "" powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File "%~dp0desktop_pet.ps1" -HiddenConsole
+echo %DATE% %TIME% >> "D:\Antigravity\6\start_log.txt"
+start "" powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File "D:\Antigravity\6\desktop_pet.ps1"
 exit

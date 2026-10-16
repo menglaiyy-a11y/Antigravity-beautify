@@ -538,11 +538,14 @@
 
     // 构建核心深度穿透规则
     const baseThemeCss = `
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) {
   --background: transparent !important;
 }
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) {
+  --sidebar: transparent !important;
+  --card: transparent !important;
+}
 body[data-ag-mode="ocean"] {
-  --background: #000000 !important;
   --sidebar: #000000 !important;
 }
 body[data-ag-mode="native"] {
@@ -607,32 +610,23 @@ body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-aux-pane-open
 }
 
 /* ---------------------------------------------------- */
-/* 1. 左栏 (Sidebar) 区域全面重构为 Apple 极简通透风格 (仅极光与自定义模态) */
-/* 1.0 精准对齐真实左侧栏垂直主容器，挂载 --ag-left-bg 与毛玻璃 */
-body[data-ag-mode="custom"] div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar,
-body[data-ag-mode="custom"] div.h-full.w-full.flex.flex-col.bg-sidebar,
-body[data-ag-mode="custom"] div.flex:has(> div.h-full.w-full > div.bg-sidebar),
-body[data-ag-mode="custom"] div[data-testid="sidebar-wrapper"],
-body[data-ag-mode="custom"] aside {
+/* 1. 左栏 (Sidebar) 区域全面重构为 Apple 极简通透风格 (极光与自定义模态全透联动) */
+/* 1.0 精准对齐真实左侧栏垂直主容器，挂载 --ag-left-bg 与毛玻璃，严禁 0.94 等死黑遮光 */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.relative.flex.w-full.h-full.outline-none > div.flex,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.h-full.w-full.flex.flex-col.bg-sidebar,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.flex:has(> div.h-full.w-full > div.bg-sidebar),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="sidebar-wrapper"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) aside {
   background-color: var(--ag-left-bg) !important;
   backdrop-filter: blur(var(--ag-left-blur)) saturate(160%) !important;
   -webkit-backdrop-filter: blur(var(--ag-left-blur)) saturate(160%) !important;
   border-right: 1px solid var(--ag-left-border, rgba(255, 255, 255, 0.08)) !important;
 }
 
-/* 流光极光模式侧边栏：给予高遮光坚实黑衬 (0.94 不透明度)，消除底层全宽流光着色器导致的左栏异常泛青 */
-body[data-ag-mode="aurora"] div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar,
-body[data-ag-mode="aurora"] div.h-full.w-full.flex.flex-col.bg-sidebar,
-body[data-ag-mode="aurora"] div.flex:has(> div.h-full.w-full > div.bg-sidebar),
-body[data-ag-mode="aurora"] div[data-testid="sidebar-wrapper"],
-body[data-ag-mode="aurora"] aside {
-  background-color: rgba(8, 10, 14, 0.94) !important;
-  backdrop-filter: blur(20px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
-}
-
 /* 彻底清除左栏内部所有子容器、项目条目、折叠条目的重复背景与死黑色块，消除斑驳感与重复叠色 */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar *,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.bg-sidebar *,
 body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar div.bg-sidebar,
 body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar [class*="bg-sidebar"],
 body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div.h-full.w-full.flex.flex-col.pb-2.bg-sidebar div.pt-1,
@@ -809,11 +803,12 @@ div[style*="-webkit-app-region: drag"] {
 /* ---------------------------------------------------- */
 /* 3. 中栏 (Main Chat Viewport) 主视窗整体磨砂底衬与 UI 风格纯净统一 */
 /* ---------------------------------------------------- */
-/* 3.0 中栏最外层主视窗容器挂载 --ag-center-bg 与磨砂模糊 (仅极光与自定义模态) */
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-pane-id="pane-1"] {
-  background-color: var(--ag-center-bg) !important;
-  backdrop-filter: blur(var(--ag-center-blur)) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(var(--ag-center-blur)) saturate(160%) !important;
+/* 3.0 中栏最外层主视窗容器完全透空 (极光画布与自定义壁纸居底通透呈现，杜绝整屏大毛玻璃遮罩) */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-pane-id="pane-1"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-pane-id="pane-1"] div[class*="group/pane"] {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   border-right: 1px solid var(--ag-left-border, rgba(255, 255, 255, 0.08)) !important;
 }
 
@@ -843,12 +838,32 @@ div[data-pane-id="pane-1"] div.h-full.overflow-y-auto.min-h-0.w-full.isolate {
   scroll-padding-top: 24px !important;
 }
 
-div.md-sticky-message-bleed {
+div.md-sticky-message-bleed,
+div[class*="sticky-message"],
+div[data-pane-id="pane-1"] div.sticky,
+div[data-pane-id="pane-1"] div[class*="sticky"]:not(#ag-theme-modal *):not(#ag-theme-pill *) {
   position: relative !important;
   top: auto !important;
+  background: transparent !important;
   background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   mask-image: none !important;
   -webkit-mask-image: none !important;
+  box-shadow: none !important;
+}
+
+/* 彻底抑制 bleed 遮罩伪元素，防止 100cqw 纯黑长条或毛玻璃横条遮挡 */
+div.md-sticky-message-bleed::before,
+div.md-sticky-message-bleed::after,
+.md-table-bleed .md-sticky-message-bleed::before,
+.md-table-bleed .md-sticky-message-bleed::after,
+[class*="md-sticky-message-bleed"]::before,
+[class*="md-sticky-message-bleed"]::after,
+[class*="sticky-message"]::before,
+[class*="sticky-message"]::after {
+  display: none !important;
+  background: transparent !important;
 }
 
 /* 消除顶部渐变雾化遮挡罩 */
@@ -859,18 +874,39 @@ div[style*="-webkit-mask-image"] {
   -webkit-mask-image: none !important;
 }
 
-/* 3.1 主对话 Turn 容器：极光/自定义模式下统一纯净磨砂玻璃微透卡片 */
+/* 3.1 主对话 Turn 容器：极光/自定义模式下唯一卡片实体透光，列表外壳与内部全透空 */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) [data-testid="chat-turn-container"] {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-pane-id="pane-1"] div[class*="scroll-mt-4"],
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-pane-id="pane-1"] [data-testid="chat-turn-container"],
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-pane-id="pane-1"] div[class*="group/turn"],
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-pane-id="pane-1"] div[data-turn-id] {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] {
   background-color: var(--ag-center-card-bg) !important;
+  backdrop-filter: blur(var(--ag-center-blur)) !important;
+  -webkit-backdrop-filter: blur(var(--ag-center-blur)) !important;
   border: 1px solid var(--ag-center-card-border, rgba(255, 255, 255, 0.08)) !important;
   border-radius: 14px !important;
   margin: 10px 0 !important;
   padding: 14px 18px !important;
   box-shadow: var(--ag-center-card-shadow, 0 4px 16px rgba(0, 0, 0, 0.12)) !important;
   transition: background-color 0.18s ease, border-color 0.18s ease !important;
+}
+
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div[class*="group/turn"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[class*="scroll-mt-4"] div[data-turn-id] {
+  background-color: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 /* 3.2 彻底清除 Turn 内部一切无意义的死黑死灰堆叠层 (极光/自定义/海洋模态核心通透) */
@@ -886,9 +922,17 @@ body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]
   box-shadow: none !important;
 }
 
-/* 消除顶部渐变雾化遮挡罩伪元素 */
+/* 消除顶部渐变雾化遮挡罩伪元素与横向 bleed 遮罩 */
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div.md-sticky-message-bleed::before,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div.md-sticky-message-bleed::after,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) .md-table-bleed .md-sticky-message-bleed::before,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) .md-table-bleed .md-sticky-message-bleed::after,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) [class*="md-sticky-message-bleed"]::before,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) [class*="md-sticky-message-bleed"]::after,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[class*="scroll-mt-4"] div.md-sticky-message-bleed::before,
 body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[class*="scroll-mt-4"] div.md-sticky-message-bleed::after {
   display: none !important;
+  background: transparent !important;
 }
 
 /* 3.3 用户提问卡片统一：高雅纯净半透微光胶囊 */
@@ -1025,27 +1069,27 @@ body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) #antigravity\.agentSid
   overflow: visible !important;
 }
 
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[id="antigravity.agentSidePanelInputBox"] > div:not(.bottom-full):not([data-mention-menu]),
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[id="antigravity.agentSidePanelInputBox"] div.bg-card:not(.bottom-full):not([data-mention-menu]),
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[id="antigravity.agentSidePanelInputBox"] div.bg-card-border:not(.bottom-full):not([data-mention-menu]) {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[id="antigravity.agentSidePanelInputBox"] > div:not(.bottom-full):not([data-mention-menu]),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[id="antigravity.agentSidePanelInputBox"] div.bg-card:not(.bottom-full):not([data-mention-menu]),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[id="antigravity.agentSidePanelInputBox"] div.bg-card-border:not(.bottom-full):not([data-mention-menu]) {
   background-color: transparent !important;
   border: none !important;
   box-shadow: none !important;
 }
 
 /* 输入框内部子智能体状态行 */
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[id="antigravity.agentSidePanelInputBox"] div:has(> button[aria-label*="subagents running"]),
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[id="antigravity.agentSidePanelInputBox"] div.flex.items-center.justify-between.cursor-pointer {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[id="antigravity.agentSidePanelInputBox"] div:has(> button[aria-label*="subagents running"]),
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[id="antigravity.agentSidePanelInputBox"] div.flex.items-center.justify-between.cursor-pointer {
   border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
   padding: 4px 12px !important;
   background: transparent !important;
 }
 
 /* 输入框内部文本与文本域透底 */
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) div[data-testid="chat-input-container"] textarea,
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) textarea[data-testid="chat-input-textarea"],
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) textarea.bg-transparent,
-body:is([data-ag-mode="aurora"], [data-ag-mode="custom"]) textarea {
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) div[data-testid="chat-input-container"] textarea,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) textarea[data-testid="chat-input-textarea"],
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) textarea.bg-transparent,
+body:is([data-ag-mode="aurora"], [data-ag-mode="custom"], [data-ag-mode="ocean"]) textarea {
   background: transparent !important;
   color: #ffffff !important;
   caret-color: var(--ag-accent) !important;
@@ -1801,31 +1845,50 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] [data-testid="conversation
   background-color: transparent !important;
 }
 
-/* 中栏会话视窗父容器：完全透空，绝不遮挡底层晶格海洋 */
+/* 中栏会话视窗父容器与Turn列表外壳：完全透空，绝不遮挡底层晶格海洋 */
 body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] [data-testid="conversation-view"],
-body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] [data-testid="conversation-view"] > div {
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] [data-testid="conversation-view"] > div,
+body[data-ag-mode="ocean"] [data-testid="chat-turn-container"] {
   background-color: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   border: none !important;
   box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-/* 中栏对话卡片：采用轻量通透背景配合清爽细微描边，让晶格海洋与流动粒子清晰可见，同时保证文字易读 */
+/* 中栏对话卡片：微透轻量底衬，彻底禁用 blur 避免将底层晶格粒子抹成灰黑大遮罩，绝无沉重黑边 */
 body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div[class*="scroll-mt-4"],
-body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] [data-testid="chat-turn-container"],
-body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div[class*="group/turn"] {
-  background-color: rgba(10, 14, 22, 0.16) !important;
-  backdrop-filter: blur(3px) !important;
-  -webkit-backdrop-filter: blur(3px) !important;
+body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] {
+  background-color: rgba(10, 14, 22, 0.12) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
-  border-radius: 14px !important;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15) !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
 }
 
-/* 对话内部子元素：高雅微透，杜绝沉重黑块遮蔽 */
+/* 对话内部子元素：全部透空无黑边，杜绝沉重黑块遮蔽 */
+body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] div[class*="group/turn"],
+body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] div[data-turn-id],
+body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] .bg-card,
+body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] .bg-card-border,
+body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] .bg-muted,
+body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] article,
+body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] div[data-testid="user-input-step"],
+body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] div.flex.shrink-0,
+body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] div:has(> img),
+body[data-ag-mode="ocean"] div[class*="scroll-mt-4"] div:has(> div > img),
 body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div[data-testid="user-input-step"] div[data-testid="lifted-context-menu-trigger"],
-body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div[data-testid="user-input-step"] div[class*="bg-card-border"],
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div[data-testid="user-input-step"] div[class*="bg-card-border"] {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] button.group.tabular-nums,
 body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div.relative:has(> button.tabular-nums),
 body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div[class*="group/agent-card"],
@@ -1833,17 +1896,40 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div.files-changed-header {
   background: rgba(255, 255, 255, 0.03) !important;
   border: 1px solid rgba(255, 255, 255, 0.06) !important;
   border-radius: 10px !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* 中栏代码块与引用块：微透轻量，杜绝深黑色块阻断晶格流动 */
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] pre,
+body[data-ag-mode="ocean"] pre {
+  background-color: rgba(10, 14, 22, 0.22) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+}
+
+body[data-ag-mode="ocean"] blockquote,
+body[data-ag-mode="ocean"] div[class*="markdown-alert"] {
+  background-color: rgba(10, 14, 22, 0.16) !important;
+  border-left: 3px solid var(--ag-accent) !important;
+  border-radius: 0 8px 8px 0 !important;
   backdrop-filter: blur(4px) !important;
-  -webkit-backdrop-filter: blur(4px) !important;
+}
+
+/* Overview 面板高雅半透毛玻璃 */
+body[data-ag-mode="ocean"] div.animate-overview-panel,
+body[data-ag-mode="ocean"] div[data-testid="overview-panel-host"] > div {
+  background-color: rgba(14, 18, 28, 0.75) !important;
+  backdrop-filter: blur(16px) saturate(150%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(150%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
 /* 底部输入框：高透柔光毛玻璃悬浮，清晰悬浮于晶格海洋之上 */
 body[data-ag-mode="ocean"] div[data-testid="chat-input-container"],
 body[data-ag-mode="ocean"] div[id="antigravity.agentSidePanelInputBox"],
-body[data-ag-mode="ocean"] #antigravity\\.agentSidePanelInputBox,
-body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div:has(> textarea),
-body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] form:has(textarea),
-body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
+body[data-ag-mode="ocean"] #antigravity\\.agentSidePanelInputBox {
   background-color: rgba(14, 18, 28, 0.48) !important;
   backdrop-filter: blur(16px) saturate(160%) !important;
   -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
@@ -1852,6 +1938,14 @@ body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
   position: relative !important;
   z-index: 10 !important;
+}
+
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] div:has(> textarea),
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] form:has(textarea),
+body[data-ag-mode="ocean"] div[data-pane-id="pane-1"] textarea {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* 新会话聊天启动界面 (未有对话历史时的空白初始界面)：彻底去除不透明黑底遮盖，通透毛玻璃展示让海洋完美透显 */
@@ -3063,8 +3157,27 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
         color: #ffffff !important;
         font-family: -apple-system, BlinkMacSystemFont, "SF Mono", monospace;
       }
+      .ag-apple-switch input:checked + .ag-apple-switch-slider {
+        background-color: #30d158 !important;
+      }
+      .ag-apple-switch-slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 2px;
+        bottom: 2px;
+        background-color: #ffffff;
+        transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        border-radius: 50%;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      }
+      .ag-apple-switch input:checked + .ag-apple-switch-slider:before {
+        transform: translateX(16px);
+      }
     `;
     document.head.appendChild(animStyle);
+
 
     modal.innerHTML = `
       <!-- 一级页面: Apple 官网极简主控制台 -->
@@ -3373,14 +3486,46 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
           </button>
         </div>
 
-        <!-- 全局桌面伴侣快捷入口 -->
-        <div style="margin-top: 8px;">
-          <button id="ag-btn-launch-pet" style="width: 100%; padding: 7px 10px; background: rgba(10, 132, 255, 0.20); border: 1px solid rgba(10, 132, 255, 0.40); border-radius: 8px; color: #ffffff; font-size: 11px; font-weight: 500; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 6px;">
-            <span>🐱 全局桌面伴侣已就绪 (双击 start_pet.bat 运行)</span>
-          </button>
+        <!-- 全局桌面伴侣控制中心卡片 (连接总控、常驻自启开关、一键启闭) -->
+        <div class="ag-apple-card" style="margin-top: 10px; margin-bottom: 8px; padding: 12px 14px; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.10); border-radius: 12px;">
+          <!-- 标题与运行状态指示 -->
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 13px;">🐾</span>
+              <span style="font-size: 12px; font-weight: 600; color: #ffffff;">全局桌面伴侣</span>
+            </div>
+            <div id="ag-pet-status-pill" style="display: flex; align-items: center; gap: 5px; font-size: 10px; padding: 2px 8px; border-radius: 12px; background: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.8);">
+              <span id="ag-pet-status-dot" style="width: 6px; height: 6px; border-radius: 50%; background: #8e8e93; transition: all 0.2s;"></span>
+              <span id="ag-pet-status-text">检测中...</span>
+            </div>
+          </div>
+
+          <!-- 常驻随软件自启设置项 -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 7px 0; border-top: 1px solid rgba(255, 255, 255, 0.06); border-bottom: 1px solid rgba(255, 255, 255, 0.06); margin-bottom: 10px;">
+            <div>
+              <div style="font-size: 11px; font-weight: 500; color: #ffffff;">随软件自启 (常驻开启)</div>
+              <div style="font-size: 9px; color: rgba(255, 255, 255, 0.65); margin-top: 2px;">打开 Antigravity 时自动唤醒桌宠</div>
+            </div>
+            <label class="ag-apple-switch" style="position: relative; display: inline-block; width: 36px; height: 20px; cursor: pointer; margin: 0;">
+              <input type="checkbox" id="ag-pet-toggle-auto" style="opacity: 0; width: 0; height: 0;">
+              <span class="ag-apple-switch-slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(255, 255, 255, 0.2); transition: 0.2s; border-radius: 20px;"></span>
+            </label>
+          </div>
+
+          <!-- 一键启闭控制按钮组 -->
+          <div style="display: flex; gap: 8px;">
+            <button id="ag-btn-start-pet" style="flex: 1; padding: 7px 10px; background: rgba(48, 209, 88, 0.20); border: 1px solid rgba(48, 209, 88, 0.40); border-radius: 8px; color: #ffffff; font-size: 11px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s;">
+              <span>▶ 唤醒桌宠</span>
+            </button>
+            <button id="ag-btn-stop-pet" style="flex: 1; padding: 7px 10px; background: rgba(255, 69, 58, 0.16); border: 1px solid rgba(255, 69, 58, 0.35); border-radius: 8px; color: #ffffff; font-size: 11px; font-weight: 500; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: all 0.15s;">
+              <span>⏹ 关闭桌宠</span>
+            </button>
+          </div>
         </div>
+
         <div id="ag-toast" style="font-size: 11px; text-align: center; color: #ffffff; margin-top: 6px; height: 14px; opacity: 0; transition: opacity 0.2s;"></div>
       </div>
+
 
       <!-- 二级页面: 广色域专业色谱盘 + RGB 精准通道 (点开放大无缝切换，删除箭头，统一白字) -->
       <div id="ag-view-palette" style="display: none; flex-direction: column; padding: 18px 20px; overflow-y: auto; max-height: 86vh;">
@@ -3467,7 +3612,11 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
       if (mode === 'ocean' && typeof syncOceanPanelControls === 'function') {
         syncOceanPanelControls();
       }
+      if (typeof checkPetStatus === 'function') {
+        checkPetStatus();
+      }
     }
+
 
     // 控制台展开/收起切换
     function togglePanel() {
@@ -4290,16 +4439,124 @@ body[data-ag-mode="ocean"] div[class*="justify-start"][class*="animate-fade-in"]
       }
     };
 
-    // 全局桌面伴侣启动提示
-    const btnLaunchPet = document.getElementById('ag-btn-launch-pet');
-    if (btnLaunchPet) {
-      btnLaunchPet.onclick = () => {
-        showToast('桌宠已就绪！可运行 start_pet.bat 启动全局桌面伴侣');
+    // =========================================================================
+    // 全局桌面伴侣智能控制联动引擎 (连接总控、常驻自启开关、一键启闭)
+    // =========================================================================
+    const PET_AUTO_KEY = 'ag_pet_auto_launch_v1';
+    const petToggleAuto = document.getElementById('ag-pet-toggle-auto');
+    const petStatusDot = document.getElementById('ag-pet-status-dot');
+    const petStatusText = document.getElementById('ag-pet-status-text');
+    const btnStartPet = document.getElementById('ag-btn-start-pet');
+    const btnStopPet = document.getElementById('ag-btn-stop-pet');
+
+    function updatePetStatusUI(isRunning) {
+      if (petStatusDot && petStatusText) {
+        if (isRunning) {
+          petStatusDot.style.background = '#30d158';
+          petStatusDot.style.boxShadow = '0 0 8px #30d158';
+          petStatusText.textContent = '运行中';
+          petStatusText.style.color = '#30d158';
+        } else {
+          petStatusDot.style.background = '#8e8e93';
+          petStatusDot.style.boxShadow = 'none';
+          petStatusText.textContent = '未启动';
+          petStatusText.style.color = 'rgba(255, 255, 255, 0.6)';
+        }
+      }
+    }
+
+    function checkPetStatus() {
+      if (window.__ag_pet_bridge && typeof window.__ag_pet_bridge.checkRunning === 'function') {
+        window.__ag_pet_bridge.checkRunning((running) => {
+          updatePetStatusUI(running);
+        });
+      } else {
+        document.dispatchEvent(new CustomEvent('ag-pet-cmd', { detail: { action: 'check' } }));
+      }
+    }
+
+    document.addEventListener('ag-pet-status-change', (ev) => {
+      const detail = ev.detail || {};
+      if (typeof detail.running === 'boolean') {
+        updatePetStatusUI(detail.running);
+      } else if (detail.action === 'start') {
+        setTimeout(checkPetStatus, 600);
+      } else if (detail.action === 'stop') {
+        setTimeout(checkPetStatus, 400);
+      }
+    });
+
+    if (petToggleAuto) {
+      const isAuto = localStorage.getItem(PET_AUTO_KEY) === 'true';
+      petToggleAuto.checked = isAuto;
+      petToggleAuto.onchange = () => {
+        const checked = petToggleAuto.checked;
+        localStorage.setItem(PET_AUTO_KEY, checked ? 'true' : 'false');
+        if (checked) {
+          showToast('已设为常驻开启：随 Antigravity 打开自动唤醒桌宠');
+          checkPetStatus();
+        } else {
+          showToast('已设为常驻关闭：仅在总控中手动开启');
+        }
       };
     }
 
+    function triggerStartPet() {
+      let started = false;
+      if (window.__ag_pet_bridge && typeof window.__ag_pet_bridge.startPet === 'function') {
+        started = window.__ag_pet_bridge.startPet();
+      }
+      if (!started && window.electronNative && typeof window.electronNative.openExternal === 'function') {
+        window.electronNative.openExternal('file:///D:/Antigravity/6/start_pet.bat');
+        started = true;
+      }
+      if (!started) {
+        document.dispatchEvent(new CustomEvent('ag-pet-cmd', { detail: { action: 'start' } }));
+      }
+      showToast('🐾 桌面伴侣已启动并在右下角常驻！');
+      updatePetStatusUI(true);
+      setTimeout(checkPetStatus, 1500);
+    }
+
+    function triggerStopPet() {
+      let stopped = false;
+      if (window.__ag_pet_bridge && typeof window.__ag_pet_bridge.stopPet === 'function') {
+        stopped = window.__ag_pet_bridge.stopPet();
+      }
+      if (!stopped && window.electronNative && typeof window.electronNative.openExternal === 'function') {
+        window.electronNative.openExternal('file:///D:/Antigravity/6/stop_pet.bat');
+        stopped = true;
+      }
+      if (!stopped) {
+        document.dispatchEvent(new CustomEvent('ag-pet-cmd', { detail: { action: 'stop' } }));
+      }
+      showToast('桌面伴侣已退出。');
+      updatePetStatusUI(false);
+      setTimeout(checkPetStatus, 1000);
+    }
+
+    if (btnStartPet) {
+      btnStartPet.onclick = triggerStartPet;
+    }
+
+    if (btnStopPet) {
+      btnStopPet.onclick = triggerStopPet;
+    }
+
+    checkPetStatus();
+
     // 暴露全局实例与对外桥接 API (供全局桌宠与外部控制调用)
     window.agVisualPanel = {
+      pet: {
+        start: triggerStartPet,
+        stop: triggerStopPet,
+        check: checkPetStatus,
+        onPetAlive: (alive) => {
+          updatePetStatusUI(!!alive);
+        }
+      },
+
+
       oceanEngine: oceanEngine,
       syncOceanControls: syncOceanPanelControls,
       toggle: togglePanel,

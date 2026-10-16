@@ -23,8 +23,13 @@ $gifBase64 = [System.IO.File]::ReadAllText($base64Path, [System.Text.Encoding]::
 $template = [System.IO.File]::ReadAllText($templatePath, [System.Text.Encoding]::UTF8)
 $coreJs = $template.Replace("___SUOMING_GIF_PLACEHOLDER___", $gifBase64)
 
-# 4. 组合初始化注入代码 (纯净核心逻辑，默认原生 UI，不再强行定向冰川底图)
-$combinedJs = $coreJs
+$snippetPath = "D:\Antigravity\6\preload_head_snippet.js"
+$headSnippetRaw = [System.IO.File]::ReadAllText($snippetPath, [System.Text.Encoding]::UTF8)
+$headSnippet = $headSnippetRaw.Replace("___BASE64_PLACEHOLDER___", "")
+
+# 4. 组合初始化注入代码 (包含宿主桥接与控制台核心逻辑)
+$combinedJs = [string]::Concat($headSnippet, "`r`n`r`n", $coreJs)
+
 
 # 5. 获取 DevTools CDP 端口
 $DevToolsPortFile = "C:\Users\31411\AppData\Roaming\Antigravity\DevToolsActivePort"
